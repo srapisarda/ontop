@@ -542,6 +542,7 @@ public class MappingAnalyzer {
 		HashMap<String, String> aliasMap = queryParsed.getAliasMap();
 		
 		int offset = 0; // the index offset
+		int index = 0;
 
 		for (RelationJSQL table : tableList) {
 			
@@ -560,7 +561,7 @@ public class MappingAnalyzer {
 
 			for (int i = 1; i <= size; i++) {
 				// assigned index number
-				int index = i + offset;
+				index = i + offset;
 				
 				// simple attribute name
 //				String columnName = dbMetaData.getAttributeName(tableName, i);
@@ -637,6 +638,30 @@ public class MappingAnalyzer {
 			}
 			offset += size;
 		}
+		
+		index = findFunctionAliases(lookupTable, aliasMap, index + 1);
 		return lookupTable;
+	}
+
+	/**
+	 * Looks for aliases that are not yet in the lookupTable.
+	 * 
+	 * For instance, this happens with CAST function.
+	 * 
+	 * Example: Adding an entry for "u_name" for the query 
+	 * "SELECT id, CAST(first_name AS VARCHAR(80) CHARACTER SET utf8) AS u_name FROM Student"
+	 * 
+	 * @param lookupTable
+	 * @param aliasMap
+	 * @param index
+	 * @return the updated lookupTable
+	 */
+	private int findFunctionAliases(LookupTable lookupTable, HashMap<String, String> aliasMap, int index) {
+		for (String alias : aliasMap.values()) {
+			if (lookupTable.lookup(alias) == null) {
+				lookupTable.add(alias, index++);
+			}
+		}
+		return index;
 	}
 }

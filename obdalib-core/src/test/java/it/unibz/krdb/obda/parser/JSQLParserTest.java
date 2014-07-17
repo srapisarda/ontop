@@ -685,6 +685,13 @@ public class JSQLParserTest extends TestCase {
 		printJSQL("testCast", result);
 		assertTrue(result);
 	}
+	public void testCast2(){
+		final boolean result = parseUnquotedJSQL("SELECT id, CAST(first_name AS VARCHAR(80) CHARACTER SET utf8) AS u_name FROM Student");
+		printJSQL("testCast", result);
+		assertTrue(result);
+	}
+	
+
 
 	private String queryText;
 
@@ -748,7 +755,6 @@ public class JSQLParserTest extends TestCase {
 		try {
 			queryP = new VisitedQuery(input,true);
 		} catch (Exception e) {
-
 			return false;
 		}
 

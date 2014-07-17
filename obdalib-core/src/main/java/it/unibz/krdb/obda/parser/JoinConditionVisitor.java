@@ -595,8 +595,8 @@ public class JoinConditionVisitor implements SelectVisitor, ExpressionVisitor, F
 	}
 
 	@Override
-	public void visit(CastExpression arg0) {
-		
+	public void visit(CastExpression cast) {
+		cast.getLeftExpression().accept(this);
 	}
 
 	/*

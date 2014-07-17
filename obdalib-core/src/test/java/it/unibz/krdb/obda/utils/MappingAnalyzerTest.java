@@ -199,4 +199,10 @@ public class MappingAnalyzerTest extends TestCase {
 				":S_{StudentId} a :Student .");
 	}
 
+	public void testAnalysisCast() throws Exception {
+		runAnalysis(
+				"SELECT id, CAST(first_name AS VARCHAR(80) CHARACTER SET utf8) AS u_name FROM Student",
+				":S_{id} a :Student ; :fname {u_name} .");
+	}
+	
 }

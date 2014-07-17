@@ -561,8 +561,7 @@ public class SelectionVisitor implements SelectVisitor, ExpressionVisitor, FromI
 
 	@Override
 	public void visit(CastExpression cast) {
-		// not supported
-		
+		cast.getLeftExpression().accept(this);
 	}
 
 	/*
