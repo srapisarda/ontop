@@ -36,6 +36,7 @@ import it.unibz.krdb.obda.parser.SQLQueryParser;
 import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DataDefinition;
 import it.unibz.krdb.sql.api.ParsedSQLQuery;
+import it.unibz.krdb.sql.api.ProjectionJSQL;
 import it.unibz.krdb.sql.api.RelationJSQL;
 import it.unibz.krdb.sql.api.SelectJSQL;
 import it.unibz.krdb.sql.api.SelectionJSQL;
@@ -73,7 +74,7 @@ import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.RegExpMatchOperator;
 import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.statement.create.table.ColDataType;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 
@@ -128,7 +129,13 @@ public class Mapping2DatalogConverter {
 
                 // For each where clause, creates an atom and adds it to the body
                 addWhereClauseAtoms(bodyAtoms, parsedSQLQuery, lookupTable);
-
+                
+                List<Function> castAtoms = createCastAtoms(parsedSQLQuery, lookupTable);
+                
+                // FIXME: Should we keep separated from normal body atoms?
+                // And only add some of them only when needed?
+                bodyAtoms.addAll(castAtoms);
+                
                 // For each body atom in the target query,
                 //  (1) renameVariables its variables and
                 //  (2) use it as the head atom of a new rule
@@ -243,6 +250,29 @@ public class Mapping2DatalogConverter {
         }
     }
 
+    /**
+     * Creates atoms for the CAST expressions found in the SQL query.
+     * @param parsedSQLQuery
+     * @param lookupTable
+     * @throws JSQLParserException 
+     */
+    private List<Function> createCastAtoms(ParsedSQLQuery parsedSQLQuery, LookupTable lookupTable) throws JSQLParserException {
+    	List<Function> castAtoms = new ArrayList<>();
+
+    	ProjectionJSQL projection = parsedSQLQuery.getProjection();
+    	
+    	for (SelectExpressionItem expressionItem : projection.getColumnList()) {
+    		Expression expression = expressionItem.getExpression();
+    		if (expression instanceof CastExpression) {
+        		Expression2FunctionConverter converter = new Expression2FunctionConverter(lookupTable);
+        		
+        		Function atom = converter.convert(expressionItem.getExpression());
+        		castAtoms.add(atom);  			
+    		}
+
+    	}
+    	return castAtoms;
+    }
 
     /**
      * Returns a new term by renaming variables occurring in the  {@code term}
@@ -825,8 +855,10 @@ public class Mapping2DatalogConverter {
         }
 
         @Override
+        /**
+         * Creates an atom for the CAST expression
+         */
         public void visit(CastExpression expression) {
-            // TODO
             Expression column = expression.getLeftExpression();
             String columnName = column.toString();
             String variableName = lookupTable.lookup(columnName);
@@ -836,16 +868,10 @@ public class Mapping2DatalogConverter {
             }
             Term var = factory.getVariable(variableName);
 
-            ColDataType datatype = expression.getType();
+            Term dataType = factory.getConstantLiteral(expression.getType().toString());
 
-
-
-            Term var2 = null;
-
-            //first value is a column, second value is a datatype. It can  also have the size
-
-            result = factory.getFunctionCast(var, var2);
-
+            // First value is a column, second value is a data-type.
+            result = factory.getFunctionCast(var, dataType);
         }
 
         @Override
