@@ -266,8 +266,13 @@ public class Mapping2DatalogConverter {
     		if (expression instanceof CastExpression) {
         		Expression2FunctionConverter converter = new Expression2FunctionConverter(lookupTable);
         		
-        		Function atom = converter.convert(expressionItem.getExpression());
-        		castAtoms.add(atom);  			
+        		Function castCompositeTerm = converter.convert(expressionItem.getExpression());
+
+                String alias = expressionItem.getAlias().getName();
+                Variable var = factory.getVariable(lookupTable.lookup(alias));
+
+                Function atom = factory.getFunctionEQ(var, castCompositeTerm);
+        		castAtoms.add(atom);
     		}
 
     	}
@@ -425,7 +430,7 @@ public class Mapping2DatalogConverter {
 			offset += size;
 		}
 		
-		index = findFunctionAliases(lookupTable, aliasMap, index);
+		index = findFunctionAliases(lookupTable, aliasMap, index + 1);
 		return lookupTable;
 	}
     
