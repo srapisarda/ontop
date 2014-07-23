@@ -20,28 +20,12 @@ package it.unibz.krdb.obda.owlrefplatform.core.mappingprocessing;
  * #L%
  */
 
-import it.unibz.krdb.obda.model.BNodePredicate;
-import it.unibz.krdb.obda.model.CQIE;
-import it.unibz.krdb.obda.model.DataTypePredicate;
-import it.unibz.krdb.obda.model.DatalogProgram;
-import it.unibz.krdb.obda.model.Function;
-import it.unibz.krdb.obda.model.Term;
-import it.unibz.krdb.obda.model.OBDADataFactory;
-import it.unibz.krdb.obda.model.OBDAException;
-import it.unibz.krdb.obda.model.Predicate;
-import it.unibz.krdb.obda.model.URIConstant;
-import it.unibz.krdb.obda.model.URITemplatePredicate;
-import it.unibz.krdb.obda.model.ValueConstant;
-import it.unibz.krdb.obda.model.Variable;
-import it.unibz.krdb.obda.model.impl.AnonymousVariable;
-import it.unibz.krdb.obda.model.impl.FunctionalTermImpl;
-import it.unibz.krdb.obda.model.impl.OBDADataFactoryImpl;
-import it.unibz.krdb.obda.model.impl.VariableImpl;
+import it.unibz.krdb.obda.model.*;
+import it.unibz.krdb.obda.model.impl.*;
 import it.unibz.krdb.obda.utils.TypeMapper;
 import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DataDefinition;
 import it.unibz.krdb.sql.api.Attribute;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -95,13 +79,16 @@ public class MappingDataTypeRepair {
 			if (term instanceof Function) {
 				Function function = (Function) term;
 
-				if (function.getFunctionSymbol() instanceof URITemplatePredicate
-						|| function.getFunctionSymbol() instanceof BNodePredicate) {
+                Predicate functionSymbol = function.getFunctionSymbol();
+
+
+				if (functionSymbol instanceof URITemplatePredicate
+						|| functionSymbol instanceof BNodePredicate
+                        || functionSymbol instanceof SQLOperatorPredicate) {
 					// NO-OP for object properties
 					continue;
 				}
 
-				Predicate functionSymbol = function.getFunctionSymbol();
 				if (functionSymbol instanceof DataTypePredicate) {
 					// NO-OP
 					// If the term is already a data-type predicate then the
