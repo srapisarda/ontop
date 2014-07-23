@@ -42,6 +42,7 @@ import it.unibz.krdb.sql.api.SelectJSQL;
 import it.unibz.krdb.sql.api.SelectionJSQL;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -130,18 +131,14 @@ public class Mapping2DatalogConverter {
                 // For each where clause, creates an atom and adds it to the body
                 addWhereClauseAtoms(bodyAtoms, parsedSQLQuery, lookupTable);
                 
-                List<Function> castAtoms = createCastAtoms(parsedSQLQuery, lookupTable);
-                
-                // FIXME: Should we keep separated from normal body atoms?
-                // And only add some of them only when needed?
-                bodyAtoms.addAll(castAtoms);
+                Map<String, Function> castAliasMap = createCastAliasMap(parsedSQLQuery, lookupTable);
                 
                 // For each body atom in the target query,
                 //  (1) renameVariables its variables and
                 //  (2) use it as the head atom of a new rule
                 for (Function atom : targetQuery.getBody()) {
                     // Construct the head from the target query.
-                    Function head = createHeadAtom(atom, lookupTable);
+                    Function head = createHeadAtom(atom, lookupTable, castAliasMap);
                     // Create a new rule from the new head and the body
                     CQIE rule = factory.getCQIE(head, bodyAtoms);
                     datalogProgram.appendRule(rule);
@@ -174,13 +171,14 @@ public class Mapping2DatalogConverter {
      *
      * @param atom an atom from the body of the target query
      * @param lookupTable
+     * @param castAliasMap
      * @return a head atom
      */
-    private Function createHeadAtom(Function atom, LookupTable lookupTable) {
+    private Function createHeadAtom(Function atom, LookupTable lookupTable, Map<String, Function> castAliasMap) {
         List<Term> terms = atom.getTerms();
         List<Term> newTerms = new ArrayList<>();
         for (Term term : terms) {
-            newTerms.add(renameVariables(term, lookupTable));
+            newTerms.add(renameVariables(term, lookupTable, castAliasMap));
         }
         return factory.getFunction(atom.getFunctionSymbol(),
                 newTerms);
@@ -251,13 +249,13 @@ public class Mapping2DatalogConverter {
     }
 
     /**
-     * Creates atoms for the CAST expressions found in the SQL query.
+     * Creates a map for the CAST expressions and their aliases found in the SQL query.
      * @param parsedSQLQuery
      * @param lookupTable
      * @throws JSQLParserException 
      */
-    private List<Function> createCastAtoms(ParsedSQLQuery parsedSQLQuery, LookupTable lookupTable) throws JSQLParserException {
-    	List<Function> castAtoms = new ArrayList<>();
+    private Map<String, Function> createCastAliasMap(ParsedSQLQuery parsedSQLQuery, LookupTable lookupTable) throws JSQLParserException {
+    	Map<String, Function> castAliasMap = new HashMap<>();
 
     	ProjectionJSQL projection = parsedSQLQuery.getProjection();
     	
@@ -268,27 +266,31 @@ public class Mapping2DatalogConverter {
         		
         		Function castCompositeTerm = converter.convert(expressionItem.getExpression());
 
-                String alias = expressionItem.getAlias().getName();
-                Variable var = factory.getVariable(lookupTable.lookup(alias));
+                String alias = expressionItem.getAlias().getName().replaceAll("^\"|\"$", "");
 
-                Function atom = factory.getFunctionEQ(var, castCompositeTerm);
-        		castAtoms.add(atom);
+        		castAliasMap.put(alias, castCompositeTerm);
     		}
 
     	}
-    	return castAtoms;
+    	return castAliasMap;
     }
 
     /**
      * Returns a new term by renaming variables occurring in the  {@code term}
-     *  according to the {@code lookupTable}
+     *  according to the {@code lookupTable} and the {@code castAliasMap}.
      */
-    private Term renameVariables(Term term, LookupTable lookupTable) {
+    private Term renameVariables(Term term, LookupTable lookupTable, Map<String, Function> castAliasMap) {
         Term result = null;
 
         if (term instanceof Variable) {
             Variable var = (Variable) term;
             String varName = var.getName();
+
+            // Cast alias
+            if (castAliasMap.containsKey(varName)) {
+                return castAliasMap.get(varName);
+            }
+
             String termName = lookupTable.lookup(varName);
             if (termName == null) {
                 String messageFormat = "Error in identifying column name \"%s\", " +
@@ -306,7 +308,7 @@ public class Mapping2DatalogConverter {
             List<Term> terms = func.getTerms();
             List<Term> newTerms = new ArrayList<>();
             for (Term innerTerm : terms) {
-                newTerms.add(renameVariables(innerTerm, lookupTable));
+                newTerms.add(renameVariables(innerTerm, lookupTable, castAliasMap));
             }
             result = factory.getFunction(func.getFunctionSymbol(), newTerms);
         } else if (term instanceof Constant) {
@@ -329,7 +331,6 @@ public class Mapping2DatalogConverter {
 		Map<String, String> aliasMap = queryParsed.getAliasMap();
 		
 		int offset = 0; // the index offset
-		int index = 0;
 
 		for (RelationJSQL table : tables) {
 			
@@ -346,7 +347,7 @@ public class Mapping2DatalogConverter {
 
 			for (int i = 1; i <= size; i++) {
 				// assigned index number
-				index = i + offset;
+				int index = i + offset;
 				
 				// simple attribute name
 				String columnName = dbMetadata.getAttributeName(fullName, i);
@@ -429,19 +430,9 @@ public class Mapping2DatalogConverter {
 			}
 			offset += size;
 		}
-		
-		index = findFunctionAliases(lookupTable, aliasMap, index + 1);
 		return lookupTable;
 	}
-    
-	private int findFunctionAliases(LookupTable lookupTable, Map<String, String> aliasMap, int index) {
-		for (String alias : aliasMap.values()) {
-			if (lookupTable.lookup(alias) == null) {
-				lookupTable.add(alias, index++);
-			}
-		}
-		return index;
-	}
+
 
     /**
      * This visitor class converts the SQL Expression to a Function
@@ -876,7 +867,7 @@ public class Mapping2DatalogConverter {
             Term dataType = factory.getConstantLiteral(expression.getType().toString());
 
             // First value is a column, second value is a data-type.
-            result = factory.getFunctionCast(var, dataType);
+            result = factory.getFunctionSqlCast(var, dataType);
         }
 
         @Override

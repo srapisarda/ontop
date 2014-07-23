@@ -409,10 +409,14 @@ public class OBDADataFactoryImpl implements OBDADataFactory {
 	}
 
 	@Override
-	public Function getFunctionCast(Term term1, Term term2) {
-		// TODO implement cast function
+	public Function getFunctionSparqlCast(Term term1, Term term2) {
 		return getFunction(OBDAVocabulary.QUEST_CAST, term1, term2);
 	}
+
+    @Override
+    public Function getFunctionSqlCast(Term term, Term sqlType) {
+        return getFunction(OBDAVocabulary.SQL_CAST, term, sqlType);
+    }
 	
 	@Override
 	public OBDADataSource getJDBCDataSource(String jdbcurl, String username, 
