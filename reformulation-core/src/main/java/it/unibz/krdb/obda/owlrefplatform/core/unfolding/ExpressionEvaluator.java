@@ -28,7 +28,6 @@ import it.unibz.krdb.obda.model.CQIE;
 import it.unibz.krdb.obda.model.Constant;
 import it.unibz.krdb.obda.model.DataTypePredicate;
 import it.unibz.krdb.obda.model.DatalogProgram;
-import it.unibz.krdb.obda.model.Function;
 import it.unibz.krdb.obda.model.Term;
 import it.unibz.krdb.obda.model.NonBooleanOperationPredicate;
 import it.unibz.krdb.obda.model.NumericalOperationPredicate;
@@ -44,7 +43,6 @@ import it.unibz.krdb.obda.model.impl.OBDAVocabulary;
 import it.unibz.krdb.obda.owlrefplatform.core.basicoperations.Unifier;
 import it.unibz.krdb.obda.owlrefplatform.core.basicoperations.UriTemplateMatcher;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -401,9 +399,9 @@ public class ExpressionEvaluator {
 				} else {
 					return fac.getFunction(
 							fac.getDataTypePredicateString(),
-							fac.getFunctionCast(
-									fac.getVariable(parameter.toString()),
-									fac.getConstantLiteral(OBDAVocabulary.XSD_STRING_URI))
+							fac.getFunctionSparqlCast(
+                                    fac.getVariable(parameter.toString()),
+                                    fac.getConstantLiteral(OBDAVocabulary.XSD_STRING_URI))
 									);
 				}
 			} else if (predicate instanceof URITemplatePredicate) {
