@@ -423,8 +423,8 @@ public class AliasMapVisitor implements SelectVisitor, SelectItemVisitor, Expres
 	}
 
 	@Override
-	public void visit(CastExpression cast) {
-		// TODO Auto-generated method stub
+	public void visit(CastExpression castExpression) {
+        castExpression.getLeftExpression().accept(this);
 		
 	}
 

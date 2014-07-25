@@ -544,8 +544,7 @@ public class ExpressionEvaluator {
 				} else {
 					return fac.getFunction(
 							fac.getDataTypePredicateString(),
-							fac.getFunction(
-									OBDAVocabulary.QUEST_CAST,
+							fac.getFunctionSPARQLCast(
 									fac.getVariable(parameter.toString()),
 									fac.getConstantLiteral(OBDAVocabulary.XSD_STRING_URI)));
 				}

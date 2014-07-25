@@ -20,6 +20,7 @@ package org.semanticweb.ontop.utils;
  * #L%
  */
 
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import org.semanticweb.ontop.model.CQIE;
 import org.semanticweb.ontop.model.Constant;
 import org.semanticweb.ontop.model.DatalogProgram;
@@ -35,12 +36,10 @@ import org.semanticweb.ontop.model.impl.OBDADataFactoryImpl;
 import org.semanticweb.ontop.parser.SQLQueryParser;
 import org.semanticweb.ontop.sql.DBMetadata;
 import org.semanticweb.ontop.sql.DataDefinition;
-import org.semanticweb.ontop.sql.api.ParsedSQLQuery;
-import org.semanticweb.ontop.sql.api.RelationJSQL;
-import org.semanticweb.ontop.sql.api.SelectJSQL;
-import org.semanticweb.ontop.sql.api.SelectionJSQL;
+import org.semanticweb.ontop.sql.api.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -129,12 +128,14 @@ public class Mapping2DatalogConverter {
                 // For each where clause, creates an atom and adds it to the body
                 addWhereClauseAtoms(bodyAtoms, parsedSQLQuery, lookupTable);
 
+                Map<String, Function> castAliasMap = createCastAliasMap(parsedSQLQuery, lookupTable);
+
                 // For each body atom in the target query,
                 //  (1) renameVariables its variables and
                 //  (2) use it as the head atom of a new rule
                 for (Function atom : targetQuery.getBody()) {
                     // Construct the head from the target query.
-                    Function head = createHeadAtom(atom, lookupTable);
+                    Function head = createHeadAtom(atom, lookupTable, castAliasMap);
                     // Create a new rule from the new head and the body
                     CQIE rule = factory.getCQIE(head, bodyAtoms);
                     datalogProgram.appendRule(rule);
@@ -167,13 +168,14 @@ public class Mapping2DatalogConverter {
      *
      * @param atom an atom from the body of the target query
      * @param lookupTable
+     * @param castAliasMap
      * @return a head atom
      */
-    private Function createHeadAtom(Function atom, LookupTable lookupTable) {
+    private Function createHeadAtom(Function atom, LookupTable lookupTable, Map<String, Function> castAliasMap) {
         List<Term> terms = atom.getTerms();
         List<Term> newTerms = new ArrayList<>();
         for (Term term : terms) {
-            newTerms.add(renameVariables(term, lookupTable));
+            newTerms.add(renameVariables(term, lookupTable, castAliasMap));
         }
         return factory.getFunction(atom.getFunctionSymbol(),
                 newTerms);
@@ -243,17 +245,49 @@ public class Mapping2DatalogConverter {
         }
     }
 
+    /**
+     * Creates a map for the CAST expressions and their aliases found in the SQL query.
+     * @param parsedSQLQuery
+     * @param lookupTable
+     * @throws JSQLParserException
+     */
+    private Map<String, Function> createCastAliasMap(ParsedSQLQuery parsedSQLQuery, LookupTable lookupTable) throws JSQLParserException {
+        Map<String, Function> castAliasMap = new HashMap<>();
+
+        ProjectionJSQL projection = parsedSQLQuery.getProjection();
+
+        for (SelectExpressionItem expressionItem : projection.getColumnList()) {
+            Expression expression = expressionItem.getExpression();
+            if (expression instanceof CastExpression) {
+                Expression2FunctionConverter converter = new Expression2FunctionConverter(lookupTable);
+
+                Function castCompositeTerm = converter.convert(expressionItem.getExpression());
+
+                String alias = expressionItem.getAlias().getName().replaceAll("^\"|\"$", "");
+
+                castAliasMap.put(alias, castCompositeTerm);
+            }
+
+        }
+        return castAliasMap;
+    }
 
     /**
      * Returns a new term by renaming variables occurring in the  {@code term}
-     *  according to the {@code lookupTable}
+     *  according to the {@code lookupTable} and the {@code castAliasMap}.
      */
-    private Term renameVariables(Term term, LookupTable lookupTable) {
+    private Term renameVariables(Term term, LookupTable lookupTable, Map<String, Function> castAliasMap) {
         Term result = null;
 
         if (term instanceof Variable) {
             Variable var = (Variable) term;
             String varName = var.getName();
+
+            // Cast alias
+            if (castAliasMap.containsKey(varName)) {
+                return castAliasMap.get(varName);
+            }
+
             String termName = lookupTable.lookup(varName);
             if (termName == null) {
                 String messageFormat = "Error in identifying column name \"%s\", " +
@@ -271,7 +305,7 @@ public class Mapping2DatalogConverter {
             List<Term> terms = func.getTerms();
             List<Term> newTerms = new ArrayList<>();
             for (Term innerTerm : terms) {
-                newTerms.add(renameVariables(innerTerm, lookupTable));
+                newTerms.add(renameVariables(innerTerm, lookupTable, castAliasMap));
             }
             result = factory.getFunction(func.getFunctionSymbol(), newTerms);
         } else if (term instanceof Constant) {
@@ -812,9 +846,10 @@ public class Mapping2DatalogConverter {
             throw new UnsupportedOperationException();
         }
 
-        @Override
+        /**
+         * Creates an atom for the CAST expression
+         */
         public void visit(CastExpression expression) {
-            // TODO
             Expression column = expression.getLeftExpression();
             String columnName = column.toString();
             String variableName = lookupTable.lookup(columnName);
@@ -824,16 +859,10 @@ public class Mapping2DatalogConverter {
             }
             Term var = factory.getVariable(variableName);
 
-            ColDataType datatype = expression.getType();
+            Term dataType = factory.getConstantLiteral(expression.getType().toString());
 
-
-
-            Term var2 = null;
-
-            //first value is a column, second value is a datatype. It can  also have the size
-
-            result = factory.getFunctionCast(var, var2);
-
+            // First value is a column, second value is a data-type.
+            result = factory.getFunctionSQLCast(var, dataType);
         }
 
         @Override

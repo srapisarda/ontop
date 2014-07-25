@@ -160,7 +160,9 @@ public interface OBDADataFactory extends Serializable {
 	/*
 	 * Casting values cast(source-value AS destination-type)
 	 */
-	public Function getFunctionCast(Term term1, Term term2);
+	public Function getFunctionSPARQLCast(Term term, Term type);
+
+    public Function getFunctionSQLCast(Term term, Term sqlType);
 	
 	/*
 	 * JDBC objects

@@ -594,9 +594,8 @@ public class ProjectionVisitor implements SelectVisitor, SelectItemVisitor, Expr
 	}
 
 	@Override
-	public void visit(CastExpression cast) {
-		
-		
+	public void visit(CastExpression castExpression) {
+        castExpression.getLeftExpression().accept(this);
 	}
 
 	@Override

@@ -568,9 +568,8 @@ public class WhereClauseVisitor implements SelectVisitor, ExpressionVisitor, Fro
 	}
 
 	@Override
-	public void visit(CastExpression cast) {
-		// not supported
-		
+	public void visit(CastExpression castExpression) {
+        castExpression.getLeftExpression().accept(this);
 	}
 
 	/*

@@ -228,4 +228,9 @@ public class Mapping2DatalogConverterTest extends TestCase {
                 ":S_{id} a :RecentStudent ; :fname {first_name} ; :lname {last_name} .");
     }
 
+    public void testAnalysisCast() throws Exception {
+        runAnalysis(
+                "SELECT id, CAST(first_name AS VARCHAR(80) CHARACTER SET utf8) AS u_name FROM Student",
+                ":S_{id} a :Student ; :fname {u_name} .");
+    }
 }
