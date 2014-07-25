@@ -31,13 +31,7 @@ package org.semanticweb.ontop.owlrefplatform.core.basicoperations;
  */
 
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -215,12 +209,12 @@ public class Unifier {
 		applyUnifier(terms, atom, unifier,0, isEquality);
 	}
 	/***
-	 * Applies the subsittution to all the terms in the list. Note that this
-	 * will not clone the list or the terms insdie the list.
+	 * Applies the substitution to all the terms in the list. Note that this
+	 * will not clone the list or the terms inside the list.
 	 * 
 	 * @param terms
 	 * @param atom
-	 * 			the parent of the terms if known, othersize, it is null
+	 * 			the parent of the terms if known, otherwise, it is null
 	 * @param unifier
 	 */
 	public static void applyUnifier(List<Term> terms, Function atom,
@@ -377,19 +371,29 @@ public class Unifier {
 
 			Term term1 = terms1.get(termidx);
 			Term term2 = terms2.get(termidx);
+            Term termToCompare1 = extractTermToCompare(term1);
+            Term termToCompare2 = extractTermToCompare(term2);
+
+            List<Term> termsToUnify = extractTermsToUnify(term1, term2);
+            if (termsToUnify.size() != 2) {
+                // TODO: Find a better exception type
+                throw new RuntimeException("Wrong size of termsToUnify");
+            }
+            Term termToUnify1 = termsToUnify.get(0);
+            Term termToUnify2 = termsToUnify.get(1);
 
 			/*
 			 * Checking if there are already substitutions calculated for the
 			 * current terms. If there are any, then we have to take the
 			 * substitutted terms instead of the original ones.
 			 */
-			Term currentTerm1 = mgu.get(term1);
-			Term currentTerm2 = mgu.get(term2);
+			Term currentTerm1 = mgu.get(termToCompare1);
+			Term currentTerm2 = mgu.get(termToCompare2);
 
 			if (currentTerm1 != null)
-				term1 = currentTerm1;
+                termToCompare1 = currentTerm1;
 			if (currentTerm2 != null)
-				term2 = currentTerm2;
+                termToCompare2 = currentTerm2;
 
 			/*
 			 * We have two cases, unifying 'simple' terms, and unifying function
@@ -397,14 +401,14 @@ public class Unifier {
 			 * nested.
 			 */
 
-			if ((term1 instanceof Function) && (term2 instanceof Function)) {
+			if ((termToCompare1 instanceof Function) && (termToCompare2 instanceof Function)) {
 				/*
 				 * if both of them are a function term then we need to do some
 				 * check in the inner terms, else we can give it to the MGU
 				 * calculator directly
 				 */
-				Function fterm1 = (Function) term1;
-				Function fterm2 = (Function) term2;
+				Function fterm1 = (Function) termToCompare1;
+				Function fterm2 = (Function) termToCompare2;
 				if (!fterm1.getFunctionSymbol().equals(
 						fterm2.getFunctionSymbol())) {
 					return null;
@@ -445,18 +449,18 @@ public class Unifier {
 				 */
 				Substitution s = null;
 				if(!oneWayMGU){
-					s= getSubstitution(term1, term2);
+					s= getSubstitution(termToUnify1, termToUnify2);
 				}else{
 					Predicate functionSymbol = firstAtom.getFunctionSymbol();
 					if (multPredList.containsKey(functionSymbol) ){ // it is a problematic predicate regarding templates
 						if (multPredList.get(functionSymbol).contains(termidx)){ //the term is the problematic one
-							s = getOneWaySubstitution(term1, term2,true);
+							s = getOneWaySubstitution(termToUnify1, termToUnify2, true);
 						} else{
-							s = getOneWaySubstitution(term1, term2,false);	
+							s = getOneWaySubstitution(termToUnify1, termToUnify2, false);
 						}
 					}
 					else{
-							s = getOneWaySubstitution(term1, term2,false);	
+							s = getOneWaySubstitution(termToUnify1, termToUnify2, false);
 					}
 					
 					 
@@ -480,6 +484,61 @@ public class Unifier {
 		}
 		return mgu;
 	}
+
+    /**
+     * When a term is composite (sometimes called a "Function"),
+     * see if a sub-term may be more relevant that the composite term.
+     *
+     * Currently, a sub-term is only preferred when the SQL CAST operator
+     * is used.
+     *
+     * @param term
+     * @return
+     */
+    private static Term extractTermToCompare(Term term) {
+        if (term instanceof Function) {
+            Function compositeTerm = (Function) term;
+            if (compositeTerm.getFunctionSymbol() == OBDAVocabulary.SQL_CAST) {
+                return compositeTerm.getTerm(0);
+            }
+        }
+        return term;
+    }
+
+    /**
+     * In most cases, the terms to unify are the ones given.
+     *
+     * When a CAST expression is involved in the first term:
+     *   "term1 = CAST(st1, TYPE), term2"
+     * the returned terms are
+     *    "st1, CAST(term2, TYPE)".
+     *
+     * @param term1
+     * @param term2
+     * @return
+     */
+    static List<Term> extractTermsToUnify(Term term1, Term term2) {
+        List<Term> termsToUnify = new ArrayList<>();
+        if (term1 instanceof Function) {
+            Function compositeTerm1 = (Function) term1;
+            if (compositeTerm1.getFunctionSymbol() == OBDAVocabulary.SQL_CAST) {
+                // Extracts the variable from the CAST (hope it is not composite itself)
+                Term var1 = compositeTerm1.getTerm(0);
+                Term castType = compositeTerm1.getTerm(1);
+                termsToUnify.add(var1);
+
+                // Reverse the CAST
+                Function newTerm2 = ofac.getFunction(OBDAVocabulary.SQL_CAST, term2, castType);
+                termsToUnify.add(newTerm2);
+                return termsToUnify;
+            }
+        }
+        // By default
+        termsToUnify.add(term1);
+        termsToUnify.add(term2);
+
+        return termsToUnify;
+    }
 
 	/***
 	 * This will compose the unfier with the substitution. Note that the unifier
