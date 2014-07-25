@@ -26,19 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.semanticweb.ontop.model.BNodePredicate;
-import org.semanticweb.ontop.model.CQIE;
-import org.semanticweb.ontop.model.DataTypePredicate;
-import org.semanticweb.ontop.model.DatalogProgram;
-import org.semanticweb.ontop.model.Function;
-import org.semanticweb.ontop.model.OBDADataFactory;
-import org.semanticweb.ontop.model.OBDAException;
-import org.semanticweb.ontop.model.Predicate;
-import org.semanticweb.ontop.model.Term;
-import org.semanticweb.ontop.model.URIConstant;
-import org.semanticweb.ontop.model.URITemplatePredicate;
-import org.semanticweb.ontop.model.ValueConstant;
-import org.semanticweb.ontop.model.Variable;
+import org.semanticweb.ontop.model.*;
 import org.semanticweb.ontop.model.impl.AnonymousVariable;
 import org.semanticweb.ontop.model.impl.FunctionalTermImpl;
 import org.semanticweb.ontop.model.impl.OBDADataFactoryImpl;
@@ -94,14 +82,15 @@ public class MappingDataTypeRepair {
 
 			if (term instanceof Function) {
 				Function function = (Function) term;
+                Predicate functionSymbol = function.getFunctionSymbol();
 
-				if (function.getFunctionSymbol() instanceof URITemplatePredicate
-						|| function.getFunctionSymbol() instanceof BNodePredicate) {
+				if (functionSymbol instanceof URITemplatePredicate
+						|| functionSymbol instanceof BNodePredicate
+                        || functionSymbol instanceof SQLOperatorPredicate) {
 					// NO-OP for object properties
 					continue;
 				}
 
-				Predicate functionSymbol = function.getFunctionSymbol();
 				if (functionSymbol instanceof DataTypePredicate) {
 					// NO-OP
 					// If the term is already a data-type predicate then the
