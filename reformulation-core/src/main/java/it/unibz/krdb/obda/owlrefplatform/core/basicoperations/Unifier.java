@@ -38,13 +38,7 @@ import it.unibz.krdb.obda.model.OBDADataFactory;
 import it.unibz.krdb.obda.model.Predicate;
 import it.unibz.krdb.obda.model.ValueConstant;
 import it.unibz.krdb.obda.model.Variable;
-import it.unibz.krdb.obda.model.impl.AlgebraOperatorPredicateImpl;
-import it.unibz.krdb.obda.model.impl.AnonymousVariable;
-import it.unibz.krdb.obda.model.impl.FunctionalTermImpl;
-import it.unibz.krdb.obda.model.impl.OBDADataFactoryImpl;
-import it.unibz.krdb.obda.model.impl.URIConstantImpl;
-import it.unibz.krdb.obda.model.impl.ValueConstantImpl;
-import it.unibz.krdb.obda.model.impl.VariableImpl;
+import it.unibz.krdb.obda.model.impl.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -294,25 +288,27 @@ public class Unifier {
 		List<Term> terms1 = firstAtom.getTerms();
 		List<Term> terms2 = secondAtom.getTerms();
 
-		Map<Variable, Term> mgu = new HashMap<Variable, Term>();
+		Map<Variable, Term> mgu = new HashMap<>();
 
 		for (int termidx = 0; termidx < arity; termidx++) {
 
-			Term term1 = terms1.get(termidx);
-			Term term2 = terms2.get(termidx);
+            Term term1 = terms1.get(termidx);
+            Term term2 = terms2.get(termidx);
+			Term termToCompare1 = extractRelevantTermForUnification(term1);
+			Term termToCompare2 = extractRelevantTermForUnification(term2);
 
 			/*
 			 * Checking if there are already substitutions calculated for the
 			 * current terms. If there are any, then we have to take the
 			 * substitutted terms instead of the original ones.
 			 */
-			Term currentTerm1 = mgu.get(term1);
-			Term currentTerm2 = mgu.get(term2);
+			Term currentTerm1 = mgu.get(termToCompare1);
+			Term currentTerm2 = mgu.get(termToCompare2);
 
 			if (currentTerm1 != null)
-				term1 = currentTerm1;
+				termToCompare1 = currentTerm1;
 			if (currentTerm2 != null)
-				term2 = currentTerm2;
+				termToCompare2 = currentTerm2;
 
 			/*
 			 * We have two cases, unifying 'simple' terms, and unifying function
@@ -320,14 +316,14 @@ public class Unifier {
 			 * nested.
 			 */
 
-			if ((term1 instanceof Function) && (term2 instanceof Function)) {
+			if ((termToCompare1 instanceof Function) && (termToCompare2 instanceof Function)) {
 				/*
 				 * if both of them are a function term then we need to do some
 				 * check in the inner terms, else we can give it to the MGU
 				 * calculator directly
 				 */
-				Function fterm1 = (Function) term1;
-				Function fterm2 = (Function) term2;
+				Function fterm1 = (Function) termToCompare1;
+				Function fterm2 = (Function) termToCompare2;
 				if (!fterm1.getFunctionSymbol().equals(
 						fterm2.getFunctionSymbol())) {
 					return null;
@@ -366,7 +362,7 @@ public class Unifier {
 				 * the normal case
 				 */
 
-				Substitution s = getSubstitution(term1, term2);
+				Substitution s = getSubstitution(termToCompare1, termToCompare2);
 
 				if (s == null) {
 					return null;
@@ -387,6 +383,26 @@ public class Unifier {
 		}
 		return mgu;
 	}
+
+    /**
+     * When a term is composite (sometimes called a "Function"),
+     * see if a sub-term may be more relevant that the composite term.
+     *
+     * Currently, a sub-term is only preferred when the SQL CAST operator
+     * is used.
+     *
+     * @param term
+     * @return
+     */
+    private static Term extractRelevantTermForUnification(Term term) {
+        if (term instanceof Function) {
+            Function compositeTerm = (Function) term;
+            if (compositeTerm.getFunctionSymbol() == OBDAVocabulary.SQL_CAST) {
+                return compositeTerm.getTerm(0);
+            }
+        }
+        return term;
+    }
 
 	/***
 	 * This will compose the unfier with the substitution. Note that the unifier
