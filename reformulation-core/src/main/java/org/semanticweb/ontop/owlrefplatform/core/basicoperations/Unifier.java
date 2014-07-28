@@ -211,6 +211,8 @@ public class Unifier {
 	/***
 	 * Applies the substitution to all the terms in the list. Note that this
 	 * will not clone the list or the terms inside the list.
+     *
+     * Please note that some exceptions to unification exist.
 	 * 
 	 * @param terms
 	 * @param atom
@@ -223,16 +225,26 @@ public class Unifier {
 		
 		for (int i = fromIndex; i < terms.size(); i++) {
 			Term t = terms.get(i);
+
 			/*
 			 * unifiers only apply to variables, simple or inside functional
 			 * terms
 			 */
 			if (t instanceof Variable) {
 				Term replacement = unifier.get(t);
+
 				if (isequality && replacement!=null && replacement!= OBDAVocabulary.NULL){
 					replacement = replacement.getReferencedVariables().iterator().next();
 				}
 				if (replacement != null){
+
+                    /**
+                     * Checks if this unification should be exempted.
+                     */
+                    if (shouldRejectReplacement(atom, t, replacement)) {
+                        continue;
+                    }
+
 					if(atom != null){
 						/*
 						 * <code>atom.setTerm()</code> will trigger the updating the string cache of the atom
@@ -251,11 +263,56 @@ public class Unifier {
 			}
 		}
 	}
-	
-	
-	
-	
-	/**
+
+    /**
+     * Returns true when the replacement should be rejected.
+     *
+     * Replacement by Cast expressions is a typical case that generates such exceptions.
+     * See {@code shouldRejectReplacementByCast}.
+     *
+     * @param atom
+     * @param subTerm Sub-term of the atom that should be replaced
+     * @param replacement Term that should replace the subTerm
+     * @return true if the replacement should be rejected
+     */
+    private static boolean shouldRejectReplacement(Function atom, Term subTerm, Term replacement) {
+        if (replacement != null && replacement instanceof Function) {
+
+            Function replacementCompositeTerm = (Function) replacement;
+            Predicate functionSymbol = replacementCompositeTerm.getFunctionSymbol();
+            if (functionSymbol == OBDAVocabulary.SQL_CAST) {
+                return shouldRejectReplacementByCast(atom, subTerm, replacementCompositeTerm);
+            }
+        }
+        // By default, accepts
+        return false;
+    }
+
+    /**
+     * Tests if the replacement of a variable by a CAST expression should be rejected
+     * for a specific atom and sub-term.
+     *
+     * @param atom
+     * @param subTerm Sub-term of the atom that should be replaced
+     * @param castExpression Cast expression that should replace the sub-term
+     * @return true if the replacement should be rejected
+     */
+    private static boolean shouldRejectReplacementByCast(Function atom, Term subTerm, Function castExpression) {
+        if (atom != null) {
+            Predicate atomFunctionSymbol = atom.getFunctionSymbol();
+            /**
+             * Rejects IS_NOT_NULL(CAST(...)) substitutions
+             */
+            if (atomFunctionSymbol == OBDAVocabulary.IS_NOT_NULL) {
+                return true;
+            }
+        }
+        // By default, accepts
+        return false;
+    }
+
+
+    /**
 	 * This method differs from the previous one in that, if the term is URI(p), and we have the replacement
 	 * p=URI(p) then we remove that unification.
 	 * 

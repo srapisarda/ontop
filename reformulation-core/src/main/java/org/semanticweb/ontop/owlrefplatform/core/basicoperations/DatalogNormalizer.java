@@ -366,48 +366,6 @@ public class DatalogNormalizer {
 
 	}
 
-    /**
-     * Removes IS_NOT_NULL atoms from the body in some specific cases.
-     *
-     * Removed atoms:
-     *   - IS_NOT_NULL(SQL_CAST(...))
-     *
-     * @param rule The body of the rule is altered (side-effect).
-     */
-    public static void removeUnnecessaryNotNullAtoms(CQIE rule) {
-        List<Function> newBodyAtoms = new ArrayList<>();
-
-        /**
-         * Looks for IS_NOT_NULL atoms (at the body level)
-         */
-        for (Function bodyAtom : rule.getBody()) {
-            Predicate functionSymbol = bodyAtom.getFunctionSymbol();
-            if (functionSymbol == OBDAVocabulary.IS_NOT_NULL) {
-                /**
-                 * Cases where the IS_NOT_NULL atom should be removed (not added)
-                 */
-                Term mainTerm = bodyAtom.getTerm(0);
-                if (mainTerm instanceof Function) {
-                    Function nestedFunction = (Function) mainTerm;
-                    Predicate nestedFunctionSymbol = nestedFunction.getFunctionSymbol();
-
-                    /**
-                     * SQL CAST case: remove the IS_NOT_NULL atom
-                     */
-                    if (nestedFunctionSymbol == OBDAVocabulary.SQL_CAST) {
-                        // Do not add it (indirect removal)
-                        continue;
-                    }
-                }
-            }
-
-            // Normal case: keep the atom (add it to the new list)
-            newBodyAtoms.add(bodyAtom);
-        }
-
-        rule.updateBody(newBodyAtoms);
-    }
-
 	private static BranchDepthSorter sorter = new BranchDepthSorter();
 
 	/***

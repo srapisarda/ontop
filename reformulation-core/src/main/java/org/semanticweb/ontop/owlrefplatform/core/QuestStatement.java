@@ -546,15 +546,6 @@ public class QuestStatement implements OBDAStatement {
 		//	System.out.println(rule);
 		}
 
-        log.debug("Remove some unnecessary IS_NOT_NULL atoms...");
-        for (CQIE rule: unfolding.getRules()){
-            DatalogNormalizer.removeUnnecessaryNotNullAtoms(rule);
-        }
-
-		
-
-		
-		
 		log.debug("\n Partial evaluation ended.");
 
 		return unfolding;
