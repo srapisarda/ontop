@@ -23,18 +23,7 @@ package org.semanticweb.ontop.owlrefplatform.core.basicoperations;
  */
 
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 import org.semanticweb.ontop.model.AlgebraOperatorPredicate;
 import org.semanticweb.ontop.model.BooleanOperationPredicate;
@@ -54,10 +43,6 @@ import org.semanticweb.ontop.model.impl.OBDAVocabulary;
 import org.semanticweb.ontop.utils.QueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 
 /***
  * Implements several transformations on the rules of a datalog program that
@@ -341,32 +326,36 @@ public class DatalogNormalizer {
 	/***
 	 * This method introduces new variable names in each data atom and
 	 * equalities to account for JOIN operations. This method is called before
-	 * generating SQL queries and allows to avoid cross refrences in nested
+	 * generating SQL queries and allows to avoid cross references in nested
 	 * JOINs, which generate wrong ON or WHERE conditions.
 	 * 
-	 * 
-	 * @param currentTerms
-	 * @param substitutions
+	 * @param query
 	 */
 	public static CQIE pullOutEqualities(CQIE query) {
-		Map<Variable, Term> substitutions = new HashMap<Variable, Term>();
-		int[] newVarCounter = { 1 };
 
-		//Set<Function> booleanAtoms = new HashSet<Function>();
-		List<Function> equalities = new LinkedList<Function>();
-		
-		pullOutEqualities(query.getBody(), substitutions, equalities, newVarCounter, false);
+        /**
+         *  Proposes some substitutions and new equalities
+         *  by looking at the query body.
+         */
+        Map<Variable, Term> substitutions = new HashMap<>();
+        List<Function> equalities = new LinkedList<>();
+        // "Int" value that can be incremented in sub-method (without be returned)
+        int[] newVarCounter = { 1 };
+		proposeNewEqualitiesAndSubstitutions(query.getBody(), substitutions, equalities, newVarCounter, false);
+
+        /**
+         * Adds new equalities to the body.
+         */
 		List<Function> body = query.getBody();
 		body.addAll(equalities);
 
-		/*
-		 * All new variables have been generated, the substitutions also, we
-		 * need to apply them to the equality atoms and to the head of the
-		 * query.
+		/**
+         * Applies the substitutions to the equality atoms and to
+         * the head of the query (should be already OK for other body atoms).
 		 */
-
 		Unifier.applyUnifier(query, substitutions, false);
-		
+
+        // ???
 		substitutionsTotal.clear();
 		
 		/**
@@ -447,27 +436,40 @@ public class DatalogNormalizer {
 	}
 
 	/***
-	 * This method introduces new variable names in each data atom and
-	 * equalities to account for JOIN operations. This method is called before
-	 * generating SQL queries and allows to avoid cross references in nested
-	 * JOINs, which generate wrong ON or WHERE conditions.
-	 * 
-	 * 
-	 * @param currentTerms
-	 * @param substitutions
-	 * @return 
+     * Initial comment:
+	 *    This method introduces new variable names in each data atom and
+	 *    equalities to account for JOIN operations. This method is called before
+	 *    generating SQL queries and allows to avoid cross references in nested
+	 *    JOINs, which generate wrong ON or WHERE conditions.
+     *
+     * This function proposes some equalities and substitutions without applying them.
+     * However, if substitutions are not fully applied (by using a unifier),
+     * SOME TERMS ARE REPLACED LOCALLY in atoms.
+     *
+     * Consequently, this function has some SIDE-EFFECTS in addition to its proposals.
+     *
+     * Recursive function. The returned value is just used for recursive (sub)-calls,
+     * not by the main caller (pullOutEqualities() ).
+     *
+     *
+     * OPEN questions about this semi-obfuscated code:
+     *   - What is the role of eqGoOutside?
+     *   - What does the unexplained block do?
+	 *
 	 */
 
 	@SuppressWarnings("unchecked")
-	private static List<Function> pullOutEqualities(List currentTerms, Map<Variable, Term> substitutions, List<Function> eqList, int[] newVarCounter,
-			boolean isLeftJoin) {
+    private static List<Function> proposeNewEqualitiesAndSubstitutions(List currentTerms,
+                                                                       Map<Variable, Term> substitutions,
+                                                                       List<Function> equalities,
+                                                                       int[] newVarCounter,
+                                                                       boolean isLeftJoin) {
+        // TODO: What is this???
+		List<Function> eqGoOutside = new LinkedList<>();
 
-
-		//Multimap<Variable, Function> mapVarAtom =  HashMultimap.create();
-		
-		List<Function> eqGoOutside = new LinkedList<Function>();
-
-		
+        /**
+         *  For each "current" term
+         */
 		for (int i = 0; i < currentTerms.size(); i++) {
 
 			Term term = (Term) currentTerms.get(i);
@@ -481,41 +483,53 @@ public class DatalogNormalizer {
 				throw new RuntimeException("Unexpected term found while normalizing (pulling out equalities) the query.");
 
 			Function atom = (Function) term;
-			List<Term> subterms = atom.getTerms();
+            // Sub-terms of the atom will be altered!! (not-safe usage)
+			List<Term> subTerms = atom.getTerms();
+
+
+            //------ UNEXPLAINED BLOCK --------
 
 			if (atom.isAlgebraFunction()) {
 				if (atom.getFunctionSymbol() == OBDAVocabulary.SPARQL_LEFTJOIN){
-					eqGoOutside.addAll(pullOutEqualities(subterms, substitutions, eqList, newVarCounter, true));
+					eqGoOutside.addAll(proposeNewEqualitiesAndSubstitutions(subTerms, substitutions, equalities, newVarCounter, true));
 					
-					Set<Variable> uniVarTm = new HashSet<Variable>();
-					getVariablesFromList(subterms, uniVarTm);
+					Set<Variable> uniVarTm = new HashSet<>();
+					getVariablesFromList(subTerms, uniVarTm);
 					
 					//I find the scope of the equality
 					for (Function eq:eqGoOutside){
 						if (uniVarTm.containsAll(eq.getReferencedVariables())){
-							subterms.add(eq);
+							subTerms.add(eq);
 							//eqGoOutside.remove(eq);
 						}
 					}
 				}
-				
+
+                // Not a LEFT-JOIN atom
 				else{
-					eqGoOutside.addAll(pullOutEqualities(subterms, substitutions, eqList, newVarCounter, false));
+                    // Recursive call on the sub-terms
+					eqGoOutside.addAll(proposeNewEqualitiesAndSubstitutions(subTerms, substitutions, equalities, newVarCounter, false));
 				}
-
-			} else if (atom.isBooleanFunction()) {
+            }
+            /**
+             * Boolean atoms
+             * TODO: Why???
+             */
+            else if (atom.isBooleanFunction()) {
 				continue;
-
 			}
 
-			// rename/substitute variables
+            //------ END OF UNEXPLAINED BLOCK --------
 
-			for (int j = 0; j < subterms.size(); j++) {
-				Term subTerm = subterms.get(j);
+            /**
+             * Rename/substitute sub-terms
+             *
+             * TODO: move away into a separated sub-method
+             */
+			for (int j = 0; j < subTerms.size(); j++) {
+				Term subTerm = subTerms.get(j);
 				if (subTerm instanceof Variable) {
-					
-					//mapVarAtom.put((Variable)subTerm, atom);
-					renameVariable(substitutions, eqList, newVarCounter, atom,	subterms, j, (Variable) subTerm);
+					renameVariable(substitutions, equalities, newVarCounter, atom,	subTerms, j, (Variable) subTerm);
 					
 				} else if (subTerm instanceof Constant) {
 					/*
@@ -530,35 +544,43 @@ public class DatalogNormalizer {
 						Variable var = fac.getVariable("f" + newVarCounter[0]);
 						newVarCounter[0] += 1;
 						Function equality = fac.getFunctionEQ(var, subTerm);
-						subterms.set(j, var);
-						eqList.add(equality);
+						subTerms.set(j, var);
+						equalities.add(equality);
 					}
 
 				} else if (subTerm instanceof Function) {
-					Predicate head = ((Function) subTerm).getFunctionSymbol();
+					Predicate functionSymbol = ((Function) subTerm).getFunctionSymbol();
 
-					if (head.isDataTypePredicate()) {
+					if (functionSymbol.isDataTypePredicate()) {
 
 						// This case is for the ans atoms that might have
 						// functions in the head. Check if it is needed.
-						Set<Variable> subtermsset = subTerm
+						Set<Variable> subTermSet = subTerm
 								.getReferencedVariables();
 
 						// Right now we support only unary functions!!
-						for (Variable var : subtermsset) {
-							renameTerm(substitutions, eqList, newVarCounter,
-									atom, subterms, j, (Function) subTerm, var);
+						for (Variable var : subTermSet) {
+							renameTerm(substitutions, equalities, newVarCounter,
+                                    atom, subTerms, j, (Function) subTerm, var);
 						}
 					}
+                    /**
+                     * CAST expression case.
+                     *
+                     * Replaces the cast expression by a variable in the atom
+                     * and proposes a new equality expression.
+                     */
+                    else if (functionSymbol == OBDAVocabulary.SQL_CAST) {
+                        Function castExpression = (Function) subTerm;
+
+                        // New variable and new equality proposed
+                        Variable newVariable = proposeNewEqualityForCast(equalities, castExpression, newVarCounter);
+                        // Alters the atom by replacing one of its sub-term.
+                        subTerms.set(j, newVariable);
+                    }
 				}
-			} // end for subterms
-			
-			
-			
-			
-			
-			
-			
+			} // end for sub-term renaming/substitution
+
 			
 			//TODO: WHat about the JOIN????
 			if (isLeftJoin){
@@ -577,15 +599,19 @@ public class DatalogNormalizer {
 					}
 				} //END FOR
 				*/
-				eqGoOutside.addAll(eqList);
-				eqList.clear();
+				eqGoOutside.addAll(equalities);
+				equalities.clear();
 			}else{
-				currentTerms.addAll(i + 1, eqList);
-				i = i + eqList.size();
-				eqList.clear();
+				currentTerms.addAll(i + 1, equalities);
+				i = i + equalities.size();
+				equalities.clear();
 			}
 			
 		}//end for current terms
+
+        /**
+         * Only used for recursive calls. Not used by pullOutEqualities().
+         */
 		return eqGoOutside;
 	}
 
@@ -645,7 +671,29 @@ public class DatalogNormalizer {
 
 	}
 
-	private static void renameVariable(Map<Variable, Term> substitutions, List<Function> eqList, int[] newVarCounter, Function atom,
+    /**
+     * Creates a new variable for replacing the cast expression.
+     * Proposes a new equality to associate this variable to the cast expression.
+     *
+     * Please note that no substitution is proposed.
+     *
+     * @param equalities Adds a new equality to it (side-effect).
+     * @param castExpression
+     * @param newVarCounter Increments it (side-effect).
+     */
+    private static Variable proposeNewEqualityForCast(List<Function> equalities, Function castExpression, int[] newVarCounter) {
+        // New variable for replacing the cast expression
+        Variable newVariable = fac.getVariable("ct_" + newVarCounter[0]);
+        newVarCounter[0] += 1;
+
+        // Equality expression
+        Function equality = fac.getFunctionEQ(newVariable, castExpression);
+        equalities.add(equality);
+
+        return newVariable;
+     }
+
+    private static void renameVariable(Map<Variable, Term> substitutions, List<Function> eqList, int[] newVarCounter, Function atom,
 			List<Term> subterms, int j, Term subTerm) {
 		Variable var1 = (Variable) subTerm;
 		Variable var2 = (Variable) substitutions.get(var1);
@@ -782,7 +830,7 @@ public class DatalogNormalizer {
 	 * focusBranch. There are not visible in an SQL algebra tree.
 	 * <p>
 	 * Note that this method should only be called after callin pushEqualities
-	 * and pullOutEqualities on the CQIE. This is to assure that there are no
+	 * and proposeNewEqualitiesAndSubstitutions on the CQIE. This is to assure that there are no
 	 * transitive equalities to take care of and that each variable in a data
 	 * atom is unique.
 	 * 
@@ -945,7 +993,7 @@ public class DatalogNormalizer {
 					// a
 					// * "safe variable" at the same time. (this pattern happens
 					// * due to the call to
-					// DatalogNormalizer.pullOutEqualities()
+					// DatalogNormalizer.proposeNewEqualitiesAndSubstitutions()
 					// * that happens before pullingUp
 					// */
 					// for (int idx2 = 0; idx2 < currentLevelAtoms.size();
