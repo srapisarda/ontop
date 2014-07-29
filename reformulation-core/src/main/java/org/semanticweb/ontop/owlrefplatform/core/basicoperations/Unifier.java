@@ -36,13 +36,7 @@ import java.util.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import org.semanticweb.ontop.model.CQIE;
-import org.semanticweb.ontop.model.Function;
-import org.semanticweb.ontop.model.OBDADataFactory;
-import org.semanticweb.ontop.model.Predicate;
-import org.semanticweb.ontop.model.Term;
-import org.semanticweb.ontop.model.ValueConstant;
-import org.semanticweb.ontop.model.Variable;
+import org.semanticweb.ontop.model.*;
 import org.semanticweb.ontop.model.impl.AlgebraOperatorPredicateImpl;
 import org.semanticweb.ontop.model.impl.AnonymousVariable;
 import org.semanticweb.ontop.model.impl.FunctionalTermImpl;
@@ -239,11 +233,10 @@ public class Unifier {
 				if (replacement != null){
 
                     /**
-                     * Checks if this unification should be exempted.
+                     * In some specific cases, we want to alter the replacement
+                     * locally. This happens for instance with cast expressions.
                      */
-                    if (shouldRejectReplacement(atom, t, replacement)) {
-                        continue;
-                    }
+                    replacement = adaptReplacementLocally(atom, t, replacement);
 
 					if(atom != null){
 						/*
@@ -265,50 +258,87 @@ public class Unifier {
 	}
 
     /**
-     * Returns true when the replacement should be rejected.
+     * Adapts a replacement proposed by the unification according the local atom and sub-term.
      *
-     * Replacement by Cast expressions is a typical case that generates such exceptions.
-     * See {@code shouldRejectReplacementByCast}.
+     * Adaptation is for instance needed for cast expressions in some specific cases.
+     * See {@code adaptReplacementToCast}.
      *
      * @param atom
      * @param subTerm Sub-term of the atom that should be replaced
-     * @param replacement Term that should replace the subTerm
-     * @return true if the replacement should be rejected
+     * @param replacement Term that is proposed to replace the subTerm
+     * @return the replacement that should be applied
      */
-    private static boolean shouldRejectReplacement(Function atom, Term subTerm, Term replacement) {
+    private static Term adaptReplacementLocally(Function atom, Term subTerm, Term replacement) {
         if (replacement != null && replacement instanceof Function) {
 
             Function replacementCompositeTerm = (Function) replacement;
             Predicate functionSymbol = replacementCompositeTerm.getFunctionSymbol();
             if (functionSymbol == OBDAVocabulary.SQL_CAST) {
-                return shouldRejectReplacementByCast(atom, subTerm, replacementCompositeTerm);
+                return adaptReplacementToCast(atom, subTerm, replacementCompositeTerm);
             }
         }
-        // By default, accepts
-        return false;
+        // By default, no adaptation
+        return replacement;
     }
 
     /**
-     * Tests if the replacement of a variable by a CAST expression should be rejected
-     * for a specific atom and sub-term.
+     * Case where the proposed replacement is a CAST expression.
      *
      * @param atom
      * @param subTerm Sub-term of the atom that should be replaced
-     * @param castExpression Cast expression that should replace the sub-term
-     * @return true if the replacement should be rejected
+     * @param castExpression Cast expression that is proposed to replace the sub-term
+     * @return the replacement that should be applied
      */
-    private static boolean shouldRejectReplacementByCast(Function atom, Term subTerm, Function castExpression) {
+    private static Term adaptReplacementToCast(Function atom, Term subTerm, Function castExpression) {
         if (atom != null) {
             Predicate atomFunctionSymbol = atom.getFunctionSymbol();
             /**
-             * Rejects IS_NOT_NULL(CAST(...)) substitutions
+             * IS_NOT_NULL(CAST(...)) unification case
              */
             if (atomFunctionSymbol == OBDAVocabulary.IS_NOT_NULL) {
-                return true;
+                return adaptReplacementToCastInNotNull(castExpression);
             }
         }
-        // By default, accepts
-        return false;
+        // By default, no adaptation
+        return castExpression;
+    }
+
+    /**
+     * Case where a replacement by a CAST expression is proposed in a IS_NOT_NULL atom.
+     *
+     * @param castExpression Cast expression that is proposed to replace the sub-term
+     * @return the replacement that should be applied
+     */
+    private static Term adaptReplacementToCastInNotNull(Function castExpression) {
+        Term castTerm = castExpression.getTerm(0);
+        /**
+         * Variable in the CAST: substitute this variable instead of the cast expression.
+         */
+        if (castTerm instanceof Variable) {
+            return castTerm;
+        }
+
+        else if (castTerm instanceof Function) {
+            Function castCompositeTerm = (Function) castTerm;
+            Predicate castTermFunctionSymbol = castCompositeTerm.getFunctionSymbol();
+
+            /**
+             * Literal value in the CAST: give a constant value to the IS_NOT_NULL atom.
+             */
+            if (castTermFunctionSymbol.isDataTypePredicate()) {
+                return ofac.getConstantLiteral("1");
+            }
+
+        }
+        /**
+         * Constant value in the CAST: give a constant value to the IS_NOT_NULL atom.
+         */
+        else if (castTerm instanceof Constant) {
+            return ofac.getConstantLiteral("1");
+        }
+
+        // By default, no adaptation
+        return castExpression;
     }
 
 
