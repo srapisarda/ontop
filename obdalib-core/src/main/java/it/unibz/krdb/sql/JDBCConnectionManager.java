@@ -212,7 +212,6 @@ public class JDBCConnectionManager {
 			// For other database engines
 			metadata = getOtherMetaData(md);
 		}
-		metadata.setIsFullMetadata(true);
 		return metadata;
 	}
 	
@@ -249,7 +248,7 @@ public class JDBCConnectionManager {
 			// For other database engines, i.e. mysql
 			metadata = getOtherMetaData(md, conn, tables, JDBC_ORIGINALCASE);
 		}
-		metadata.setIsFullMetadata(false);
+		metadata.setTableList(tables);
 		return metadata;
 	}
 

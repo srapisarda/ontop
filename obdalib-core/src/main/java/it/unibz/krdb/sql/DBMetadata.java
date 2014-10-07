@@ -26,6 +26,7 @@ import it.unibz.krdb.obda.model.DatalogProgram;
 import it.unibz.krdb.obda.model.Function;
 import it.unibz.krdb.obda.model.Predicate;
 import it.unibz.krdb.sql.api.Attribute;
+import it.unibz.krdb.sql.api.RelationJSQL;
 
 import java.io.Serializable;
 import java.sql.DatabaseMetaData;
@@ -59,6 +60,7 @@ public class DBMetadata implements Serializable {
 	 * false if only the tables mentioned in the mappings are fetched
 	 */
 	private boolean fullMetadata;
+	private List<RelationJSQL> metadataTables;
 	
 	/**
 	 * Constructs a blank metadata. Use only for testing purpose.
@@ -78,6 +80,7 @@ public class DBMetadata implements Serializable {
 	public DBMetadata(DatabaseMetaData md) {
 		load(md);
 		this.fullMetadata = true;
+		this.metadataTables = null;
 	}
 
 	/**
@@ -138,17 +141,33 @@ public class DBMetadata implements Serializable {
 
 	}
 
+	
 	/**
-	 * @return True if the object is the result of a full metadata extraction,
-	 * false if only the tables mentioned in the mappings are fetched
+	 * Returns true if a table should have been fetched (i.e. full metadata, or was mentioned in mappings)
+	 * @param tableName
+	 * @return
 	 */
-	public boolean isFullMetadata(){
-		return this.fullMetadata;
+	public boolean shouldHaveBeenFetched(String tableName){
+		if (this.fullMetadata)
+			return true;
+		for (RelationJSQL rel : this.metadataTables){
+			if(rel.getFullName().equals(tableName) || rel.getTableName().equals(tableName))
+				return true;
+		}
+		return false;
 	}
 	
-	public void setIsFullMetadata(boolean fullMetadata){
-		this.fullMetadata = fullMetadata;
+	/**
+	 * This provides the list of tables for which this object is supposed to be the metadata. 
+	 * This list is only used for error-checking purposes (i.e. was a table not fetched because
+	 * it did not occur in the mappings, or because of an error)
+	 * @param tables
+	 */
+	public void setTableList(List<RelationJSQL> tables){
+		this.metadataTables = tables;
+		this.fullMetadata = false;
 	}
+	
 	
 	/**
 	 * Inserts a list of data definition in batch.
