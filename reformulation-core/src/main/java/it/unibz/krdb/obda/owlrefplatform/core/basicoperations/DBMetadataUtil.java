@@ -76,7 +76,11 @@ public class DBMetadataUtil {
 						if (def2 == null) { // in case of broken FK
 							// ROMAN: this is not necessarily broken -- the table may not be mentioned in the mappings 
 							//        (which can happen in the NEW abridged metadata)
-							throw new BrokenForeignKeyException(reference, "Missing table: " + table2);
+							if(metadata.isFullMetadata())
+								throw new BrokenForeignKeyException(reference, "Missing table: " + table2);
+							else
+								log.debug("Foreign key " + table1 + ":" + reference.getReferenceName() + 
+										" refers to a table " + reference.getTableReference() + " for which no metadata is fetched. Probably it is not in use the mappings.");
 						}
 						// Get positions of referenced attribute
 						int pos1 = def.getAttributePosition(column1);

@@ -55,6 +55,12 @@ public class DBMetadata implements Serializable {
 	private static Pattern pQuotes = Pattern.compile("[\"`\\[][^\\.]*[\"`\\]]");;
 
 	/**
+	 * True if the object is the result of a full metadata extraction,
+	 * false if only the tables mentioned in the mappings are fetched
+	 */
+	private boolean fullMetadata;
+	
+	/**
 	 * Constructs a blank metadata. Use only for testing purpose.
 	 */
 	public DBMetadata() {
@@ -71,6 +77,7 @@ public class DBMetadata implements Serializable {
 	 */
 	public DBMetadata(DatabaseMetaData md) {
 		load(md);
+		this.fullMetadata = true;
 	}
 
 	/**
@@ -131,6 +138,18 @@ public class DBMetadata implements Serializable {
 
 	}
 
+	/**
+	 * @return True if the object is the result of a full metadata extraction,
+	 * false if only the tables mentioned in the mappings are fetched
+	 */
+	public boolean isFullMetadata(){
+		return this.fullMetadata;
+	}
+	
+	public void setIsFullMetadata(boolean fullMetadata){
+		this.fullMetadata = fullMetadata;
+	}
+	
 	/**
 	 * Inserts a list of data definition in batch.
 	 * 
