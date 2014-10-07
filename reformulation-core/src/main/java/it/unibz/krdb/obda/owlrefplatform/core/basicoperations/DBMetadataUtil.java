@@ -78,9 +78,11 @@ public class DBMetadataUtil {
 							//        (which can happen in the NEW abridged metadata)
 							if(metadata.isFullMetadata())
 								throw new BrokenForeignKeyException(reference, "Missing table: " + table2);
-							else
+							else {
 								log.debug("Foreign key " + table1 + ":" + reference.getReferenceName() + 
 										" refers to a table " + reference.getTableReference() + " for which no metadata is fetched. Probably it is not in use the mappings.");
+								continue;
+							}
 						}
 						// Get positions of referenced attribute
 						int pos1 = def.getAttributePosition(column1);
