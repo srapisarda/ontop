@@ -25,11 +25,13 @@ package it.unibz.krdb.sql;
  */
 public class Reference {
 	private String fkReferenceName;
+	private String pkSchemaReference;
 	private String pkTableReference;
 	private String pkColumnReference;
 	
-	public Reference(String fkReferenceName, String pkTableReference, String pkColumnReference) {
+	public Reference(String fkReferenceName, String pkSchemaReference, String pkTableReference, String pkColumnReference) {
 		this.fkReferenceName = fkReferenceName;
+		this.pkSchemaReference = pkSchemaReference;
 		this.pkTableReference = pkTableReference;
 		this.pkColumnReference = pkColumnReference;
 	}
@@ -37,6 +39,12 @@ public class Reference {
 	public String getReferenceName() {
 		return fkReferenceName;
 	}
+	
+
+	public String getSchemaReference() {
+		return pkSchemaReference;
+	}
+	
 	
 	public String getTableReference() {
 		return pkTableReference;

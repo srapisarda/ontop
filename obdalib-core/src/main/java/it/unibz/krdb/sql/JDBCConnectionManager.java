@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jsqlparser.schema.Table;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -596,6 +598,120 @@ public class JDBCConnectionManager {
 		}
 		return metadata;
 	}
+
+	
+	/**
+	 * Retrieve all oracle tables and views
+	 * @throws SQLException 
+	 */
+	private static List<TableDefinition> getOracleAllTables(Statement stmt, String defaultSchema) throws SQLException{
+		/* Obtain the relational objects (i.e., tables and views) */
+		final String tableSelectQuery = "SELECT owner, object_name FROM ( " +
+				"SELECT owner, table_name as object_name FROM all_tables WHERE " +
+				"NOT table_name LIKE 'MVIEW$_%' AND " +
+				"NOT table_name LIKE 'LOGMNR_%' AND " +
+				"NOT table_name LIKE 'AQ$_%' AND " +
+				"NOT table_name LIKE 'DEF$_%' AND " +
+				"NOT table_name LIKE 'REPCAT$_%' AND " +
+				"NOT table_name LIKE 'LOGSTDBY$%' AND " +
+				"NOT table_name LIKE 'OL$%' " +
+				"UNION " +
+				"SELECT owner, view_name as object_name FROM all_views WHERE " +
+				"NOT view_name LIKE 'MVIEW_%' AND " +
+				"NOT view_name LIKE 'LOGMNR_%' AND " +
+				"NOT view_name LIKE 'AQ$_%')";
+		ResultSet resultSet = stmt.executeQuery(tableSelectQuery);
+			
+		List<TableDefinition> tables = new ArrayList<TableDefinition>();
+		while(resultSet.next()){
+			final String tblName = resultSet.getString("object_name");
+			final String schName = resultSet.getString("owner");
+			tables.add(new TableDefinition(schName, tblName));
+			if(schName.equals(defaultSchema))
+				tables.add(new TableDefinition(null, tblName));
+		}
+		resultSet.close();
+		return tables;
+	}
+	
+	/**
+	 * Retrieve all oracle primary keys. Used by getOracleMetadata
+	 */
+	private static Map<String, ArrayList<String>> getOraclePrimaryKeys(Statement stmt) throws SQLException{
+		
+		Map<String, ArrayList<String>> primaryKeys = new HashMap<String, ArrayList<String>>();
+		
+		final String primaryKeyQuery = "SELECT cols.table_name, cols.column_name, cols.position, "
+				+ " cons.status, cons.owner "
+				+ "FROM all_constraints cons, all_cons_columns cols "
+				+ "WHERE cons.constraint_type = 'P' "
+				+ "AND cons.constraint_name = cols.constraint_name "
+				+ "AND cons.owner = cols.owner ";
+		ResultSet resultSet = stmt.executeQuery(primaryKeyQuery);
+		while(resultSet.next()){
+			final String schName = resultSet.getString("cons.owner");
+			String tblName = resultSet.getString("cols.table_name");
+			if (schName != null)
+				tblName = schName + "." + tblName;
+			final String colName = resultSet.getString("cols.column_name");
+			ArrayList<String> l;
+			if(!primaryKeys.containsKey(tblName)){
+				l = new ArrayList<String>();
+			} else {
+				l = primaryKeys.get(tblName);
+			}
+			l.add(colName);
+			primaryKeys.put(tblName, l);
+		}
+		
+		return primaryKeys;
+	}
+	
+	
+
+	/**
+	 * Retrieve all oracle primary keys. Used by getOracleMetadata
+	 */
+	private static Map<String, HashMap<String, Reference>> getOracleForeignKeys(Statement stmt) throws SQLException{
+		
+		Map<String, HashMap<String, Reference>> foreignKeys = new HashMap<String, HashMap<String, Reference>>();
+
+		final String foreignKeyQuery = "SELECT a.owner , "
+				+ " a.table_name, a.column_name,  a.constraint_name, "
+				+ " c.r_owner , c_pk.table_name, c_pk.constraint_name "
+				+ "FROM all_cons_columns a ,"
+				+ "all_constraints c , "
+				+ "all_constraints c_pk ," 
+				+ "WHERE c.r_owner = c_pk.owner "
+				+ "AND c.r_constraint_name = c_pk.constraint_name "
+				+ "AND a.owner = c.owner "
+				+ "AND a.constraint_name = c.constraint_name "
+				+ "AND c.constraint_type = 'R' ";
+		ResultSet resultSet = stmt.executeQuery(foreignKeyQuery);
+		while(resultSet.next()){
+			final String schName = resultSet.getString("a.owner");
+			String tblName = resultSet.getString("a.table_name");
+			String colName = resultSet.getString("a.column_name");
+			if (schName != null)
+				tblName = schName + "." + tblName;
+			HashMap<String, Reference> l;
+			if(!foreignKeys.containsKey(tblName)){
+				l = new HashMap<String, Reference>();
+			} else {
+				l = foreignKeys.get(tblName);
+			}
+			final String RschName = resultSet.getString("a.owner");
+			String RtblName = resultSet.getString("a.table_name");
+			String RcolName = resultSet.getString("a.column_name");
+			String cons_name = resultSet.getString("a.constraint_name");
+			l.put(colName, new Reference(cons_name, RschName, RtblName, RcolName));
+			foreignKeys.put(tblName, l);
+		}
+		
+		return foreignKeys;
+	}
+	
+	
 	
 	/**
 	 * Retrieve metadata for Oracle database engine
@@ -610,41 +726,30 @@ public class JDBCConnectionManager {
 			stmt = conn.createStatement();
 			
 			/* Obtain the table owner (i.e., schema name) */
-			String tableOwner = "SYSTEM"; // by default
+			String defaultSchema = "SYSTEM"; // by default
 			resultSet = stmt.executeQuery("SELECT user FROM dual");
 			if (resultSet.next()) {
-				tableOwner = resultSet.getString("user");
+				defaultSchema = resultSet.getString("user");
 			}
 			
-			/* Obtain the relational objects (i.e., tables and views) */
-			final String tableSelectQuery = "SELECT object_name FROM ( " +
-					"SELECT table_name as object_name FROM user_tables WHERE " +
-					"NOT table_name LIKE 'MVIEW$_%' AND " +
-					"NOT table_name LIKE 'LOGMNR_%' AND " +
-					"NOT table_name LIKE 'AQ$_%' AND " +
-					"NOT table_name LIKE 'DEF$_%' AND " +
-					"NOT table_name LIKE 'REPCAT$_%' AND " +
-					"NOT table_name LIKE 'LOGSTDBY$%' AND " +
-					"NOT table_name LIKE 'OL$%' " +
-					"UNION " +
-					"SELECT view_name as object_name FROM user_views WHERE " +
-					"NOT view_name LIKE 'MVIEW_%' AND " +
-					"NOT view_name LIKE 'LOGMNR_%' AND " +
-					"NOT view_name LIKE 'AQ$_%')";
-			resultSet = stmt.executeQuery(tableSelectQuery);
+			List<TableDefinition> tables = getOracleAllTables(stmt, defaultSchema);
+			
+			Map<String, ArrayList<String>> primaryKeysMap = getOraclePrimaryKeys(stmt);
+			
+			Map<String, HashMap<String, Reference>> foreignKeysMap = getOracleForeignKeys(stmt);
 			
 			/* Obtain the column information for each relational object */
-			while (resultSet.next()) {
+			for (TableDefinition td : tables) {
 				ResultSet rsColumns = null;
 				try {
-					final String tblName = resultSet.getString("object_name");
-					final ArrayList<String> primaryKeys = getPrimaryKey(md, null, tableOwner, tblName);
-					final Map<String, Reference> foreignKeys = getForeignKey(md, null, tableOwner, tblName);
-					
-					TableDefinition td = new TableDefinition(tblName);
+					final String tblName = td.getOnlyTableName();
+					String tableOwner = td.getSchema();
+					if(tableOwner == null)
+						tableOwner = defaultSchema;
 					rsColumns = md.getColumns(null, tableOwner, tblName, null);
 					
-					
+					ArrayList<String> primaryKeys = primaryKeysMap.get(td.getName());
+					Map<String, Reference> foreignKeys = foreignKeysMap.get(td.getName());
 					
 					for (int pos = 1; rsColumns.next(); pos++) {
 						log.debug("=============== COLUMN METADATA ========================");
@@ -856,9 +961,10 @@ public class JDBCConnectionManager {
 			while (rsForeignKeys.next()) {
 				String fkName = rsForeignKeys.getString("FK_NAME");
 				String colName = rsForeignKeys.getString("FKCOLUMN_NAME");
-				String pkTableName = rsForeignKeys.getString("PKTABLE_NAME");
+				String pkTableName = rsForeignKeys.getString("PKSCHEM_NAME");
+				String pkSchemaName = rsForeignKeys.getString("PKTABLE_NAME");
 				String pkColumnName = rsForeignKeys.getString("PKCOLUMN_NAME");
-				fk.put(colName, new Reference(fkName, pkTableName, pkColumnName));
+				fk.put(colName, new Reference(fkName, pkSchemaName, pkTableName, pkColumnName));
 			}
 		} finally {
 			if (rsForeignKeys != null) {

@@ -35,6 +35,10 @@ public class TableDefinition extends DataDefinition {
 		super(name);
 	}
 	
+	public TableDefinition(String schema, String object_name){
+		super(schema, object_name);
+	}
+	
 	public List<Attribute> getPrimaryKeys() {
 		List<Attribute> primaryKeys = new ArrayList<Attribute>();
 		for (Attribute attr : attributes.values()) {

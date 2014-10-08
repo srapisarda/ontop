@@ -31,11 +31,19 @@ public abstract class DataDefinition implements Serializable {
 	private static final long serialVersionUID = 212770563440334334L;
 
 	protected String name;
-
+	protected String schema;
+	protected String only_table_name;
+	
 	protected HashMap<Integer, Attribute> attributes = new HashMap<Integer, Attribute>();
 
 	public DataDefinition() { // TODO Remove later! The attribute name should be mandatory and cannot be changed!
 		// NO-OP
+	}
+	
+	public DataDefinition(String schema, String only_table_name){
+		this.schema = schema;
+		this.only_table_name = only_table_name;
+		this.name = schema + "." + only_table_name;
 	}
 	
 	public DataDefinition(String name) {
@@ -48,6 +56,22 @@ public abstract class DataDefinition implements Serializable {
 
 	public String getName() {
 		return name;
+	}
+	
+	/**
+	 * Returns the schema prefix of the table / view (or null if not specified)
+	 * @return
+	 */
+	public String getSchema(){
+		return this.schema;
+	}
+	
+	/**
+	 * Returns the table / view name _without_ schema prefix
+	 * @return
+	 */
+	public String getOnlyTableName(){
+		return this.only_table_name;
 	}
 
 	public void setAttribute(int pos, Attribute value) {

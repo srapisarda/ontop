@@ -69,10 +69,11 @@ public class DBMetadataUtil {
 						// Get referenced table and column (2)
 						Reference reference = attr.getReference();
 						table2 = reference.getTableReference();
+						String schema2 = reference.getSchemaReference();
 						String column2 = reference.getColumnReference();				
 						
 						// Get table definition for referenced table
-						def2 = (TableDefinition) metadata.getDefinition(table2);
+						def2 = (TableDefinition) metadata.getDefinition(schema2, table2);
 						if (def2 == null) { // in case of broken FK
 							// ROMAN: this is not necessarily broken -- the table may not be mentioned in the mappings 
 							//        (which can happen in the NEW abridged metadata)

@@ -30,6 +30,8 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +50,7 @@ public abstract class AbstractConstraintTest extends TestCase {
 		super(method);
 	}
 	
-	@Override
+	@Before
 	public void setUp() {
 
 		try {
@@ -60,6 +62,7 @@ public abstract class AbstractConstraintTest extends TestCase {
 		}
 	}
 	
+	@Test
 	public void testPrimaryKey() {
 		log.info("==== PRIMARY KEY ====");
 		
@@ -80,6 +83,7 @@ public abstract class AbstractConstraintTest extends TestCase {
 		log.info("\n");
 	}
 	
+	@Test
 	public void testForeignKey() {
 		log.info("==== FOREIGN KEY ====");
 		

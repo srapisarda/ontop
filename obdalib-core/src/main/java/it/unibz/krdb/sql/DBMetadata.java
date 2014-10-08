@@ -187,7 +187,15 @@ public class DBMetadata implements Serializable {
 	 * 
 	 * @param name
 	 *            The string name.
+	 * @param fkTable 
+	 * 
 	 */
+	public DataDefinition getDefinition(String fkSchema, String fkTable) {
+		if (fkSchema != null && !fkSchema.equals(""))
+			fkTable = fkSchema + "." + fkTable;
+		return this.getDefinition(fkTable);
+	}
+
 	public DataDefinition getDefinition(String name) {
 		DataDefinition def = schema.get(name);
 		if (def == null)
@@ -199,6 +207,7 @@ public class DBMetadata implements Serializable {
 		return def;
 	}
 
+	
 	/**
 	 * Retrieves the relation list (table and view definition) form the
 	 * metadata.

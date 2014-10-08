@@ -98,7 +98,13 @@ public class ImplicitDBConstraints {
 						}
 						pKeyList.add(pKey);
 					} else if (parts.length == 4){ // FOreign key
-						String fkTable = parts[2];
+						String[] tableNames = parts[2].split("\\.");
+						String fkTable = tableNames[tableNames.length - 1];
+						String fkSchema = null;
+						if(tableNames.length > 1)
+							fkSchema = tableNames[tableNames.length - 2];
+						if(tableNames.length > 2)
+							log.warn("Cannot parse references to table names with more than two parts: " + line);
 						this.referredTables.add(fkTable);
 						String[] fkColumnS = parts[3].split(",");
 						
@@ -118,7 +124,7 @@ public class ImplicitDBConstraints {
 							String keyColumn = keyColumns[i];
 							String fkColumn = fkColumnS[i];
 							
-							Reference ref = new Reference(fkName, fkTable, fkColumn);
+							Reference ref = new Reference(fkName, fkSchema, fkTable, fkColumn);
 							fKey.put(keyColumn, ref);
 						}
 						tableFKeys.add(fKey);
@@ -254,7 +260,8 @@ public class ImplicitDBConstraints {
 					}
 					Reference ref = fKey.get(keyColumn);
 					String fkTable = ref.getTableReference();
-					DataDefinition fktd = md.getDefinition(fkTable);
+					String fkSchema = ref.getSchemaReference();
+					DataDefinition fktd = md.getDefinition(fkSchema, fkTable);
 					if(fktd == null){
 						log.warn("Error in user-supplied foreign key: Reference to non-existing table '" + fkTable + "'");
 						continue;
