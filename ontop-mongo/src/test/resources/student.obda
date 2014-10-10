@@ -1,0 +1,30 @@
+[PrefixDeclaration]
+ex:		http://ex.org/#
+:		http://ex.org/#
+owl:		http://www.w3.org/2002/07/owl#
+rdf:		http://www.w3.org/1999/02/22-rdf-syntax-ns#
+xsd:		http://www.w3.org/2001/XMLSchema#
+rdfs:		http://www.w3.org/2000/01/rdf-schema#
+quest:		http://obda.org/quest#
+
+[SourceDeclaration]
+sourceUri	Books
+connectionUrl	jdbc:postgresql://alcor.inf.unibz.it:5432/odbs
+username	odbsstudent
+password	odbs1314
+driverClass	org.postgresql.Driver
+
+[MappingDeclaration] @collection [[
+mappingId	UndergraduateStudent
+target		<http://ex.org/Student/{code}> a <http://ex.org/UndergraduateStudent> . 
+source		select "code" from "students" where "type" = 1
+
+mappingId	GraduateStudent
+target		<http://ex.org/Student/{code}> a <http://ex.org/GraduateStudent> . 
+source		select "code" from "students" where "type" = 2
+
+mappingId	Student
+target		<http://ex.org/Student/{code}> a :Student ; ex:name {name}^^xsd:string ; ex:email {email}^^xsd:string ; <http://ex.org/age> {age}^^xsd:int ; <http://ex.org/nickname> {nickname} .  
+source		select "code", "name", "email", "age", "nickname" from "students"
+]]
+

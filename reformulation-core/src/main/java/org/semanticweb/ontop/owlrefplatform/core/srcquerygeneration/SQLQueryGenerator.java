@@ -35,18 +35,8 @@ import org.semanticweb.ontop.model.OBDAException;
  * 
  */
 
-public interface SQLQueryGenerator extends Serializable {
+public interface SQLQueryGenerator extends NativeQueryGenerator {
 
-	/**
-	 * Translates the given datalog program into a source query, which can later
-	 * be evaluated by a evaluation engine.
-	 * 
-	 * @param query
-	 *            the datalog program
-	 * @return the souce query
-	 * @throws Exception
-	 */
-	public String generateSourceQuery(DatalogProgram query, List<String> signature) throws OBDAException;
 	/**
 	 * Updates the current view manager with the new given parameters
 	 * 
