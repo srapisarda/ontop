@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +26,7 @@ import org.semanticweb.ontop.model.DatalogProgram;
 import org.semanticweb.ontop.model.Function;
 import org.semanticweb.ontop.model.OBDADataFactory;
 import org.semanticweb.ontop.model.OBDAException;
+import org.semanticweb.ontop.model.OBDAMappingAxiom;
 import org.semanticweb.ontop.model.Predicate;
 import org.semanticweb.ontop.model.SQLOBDAModel;
 import org.semanticweb.ontop.model.Variable;
@@ -38,6 +41,8 @@ import org.semanticweb.ontop.owlrefplatform.owlapi3.QuestOWLConnection;
 import org.semanticweb.ontop.owlrefplatform.owlapi3.QuestOWLFactory;
 import org.semanticweb.ontop.owlrefplatform.owlapi3.QuestOWLResultSet;
 import org.semanticweb.ontop.owlrefplatform.owlapi3.QuestOWLStatement;
+import org.semanticweb.ontop.sql.DBMetadata;
+import org.semanticweb.ontop.sql.TableDefinition;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLException;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -127,10 +132,11 @@ public class MongoTest {
 	
 	}*/
 	
-	//@Test
-	public void test1() throws OBDAException, OWLException, InvalidMappingExceptionWithIndicator, IOException, InvalidPredicateDeclarationException {
+	@Test
+	public void test1() throws OBDAException, OWLException, InvalidMappingExceptionWithIndicator, IOException, InvalidPredicateDeclarationException, InvalidMongoMappingException {
 		final String owlfile = "src/test/resources/student.owl";
 		final String obdafile = "src/test/resources/student.obda";
+		final String mongofile = "src/test/resources/simpleMapping.json";
 
 		OBDADataFactory dataFactory = OBDADataFactoryImpl.getInstance();
 		SQLOBDAModel obdaModel = dataFactory.getOBDAModel();
@@ -153,9 +159,9 @@ public class MongoTest {
 		String sparqlQuery = 
 				"PREFIX : <http://ex.org/> \n" +
 				"SELECT DISTINCT ?x \n" +
-				"WHERE { ?x a :Student . }";
+				"WHERE { ?x a :GraduateStudent . }";
 
-		//ans1(URI("http://ex.org/Student/{}",t1_1f1)) :- students(t1_1f1,t2_1f2,t3_1f3,t4_1f4,t5_1f5,?FreshVar1_1f6), OR(EQ(1,?FreshVar1_1f6),EQ(2,?FreshVar1_1f6)), IS_NOT_NULL(t1_1f1)
+		//ans1(URI("http://ex.org/Student/{}",t1_1f1)) :- students(t1_1f1,t2_1f2,t3_1f3,t4_1f4,t5_1f5,f6_lf6), IS_NOT_NULL(t1_1f1)
 		//ans1(URI("http://ex.org/Student/{}",t1_1f1)) :- students(t1_1f1,t2_1f2,t3_1f3,t4_1f4,t5_1f5,f6), EQ(f6,2), IS_NOT_NULL(t1_1f1)
 
 		QuestOWLResultSet rs = st.executeTuple(sparqlQuery);
@@ -174,6 +180,21 @@ public class MongoTest {
 		rs.close();
 		
 		assertEquals(3, count);
+		
+		
+        InputStream stream = MongoMappingParserTest.class.getResourceAsStream(mongofile);
+        MongoMappingParser parser = new MongoMappingParser(new InputStreamReader(stream));
+        List<OBDAMappingAxiom> mappings =  parser.parse();
+        TableDefinition collectionDefinition = MongoSchemaExtractor.extractCollectionDefinition(mappings);
+
+        DBMetadata metadata = new DBMetadata();
+        metadata.add(collectionDefinition);
+		MongoQueryGenerator queryGenerator = new MongoQueryGenerator(metadata);
+
+		
+		DatalogProgram programAfterUnfolding = st.getQuestStatement().getProgramAfterUnfolding();
+		List<String> signature = null;
+		queryGenerator.generateSourceQuery(programAfterUnfolding, signature);
 		
 	}
 }

@@ -341,7 +341,7 @@ public class QuestOWL extends OWLReasonerBase {
 					// Retrieves the ABox from the target database via mapping.
 					log.debug("Loading data from Mappings into the database");
 
-					SQLOBDAModel obdaModelForMaterialization = questInstance.getOBDAModel();
+					SQLOBDAModel obdaModelForMaterialization = (SQLOBDAModel) questInstance.getOBDAModel();
 					for (Predicate p: translatedOntologyMerge.getVocabulary()) {
 						obdaModelForMaterialization.declarePredicate(p);
 					}
