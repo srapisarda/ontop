@@ -194,7 +194,7 @@ public class MongoTest {
 		
 		DatalogProgram programAfterUnfolding = st.getQuestStatement().getProgramAfterUnfolding();
 		List<String> signature = null;
-		queryGenerator.generateSourceQuery(programAfterUnfolding, signature);
+		String mongoQuery = queryGenerator.generateSourceQuery(programAfterUnfolding, signature);
 		
 	}
 }
