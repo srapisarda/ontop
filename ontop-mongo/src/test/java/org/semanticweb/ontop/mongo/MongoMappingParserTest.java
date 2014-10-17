@@ -51,8 +51,6 @@ public class MongoMappingParserTest {
 
         Assert.assertEquals(expectedIds, ids);
         Assert.assertEquals(expectedCriteria, criteria);
-        
-        MongoSchemaExtractor.extractCollectionDefinition(mappings);
     }
 
     @Test
@@ -308,7 +306,7 @@ public class MongoMappingParserTest {
      
         Assert.assertEquals(3, mappings.size());
              
-        MongoSchemaExtractor.extractCollectionDefinition(mappings);
+        (new MongoSchemaExtractor()).extractCollectionDefinition(mappings);
     }
 
 

@@ -2186,7 +2186,8 @@ public class SQLGenerator implements SQLQueryGenerator {
 				// atoms of the form integer(x)
 				return getSQLString(term1, index, false);
 			} else {
-				return getSQLStringForTemplateFunction(function, index);
+				String s=getSQLStringForTemplateFunction(function, index);
+				return s;
 			}
 		} else if (functionSymbol instanceof BooleanOperationPredicate) {
 			// atoms of the form EQ(x,y)
