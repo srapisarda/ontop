@@ -78,6 +78,12 @@ public class SesameVirtualRepo extends SesameAbstractRepo {
 		super();
 		createRepo(name, tbox, mappings, metadata, prop);
 	}
+
+    public SesameVirtualRepo(String name, String mappingFile, QuestPreferences preferences) throws Exception {
+        super();
+        createRepo(name, null, mappingFile, preferences, null);
+    }
+
 	
 	/**
 	 * Generate QuestPreferences from a config file
@@ -86,7 +92,7 @@ public class SesameVirtualRepo extends SesameAbstractRepo {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private QuestPreferences getPreferencesFromFile(String configFileName) throws FileNotFoundException, IOException {
+	private QuestPreferences getPreferencesFromFile(String configFileName) throws IOException {
 		QuestPreferences pref = new QuestPreferences();
 		if (!configFileName.isEmpty()) {
 			File configFile = new File(URI.create(configFileName));

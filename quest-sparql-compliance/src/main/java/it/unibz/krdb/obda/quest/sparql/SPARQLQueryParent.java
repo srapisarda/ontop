@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +43,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.junit.After;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
@@ -79,7 +82,6 @@ import org.openrdf.repository.util.RDFInserter;
 import org.openrdf.rio.ParserConfig;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFParser;
-import org.openrdf.rio.RDFParser.DatatypeHandling;
 import org.openrdf.rio.Rio;
 import org.openrdf.rio.helpers.BasicParserSettings;
 import org.openrdf.rio.helpers.StatementCollector;
@@ -96,15 +98,13 @@ public abstract class SPARQLQueryParent extends TestCase {
 	static final Logger logger = LoggerFactory.getLogger(SPARQLQueryParent.class);
 
 	protected final String testURI;
-
 	protected final String queryFileURL;
-
 	protected final String resultFileURL;
+    protected final String mappingFileURL;
+    protected final String dbFileURL;
 
-	protected final Dataset dataset;
 
 	protected final boolean laxCardinality;
-
 	protected final boolean checkOrder;
 
 	/*-----------*
@@ -113,28 +113,29 @@ public abstract class SPARQLQueryParent extends TestCase {
 
 	protected Repository dataRep;
 
+    /*-----------*
+	 * DB        *
+	 *-----------*/
+
+    protected Connection sqlConnection;
+
 	/*--------------*
 	 * Constructors *
 	 *--------------*/
 
-	public SPARQLQueryParent(String testURI, String name, String queryFileURL, String resultFileURL,
-			Dataset dataSet, boolean laxCardinality)
-	{
-		this(testURI, name, queryFileURL, resultFileURL, dataSet, laxCardinality, false);
-	}
+    public SPARQLQueryParent(String testURI, String name, String queryFileURL, String resultFileURL,
+                             String mappingFileURL,
+                             String dbFileName, boolean laxCardinality, boolean checkOrder) {
+        super(name);
 
-	public SPARQLQueryParent(String testURI, String name, String queryFileURL, String resultFileURL,
-			Dataset dataSet, boolean laxCardinality, boolean checkOrder)
-	{
-		super(name);
-
-		this.testURI = testURI;
-		this.queryFileURL = queryFileURL;
-		this.resultFileURL = resultFileURL;
-		this.dataset = dataSet;
-		this.laxCardinality = laxCardinality;
-		this.checkOrder = checkOrder;
-	}
+        this.testURI = testURI;
+        this.queryFileURL = queryFileURL;
+        this.resultFileURL = resultFileURL;
+        this.mappingFileURL = mappingFileURL;
+        this.dbFileURL = dbFileName;
+        this.laxCardinality = laxCardinality;
+        this.checkOrder = checkOrder;
+    }
 
 	/*---------*
 	 * Methods *
@@ -144,38 +145,7 @@ public abstract class SPARQLQueryParent extends TestCase {
 	protected void setUp()
 		throws Exception
 	{
-		dataRep = createRepository(dataset);
-
-		if (dataset != null) {
-			try {
-				uploadDataset(dataset);
-			}
-			catch (Exception exc) {
-				try {
-					dataRep.shutDown();
-					dataRep = null;
-				}
-				catch (Exception e2) {
-					logger.error(e2.toString(), e2);
-				}
-				throw exc;
-			}
-		}
-	}
-
-	protected Repository createRepository(Dataset data)
-		throws Exception
-	{
-		Repository repo = newRepository();
-//		RepositoryConnection con = repo.getConnection();
-//		try {
-//			con.clear();
-//			con.clearNamespaces();
-//		}
-//		finally {
-//			con.close();
-//		}
-		return repo;
+		dataRep = newRepository();
 	}
 
 	protected abstract Repository newRepository()
@@ -189,6 +159,18 @@ public abstract class SPARQLQueryParent extends TestCase {
 			dataRep.shutDown();
 			dataRep = null;
 		}
+
+        if (!sqlConnection.isClosed()) {
+            java.sql.Statement s = sqlConnection.createStatement();
+            try {
+                s.execute("DROP ALL OBJECTS DELETE FILES");
+            } catch (SQLException sqle) {
+                System.out.println("Table not found, not dropping");
+            } finally {
+                s.close();
+                sqlConnection.close();
+            }
+        }
 	}
 
 	@Override
@@ -199,9 +181,7 @@ public abstract class SPARQLQueryParent extends TestCase {
 		try {
 			String queryString = readQueryString();
 			Query query = con.prepareQuery(QueryLanguage.SPARQL, queryString, queryFileURL);
-			if (dataset != null) {
-				query.setDataset(dataset);
-			}
+
 			if (query instanceof TupleQuery) {
 				TupleQueryResult queryResult = ((TupleQuery)query).evaluate();
 
@@ -766,10 +746,11 @@ public abstract class SPARQLQueryParent extends TestCase {
 	public interface Factory {
 
 		SPARQLQueryParent createSPARQLQueryTest(String testURI, String name, String queryFileURL,
-				String resultFileURL, Dataset dataSet, boolean laxCardinality);
+				String resultFileURL, String mappingFileURL, String dbFileURL, boolean laxCardinality);
 
 		SPARQLQueryParent createSPARQLQueryTest(String testURI, String name, String queryFileURL,
-				String resultFileURL, Dataset dataSet, boolean laxCardinality, boolean checkOrder);
+				String resultFileURL, String mappingFileURL, String dbFileURL, boolean laxCardinality,
+                boolean checkOrder);
 	}
 
 	public static TestSuite suite(String manifestFileURL, Factory factory)
@@ -797,7 +778,8 @@ public abstract class SPARQLQueryParent extends TestCase {
 		// Extract test case information from the manifest file. Note that we only
 		// select those test cases that are mentioned in the list.
 		StringBuilder query = new StringBuilder(512);
-		query.append(" SELECT DISTINCT testURI, testName, resultFile, action, queryFile, defaultGraph, ordered ");
+		query.append(" SELECT DISTINCT testURI, testName, resultFile, action, queryFile, defaultGraph, ordered, ");
+        query.append(" mappingURL, dbURL");
 		query.append(" FROM {} rdf:first {testURI} ");
 		if (approvedOnly) {
 			query.append("                          dawgt:approval {dawgt:Approved}; ");
@@ -848,6 +830,8 @@ public abstract class SPARQLQueryParent extends TestCase {
 			URI testURI = (URI)bindingSet.getValue("testURI");
 			String testName = bindingSet.getValue("testName").toString();
 			String resultFile = bindingSet.getValue("resultFile").toString();
+            String mappingFileURL = bindingSet.getValue("mappingURL").toString();
+            String dbFileURL = bindingSet.getValue("dbURL").toString();
 			String queryFile = bindingSet.getValue("queryFile").toString();
 			URI defaultGraphURI = (URI)bindingSet.getValue("defaultGraph");
 			Value action = bindingSet.getValue("action");
@@ -906,7 +890,7 @@ public abstract class SPARQLQueryParent extends TestCase {
 			}
 
 			SPARQLQueryParent test = factory.createSPARQLQueryTest(testURI.toString(), testName, queryFile,
-					resultFile, dataset, laxCardinality, checkOrder);
+					resultFile, mappingFileURL, dbFileURL, laxCardinality, checkOrder);
 			if (test != null) {
 				suite.addTest(test);
 			}

@@ -20,12 +20,19 @@ package it.unibz.krdb.obda.quest.sparql;
  * #L%
  */
 
+import it.unibz.krdb.obda.owlrefplatform.core.QuestPreferences;
 import junit.framework.Test;
 
 import org.openrdf.query.Dataset;
 import org.openrdf.repository.Repository;
 
-import sesameWrapper.SesameClassicInMemoryRepo;
+import sesameWrapper.SesameVirtualRepo;
+
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Scanner;
 
 public class QuestMemorySPARQLQueryTest extends SPARQLQueryParent {
 
@@ -33,47 +40,49 @@ public class QuestMemorySPARQLQueryTest extends SPARQLQueryParent {
 		return QuestManifestTestUtils.suite(new Factory() {
 			public QuestMemorySPARQLQueryTest createSPARQLQueryTest(
 					String testURI, String name, String queryFileURL,
-					String resultFileURL, Dataset dataSet,
-					boolean laxCardinality) {
+					String resultFileURL, String mappingFileURL,
+                    String dbFileURL, boolean laxCardinality) {
 				return createSPARQLQueryTest(testURI, name, queryFileURL,
-						resultFileURL, dataSet, laxCardinality, false);
+						resultFileURL, mappingFileURL, dbFileURL, laxCardinality, false);
 			}
 
 			public QuestMemorySPARQLQueryTest createSPARQLQueryTest(
 					String testURI, String name, String queryFileURL,
-					String resultFileURL, Dataset dataSet,
-					boolean laxCardinality, boolean checkOrder) {
+					String resultFileURL, String mappingFileURL,
+                    String dbFileURL, boolean laxCardinality, boolean checkOrder) {
 				return new QuestMemorySPARQLQueryTest(testURI, name,
-						queryFileURL, resultFileURL, dataSet, laxCardinality,
+						queryFileURL, resultFileURL, mappingFileURL, dbFileURL, laxCardinality,
 						checkOrder);
 			}
 		});
 	}
 
 	protected QuestMemorySPARQLQueryTest(String testURI, String name,
-			String queryFileURL, String resultFileURL, Dataset dataSet,
-			boolean laxCardinality) {
-		this(testURI, name, queryFileURL, resultFileURL, dataSet,
-				laxCardinality, false);
-	}
-
-	protected QuestMemorySPARQLQueryTest(String testURI, String name,
-			String queryFileURL, String resultFileURL, Dataset dataSet,
-			boolean laxCardinality, boolean checkOrder) {
-		super(testURI, name, queryFileURL, resultFileURL, dataSet,
-				laxCardinality, checkOrder);
+			String queryFileURL, String resultFileURL, String mappingFileURL,
+            String dbFileURL, boolean laxCardinality, boolean checkOrder) {
+		super(testURI, name, queryFileURL, resultFileURL, mappingFileURL,
+                dbFileURL, laxCardinality, checkOrder);
 	}
 
 	@Override
-	protected Repository newRepository() {
-		try {
-			SesameClassicInMemoryRepo repo = new SesameClassicInMemoryRepo(
-					"QuestSPARQLTest", dataset);
-			repo.initialize();
-			return repo;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+	protected Repository newRepository() throws Exception {
+
+        sqlConnection = DriverManager.getConnection("jdbc:h2:mem:triplestore", "sa", "");
+        java.sql.Statement s = sqlConnection.createStatement();
+
+        try {
+            String text = new Scanner(new File(dbFileURL)).useDelimiter("\\A").next();
+            s.execute(text);
+
+        } catch (SQLException sqle) {
+            System.out.println("Exception in creating db from script");
+        }
+        s.close();
+        sqlConnection.close();
+
+        SesameVirtualRepo repo = new SesameVirtualRepo("QuestSPARQLTest", mappingFileURL,
+                new QuestPreferences());
+        repo.initialize();
+        return repo;
+    }
 }

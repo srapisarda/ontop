@@ -38,7 +38,7 @@ public abstract class SesameAbstractRepo implements
 	boolean isinitialized = false;
 	
 	public SesameAbstractRepo() {
-		namespaces = new HashMap<String, String>();
+		namespaces = new HashMap<>();
 	}
 
 	public RepositoryConnection getConnection() throws RepositoryException {
