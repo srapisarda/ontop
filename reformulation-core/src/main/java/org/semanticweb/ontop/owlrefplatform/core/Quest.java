@@ -49,7 +49,9 @@ import org.semanticweb.ontop.owlrefplatform.core.dagjgrapht.TBoxReasonerImpl;
 import org.semanticweb.ontop.owlrefplatform.core.mappingprocessing.MappingVocabularyTranslator;
 import org.semanticweb.ontop.owlrefplatform.core.queryevaluation.*;
 import org.semanticweb.ontop.owlrefplatform.core.reformulation.*;
+import org.semanticweb.ontop.owlrefplatform.core.sql.MySQLQueryGenerator;
 import org.semanticweb.ontop.owlrefplatform.core.sql.SQLGenerator;
+import org.semanticweb.ontop.owlrefplatform.core.srcquerygeneration.NativeQueryGenerator;
 import org.semanticweb.ontop.owlrefplatform.core.srcquerygeneration.SQLQueryGenerator;
 import org.semanticweb.ontop.owlrefplatform.core.tboxprocessing.EquivalenceTBoxOptimizer;
 import org.semanticweb.ontop.owlrefplatform.core.tboxprocessing.SigmaTBoxOptimizer;
@@ -786,12 +788,13 @@ public class Quest implements Serializable, RepositoryChangedListener {
                  * but cloned for each QuestStatement.
                  * When cloned, metadata is also cloned, so it should be "safe".
                  */
-                dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil,	sqladapter, sqlGenerateReplace,
-                        true, uriRefIds);
+                dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace, true, uriRefIds);
+            //    dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
 			}
             else {
-                dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil,	sqladapter, sqlGenerateReplace);
-            }
+                dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace);
+            //    dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
+    		}
 
 			preprocessProjection(localConnection, unfoldingOBDAModel.getMappings(sourceId), fac, sqladapter);
 

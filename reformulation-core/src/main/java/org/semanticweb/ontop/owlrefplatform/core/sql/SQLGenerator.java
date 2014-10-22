@@ -139,7 +139,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 
 	private boolean isDistinct = false;
 	private boolean isOrderBy = false;
-	private boolean isSI = false;
+	private boolean isSematicIndex = false;
 
 	private boolean havingCond = false;
 	private String havingStr = "";
@@ -185,7 +185,7 @@ public class SQLGenerator implements SQLQueryGenerator {
     public SQLGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, boolean sqlGenerateReplace,
                         boolean isSI,  Map<String, Integer> uriRefIds) {
         this(metadata, jdbcutil, sqladapter, sqlGenerateReplace);
-        this.isSI = isSI;
+        this.isSematicIndex = isSI;
         this.uriRefIds = uriRefIds;
     }
 
@@ -197,7 +197,7 @@ public class SQLGenerator implements SQLQueryGenerator {
      */
     public SQLQueryGenerator cloneGenerator() {
         return new SQLGenerator(metadata.clone(), jdbcutil, sqladapter, generatingREPLACE,
-                isSI, uriRefIds);
+                isSematicIndex, uriRefIds);
     }
 
     private ImmutableTable<Predicate, Predicate, Predicate> buildPredicateUnifyTable() {
@@ -1921,7 +1921,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 				 * A URI function always returns a string, thus it is a string
 				 * column type.
 				 */
-				if (isSI)
+				if (isSematicIndex)
 					return java.sql.Types.INTEGER;
 				return java.sql.Types.VARCHAR;
 			} else {
@@ -2041,7 +2041,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 				 * A URI function always returns a string, thus it is a string
 				 * column type.
 				 */
-				if (isSI)
+				if (isSematicIndex)
 					return false;
 				return true;
 			} else {
@@ -2142,7 +2142,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 		}
 		if (term instanceof ValueConstant) {
 			ValueConstant ct = (ValueConstant) term;
-			if (isSI) {
+			if (isSematicIndex) {
 				if (ct.getType() == COL_TYPE.OBJECT
 						|| ct.getType() == COL_TYPE.LITERAL) {
 					int id = getUriid(ct.getValue());
@@ -2153,7 +2153,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 			}
 			return jdbcutil.getSQLLexicalForm(ct);
 		} else if (term instanceof URIConstant) {
-			if (isSI) {
+			if (isSematicIndex) {
 				String uri = term.toString();
 				int id = getUriid(uri);
 				return jdbcutil.getSQLLexicalForm(String.valueOf(id));
@@ -2188,8 +2188,12 @@ public class SQLGenerator implements SQLQueryGenerator {
 			} else {
 				String s=getSQLStringForTemplateFunction(function, index);
 				return s;
-			}
-		} else if (functionSymbol instanceof BooleanOperationPredicate) {
+			}	
+		} 
+		
+		
+		//Boolean predicate
+		else if (functionSymbol instanceof BooleanOperationPredicate) {
 			// atoms of the form EQ(x,y)
 			String expressionFormat = getBooleanOperatorString(functionSymbol);
 			if (isUnary(function)) {
@@ -2225,7 +2229,6 @@ public class SQLGenerator implements SQLQueryGenerator {
 					return result;
 				}
 			} else {
-
 				if (functionSymbol == OBDAVocabulary.SPARQL_REGEX) {
 					boolean caseinSensitive = false;
 					boolean multiLine = false;
@@ -2251,8 +2254,11 @@ public class SQLGenerator implements SQLQueryGenerator {
 				else
 					throw new RuntimeException("Cannot translate boolean function: " + functionSymbol);
 			}
-
-		} else if (functionSymbol instanceof NumericalOperationPredicate) {
+		} 
+		
+		
+		// Numerical Predicate
+		else if (functionSymbol instanceof NumericalOperationPredicate) {
 			String expressionFormat = getNumericalOperatorString(functionSymbol);
 			String leftOp = getSQLString(term1, index, true);
 			Term term2 = function.getTerms().get(1);
@@ -2264,8 +2270,11 @@ public class SQLGenerator implements SQLQueryGenerator {
 				return result;
 			}
 
-		} else if ((functionSymbol instanceof NonBooleanOperationPredicate)&& (functionSymbol.equals(OBDAVocabulary.SPARQL_LANG)) ) { 
+		} 
 		
+		
+		// SPARQL LANG
+		else if ((functionSymbol instanceof NonBooleanOperationPredicate)&& (functionSymbol.equals(OBDAVocabulary.SPARQL_LANG)) ) { 
 			
 			Variable var = (Variable) term1;
 			Collection<String> posList = index.getColumnReferences(var);
@@ -2278,10 +2287,11 @@ public class SQLGenerator implements SQLQueryGenerator {
 			String langC = posList.iterator().next();
 			String langColumn = langC.replaceAll("`$", "Lang`");
 			return langColumn;
-			
-			
-			
-		}else {
+		}
+		
+		
+		// Aggregate and other predicates
+		else {
 			String functionName = functionSymbol.toString();
 			if (functionName.equals(OBDAVocabulary.QUEST_CAST_STR)) {
 				String columnName = getSQLString(function.getTerm(0), index,

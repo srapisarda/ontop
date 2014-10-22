@@ -1,4 +1,4 @@
-package org.semanticweb.ontop.mongo;
+package org.semanticweb.ontop.owlrefplatform.core.sql;
 
 import java.util.HashSet;
 import java.util.List;
@@ -6,11 +6,13 @@ import java.util.Set;
 
 import org.semanticweb.ontop.model.CQIE;
 import org.semanticweb.ontop.model.Function;
+import org.semanticweb.ontop.model.NumericalOperationPredicate;
 import org.semanticweb.ontop.model.Predicate;
 import org.semanticweb.ontop.model.Term;
 import org.semanticweb.ontop.model.URIConstant;
 import org.semanticweb.ontop.model.ValueConstant;
 import org.semanticweb.ontop.model.Variable;
+import org.semanticweb.ontop.model.impl.OBDAVocabulary;
 import org.semanticweb.ontop.sql.DBMetadata;
 
 public abstract class AbstractQueryGenerator {
@@ -19,7 +21,9 @@ public abstract class AbstractQueryGenerator {
 	protected final DBMetadata metadata;
 
 	public AbstractQueryGenerator(DBMetadata metadata) {
-		this.metadata = metadata.clone();
+		this.metadata = metadata;
+		//if we clone, it does not work. Seems that metadata is being changed after an instance of Query generator is created 
+		//see e.g. #OracleRegexpTestSpace.testSparql2OracleRegexWhere()
 	}
 	
 	/**
@@ -32,7 +36,9 @@ public abstract class AbstractQueryGenerator {
 	abstract public String getBooleanOperatorTemplate(Predicate functionSymbol);
 
 	
-
+	abstract public String getArithmeticOperatorString(Predicate arithmeticPredicate);
+		
+		
 	/**
 	 * Returns the string representation of conditions. The most interesting ones are Boolean conditions.
 	 * @param atoms
@@ -40,11 +46,9 @@ public abstract class AbstractQueryGenerator {
 	 * @return
 	 */
 	 
-	protected Set<String> getConditionsString(CQIE cq) {
-		QueryVariableIndex index = new QueryVariableIndex(cq, this.metadata);
-
+	protected Set<String> getConditionsString(List<Function> atoms, QueryVariableIndex index) {
 		Set<String> conditions = new HashSet<String>();
-		for (Function atom : cq.getBody()) {
+		for (Function atom : atoms) {
 			String condition = getConditionString(atom, index);
 			if ( condition != null ) {
 				conditions.add(condition);
@@ -68,11 +72,38 @@ public abstract class AbstractQueryGenerator {
 		else if (atom.isAlgebraFunction()) {
 			return getAlgebraConditionString(atom, index);
 		}
+		else if (atom.getFunctionSymbol().isAggregationPredicate()) {
+			return getAggregateConditionString(atom, index);
+		}
+		else if (atom.getFunctionSymbol().equals(OBDAVocabulary.SPARQL_LANG)) {
+			return getLanguageConditionString(atom, index);
+		}
+		else if (atom.getFunctionSymbol().equals(OBDAVocabulary.QUEST_CAST)) {
+			return getCastConditionString(atom, index);
+		}
+		else if (atom.getFunctionSymbol().equals(OBDAVocabulary.SPARQL_STR)) {
+			return getSTRConditionString(atom, index);
+		}
+		//TODO are they supposed to be in the body of the program?
+		else if (atom.getFunctionSymbol().getName().equals(OBDAVocabulary.QUEST_URI) ||
+				atom.getFunctionSymbol().getName().equals(OBDAVocabulary.QUEST_BNODE)) {
+			return convertTemplateToString(atom, index);
+		}
 		else {
 			// a data predicate
 			return null;
 		}
 	}
+
+	protected abstract String getCastConditionString(Function atom, QueryVariableIndex index);
+
+	protected abstract String getSTRConditionString(Function atom, QueryVariableIndex index);
+
+	protected abstract String convertTemplateToString(Function atom, QueryVariableIndex index);
+
+	protected abstract String getLanguageConditionString(Function atom, QueryVariableIndex index);
+
+	protected abstract String getAggregateConditionString(Function atom, QueryVariableIndex index);
 
 	protected abstract String getAlgebraConditionString(Function atom, QueryVariableIndex index) ;
 

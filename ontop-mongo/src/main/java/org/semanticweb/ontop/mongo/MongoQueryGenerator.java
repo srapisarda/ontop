@@ -17,6 +17,8 @@ import org.semanticweb.ontop.model.ValueConstant;
 import org.semanticweb.ontop.model.Variable;
 import org.semanticweb.ontop.model.Predicate.COL_TYPE;
 import org.semanticweb.ontop.model.impl.OBDAVocabulary;
+import org.semanticweb.ontop.owlrefplatform.core.sql.AbstractQueryGenerator;
+import org.semanticweb.ontop.owlrefplatform.core.sql.QueryVariableIndex;
 import org.semanticweb.ontop.owlrefplatform.core.srcquerygeneration.NativeQueryGenerator;
 import org.semanticweb.ontop.sql.DBMetadata;
 
@@ -79,7 +81,8 @@ public class MongoQueryGenerator extends AbstractQueryGenerator implements Nativ
 
 		StringBuilder conditions = new StringBuilder();
 		for (CQIE cq : query.getRules()) {
-			Set<String> booleanTypeConditions = getConditionsString(cq);
+			QueryVariableIndex index = new QueryVariableIndex(cq, metadata);
+			Set<String> booleanTypeConditions = getConditionsString(cq.getBody(), index);
 			for(String condition : booleanTypeConditions ) {
 				conditions.append(condition).append(", ");
 			}

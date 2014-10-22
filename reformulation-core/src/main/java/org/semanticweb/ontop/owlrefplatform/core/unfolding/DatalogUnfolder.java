@@ -164,8 +164,7 @@ public class DatalogUnfolder implements UnfoldingMechanism {
 		
 		inputquery = QueryAnonymizer.deAnonymize(inputquery);
 
-		DatalogProgram partialEvaluation = flattenUCQ(inputquery, targetPredicate, strategy,  includeMappings,
-                multiTypedFunctionSymbolIndex);
+		DatalogProgram partialEvaluation = flattenUCQ(inputquery, targetPredicate, strategy,  includeMappings, multiTypedFunctionSymbolIndex);
 
         //TODO: remove this noise
 		DatalogProgram dp = termFactory.getDatalogProgram();
