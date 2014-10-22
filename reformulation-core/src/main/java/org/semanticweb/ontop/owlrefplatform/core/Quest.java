@@ -30,7 +30,6 @@ import org.apache.tomcat.jdbc.pool.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openrdf.query.parser.ParsedQuery;
 import org.semanticweb.ontop.exception.DuplicateMappingException;
-import org.semanticweb.ontop.mapping.MappingParser;
 import org.semanticweb.ontop.mapping.MappingSplitter;
 import org.semanticweb.ontop.mapping.sql.SQLMappingParser;
 import org.semanticweb.ontop.model.*;
@@ -376,7 +375,7 @@ public class Quest implements Serializable, RepositoryChangedListener {
 		inputOBDAModel = (SQLOBDAModel) ((SQLOBDAModel) model).clone();
 	}
 
-	public OBDAModel getOBDAModel() {
+	public SQLOBDAModel getOBDAModel() {
 		return inputOBDAModel;
 	}
 
@@ -528,7 +527,8 @@ public class Quest implements Serializable, RepositoryChangedListener {
 		 */
 		if (inputOBDAModel != null && !inputTBox.getVocabulary().isEmpty()) {
 			MappingVocabularyRepair repairmodel = new MappingVocabularyRepair();
-			repairmodel.fixOBDAModel(inputOBDAModel, inputTBox.getVocabulary());
+			//TODO: remove this cast (when a non-SQL OBDA model will be used) !
+			inputOBDAModel = (SQLOBDAModel) repairmodel.fixOBDAModel(inputOBDAModel, inputTBox.getVocabulary());
 		}
 
 		unfoldingOBDAModel = fac.getOBDAModel();
@@ -654,11 +654,14 @@ public class Quest implements Serializable, RepositoryChangedListener {
 
 				/* Setting up the OBDA model */
 
-				unfoldingOBDAModel.addSource(obdaSource);
-				sourceID= obdaSource.getSourceID();
-				Collection<OBDAMappingAxiom> mappings = dataRepository.getMappings();
-				unfoldingOBDAModel.addMappings(sourceID, mappings);
-
+				sourceID = obdaSource.getSourceID();
+				List<OBDAMappingAxiom> repMappings = new ArrayList<>(dataRepository.getMappings());
+				Map<URI, List<OBDAMappingAxiom>> mappings = new HashMap<>();
+				mappings.put(sourceID, repMappings);
+				List<OBDADataSource> dataSources = new ArrayList<>();
+				dataSources.add(obdaSource);
+				unfoldingOBDAModel = (SQLOBDAModel)unfoldingOBDAModel.newModel(dataSources, mappings);
+				 
 				uriRefIds = dataRepository.getUriIds();
 				uriMap = dataRepository.getUriMap();
 
@@ -669,7 +672,7 @@ public class Quest implements Serializable, RepositoryChangedListener {
 				
 				// log.debug("Working in virtual mode");
 
-				Collection<OBDADataSource> sources = this.inputOBDAModel.getSources();
+				List<OBDADataSource> sources = this.inputOBDAModel.getSources();
 				if (sources == null || sources.size() == 0)
 					throw new Exception(
 							"No datasource has been defined. Virtual ABox mode requires exactly 1 data source in your OBDA model.");
@@ -695,13 +698,15 @@ public class Quest implements Serializable, RepositoryChangedListener {
 				 * simplification
 				 */
 
-				MappingVocabularyTranslator mtrans = new MappingVocabularyTranslator();
-				sourceID= obdaSource.getSourceID();
-				List<OBDAMappingAxiom> mappingsOB = this.inputOBDAModel.getMappings(sourceID);
-				Collection<OBDAMappingAxiom> newMappings = mtrans.translateMappings(mappingsOB, equivalenceMaps);
-
-				unfoldingOBDAModel.addMappings(sourceID, newMappings);
-
+				URI sourceUri = obdaSource.getSourceID();
+				List<OBDAMappingAxiom> originalMappings = inputOBDAModel.getMappings(sourceUri);
+				List<OBDAMappingAxiom> translatedMappings = MappingVocabularyTranslator.translateMappings(originalMappings, equivalenceMaps);
+				
+				Map<URI, List<OBDAMappingAxiom>> mappings = new HashMap<>();
+				mappings.put(sourceUri, translatedMappings);
+				
+				// TODO: create the OBDA model here normally
+				unfoldingOBDAModel = (SQLOBDAModel)unfoldingOBDAModel.newModel(sources, mappings);
 			}
 
 			// NOTE: Currently the system only supports one data source.
@@ -788,12 +793,12 @@ public class Quest implements Serializable, RepositoryChangedListener {
                  * but cloned for each QuestStatement.
                  * When cloned, metadata is also cloned, so it should be "safe".
                  */
-                dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace, true, uriRefIds);
-            //    dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
+               // dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace, true, uriRefIds);
+                dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
 			}
             else {
-                dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace);
-            //    dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
+            //    dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace);
+                dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
     		}
 
 			preprocessProjection(localConnection, unfoldingOBDAModel.getMappings(sourceId), fac, sqladapter);
@@ -951,8 +956,10 @@ public class Quest implements Serializable, RepositoryChangedListener {
 	public void updateSemanticIndexMappings() throws DuplicateMappingException, OBDAException {
 		/* Setting up the OBDA model */
 
-		unfoldingOBDAModel.removeAllMappings(obdaSource.getSourceID());
-		unfoldingOBDAModel.addMappings(obdaSource.getSourceID(), dataRepository.getMappings());
+		// TODO: is it necessary to copy mappings of other datasources??
+		Map<URI, List<OBDAMappingAxiom>> mappings = new HashMap<>(unfoldingOBDAModel.getMappings());
+		mappings.put(obdaSource.getSourceID(), dataRepository.getMappings());
+		unfoldingOBDAModel = (SQLOBDAModel)unfoldingOBDAModel.newModel(unfoldingOBDAModel.getSources(), mappings);
 
 		unfolder.updateSemanticIndexMappings(unfoldingOBDAModel.getMappings(obdaSource.getSourceID()), 
 										reformulationReasoner);
