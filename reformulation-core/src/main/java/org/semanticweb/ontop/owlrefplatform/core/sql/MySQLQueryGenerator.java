@@ -212,12 +212,18 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		}
 	}
 
+	//TODO: should it be a method of DatalogProgram?
 	private DatalogProgram normalizeProgram(DatalogProgram program) {
 		Set<CQIE> normalizedRules = new HashSet<>();
 		for (CQIE rule : program.getRules()) {
 			normalizedRules.add(normalizeRule(rule));
 		}
-		return OBDADataFactoryImpl.getInstance().getDatalogProgram(normalizedRules);
+		//TODO: need a method that would return a new DatalogProgram from rules and modifiers
+		//OBDADataFactoryImpl.getInstance().getDatalogProgram(normalizedRules);
+		DatalogProgram normalizedProgram = program.clone();
+		normalizedProgram.removeAllRules();
+		normalizedProgram.appendRule(normalizedRules);
+		return normalizedProgram;
 	}
 
 	private CQIE normalizeRule(CQIE rule) {
@@ -578,7 +584,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
              * Aggregation cases
              */
             case OBDAVocabulary.SPARQL_COUNT_URI:
-                typeCode = predicateCodeTypes.get(OBDAVocabulary.XSD_INTEGER);
+                typeCode = predicateCodeTypes.get(OBDAVocabulary.XSD_INTEGER_URI);
                 break;
 
             case OBDAVocabulary.SPARQL_SUM_URI:
@@ -601,7 +607,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
                  * (any number can be promoted to a double http://www.w3.org/TR/xpath20/#promotion) .
                  */
                 if (typeCode == UNDEFINED_TYPE_CODE) {
-                    typeCode = predicateCodeTypes.get(OBDAVocabulary.XSD_DOUBLE);
+                    typeCode = predicateCodeTypes.get(OBDAVocabulary.XSD_DOUBLE_URI);
                 }
                 break;
 
