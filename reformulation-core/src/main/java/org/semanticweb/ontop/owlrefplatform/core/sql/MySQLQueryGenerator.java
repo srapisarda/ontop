@@ -163,23 +163,44 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 	static final String VIEW_NAME = "Q%sVIEW%s";
 	static final String VIEW_ANS_NAME = "Q%sView";
 
+	private static final String QUEST_TYPE = "QuestType";
+
+	
+	// Non-static fields
 	private final JDBCUtility jdbcutil;
 	private final SQLDialectAdapter sqladapter;
-	private final String QUEST_TYPE = "QuestType";
 
-    private boolean generatingREPLACE = true;
+    private final boolean generateREPLACE;
+    
+	private final boolean isSematicIndex;
+	private final Map<String, Integer> uriRefIds;
 
     
     
-	public MySQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter) {
+	public MySQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, 
+								boolean sqlGenerateReplace) {
+		this(metadata, jdbcutil, sqladapter, sqlGenerateReplace, false, null);
+	}
+
+	public MySQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, 
+								boolean sqlGenerateReplace, boolean isSemanticIndex, Map<String, Integer> uriRefIds) {
 		super(metadata);
+		
 		this.jdbcutil = jdbcutil;
 		this.sqladapter = sqladapter;
+		
+		this.generateREPLACE = sqlGenerateReplace;
+		
+		this.isSematicIndex = isSemanticIndex;
+		if (uriRefIds != null) 
+			this.uriRefIds = new HashMap<>(uriRefIds);
+		else
+			this.uriRefIds = null;
 	}
 
 	@Override
 	public SQLQueryGenerator cloneGenerator() {
-	    return new MySQLQueryGenerator(metadata.clone(), jdbcutil, sqladapter);
+	    return new MySQLQueryGenerator(metadata.clone(), jdbcutil, sqladapter, generateREPLACE, isSematicIndex, uriRefIds);
 	}
 
 	@Override
@@ -844,7 +865,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 		String replace1;
         String replace2;
-        if(generatingREPLACE) {
+        if(generateREPLACE) {
 
             replace1 = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
                     "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(";
@@ -1493,14 +1514,53 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 	@Override
 	protected String getNativeLexicalForm(URIConstant uc) {
+		if (isSematicIndex) {
+			String uri = uc.toString();
+			int id = getUriID(uri);
+			return jdbcutil.getSQLLexicalForm(String.valueOf(id));
+		}
+		
 		return jdbcutil.getSQLLexicalForm(uc.getURI());
 	}
 
 	@Override
 	protected String getNativeLexicalForm(ValueConstant ct) {
+		if (isSematicIndex) {
+			if (ct.getType() == COL_TYPE.OBJECT || ct.getType() == COL_TYPE.LITERAL) {
+				int id = getUriID(ct.getValue());
+				if (id >= 0) {
+					//return jdbcutil.getSQLLexicalForm(String.valueOf(id));
+					return String.valueOf(id);
+				}
+				else {
+					//TODO throw something?
+					return String.valueOf(id);
+				}
+			}
+		}
+		
 		return jdbcutil.getSQLLexicalForm(ct);
 	}
 
+	/***
+	 * We look for the ID in the list of IDs, if its not there, we return -2,
+	 * which we know will never appear on the DB. This is correct because if a
+	 * constant appears in a query, and that constant was never inserted in the
+	 * DB, the query must be empty (that atom), by putting -2 as id, we will
+	 * enforce that.
+	 * 
+	 * @param uri
+	 * @return
+	 */
+	private int getUriID(String uri) {
+
+		Integer id = uriRefIds.get(uri);
+		if (id != null)
+			return id;
+		return -2;
+	}
+
+	
 	@Override
 	protected String getArithmeticConditionString(Function atom, QueryVariableIndex index) {
 		String expressionFormat = getArithmeticOperatorString(atom.getFunctionSymbol());

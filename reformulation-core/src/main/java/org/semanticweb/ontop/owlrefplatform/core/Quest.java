@@ -794,11 +794,11 @@ public class Quest implements Serializable, RepositoryChangedListener {
                  * When cloned, metadata is also cloned, so it should be "safe".
                  */
                // dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace, true, uriRefIds);
-                dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
+                dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace, true, uriRefIds);
 			}
             else {
             //    dataSourceQueryGenerator = new SQLGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace);
-                dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter);
+                dataSourceQueryGenerator = new MySQLQueryGenerator(metadata, jdbcutil, sqladapter, sqlGenerateReplace);
     		}
 
 			preprocessProjection(localConnection, unfoldingOBDAModel.getMappings(sourceId), fac, sqladapter);
