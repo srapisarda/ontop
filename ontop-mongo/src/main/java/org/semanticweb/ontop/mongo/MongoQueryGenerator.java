@@ -217,6 +217,12 @@ public class MongoQueryGenerator extends AbstractQueryGenerator implements Nativ
 
 
 	@Override
+	protected String getAggregateConditionString(Function atom, QueryVariableIndex index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
 	protected String getAlgebraConditionString(Function atom, QueryVariableIndex index) {
 		// TODO Auto-generated method stub
 		return null;
@@ -282,6 +288,40 @@ public class MongoQueryGenerator extends AbstractQueryGenerator implements Nativ
 
 		throw new RuntimeException("Unknown boolean operator: " + booleanPredicate);
 	}
+
+	@Override
+	public String getArithmeticOperatorTemplate(Predicate arithmeticPredicate) {
+		if (arithmeticPredicateToQueryString.containsKey(arithmeticPredicate)) {
+			return arithmeticPredicateToQueryString.get(arithmeticPredicate);
+		}
+
+		throw new RuntimeException("Unknown boolean operator: " + arithmeticPredicate);
+	}
+
+	@Override
+	protected String getCastConditionString(Function atom, QueryVariableIndex index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected String getSTRConditionString(Function atom, QueryVariableIndex index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected String getLanguageConditionString(Function atom, QueryVariableIndex index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected String convertTemplateToNativeString(Function atom, QueryVariableIndex index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 	
 	

@@ -23,6 +23,23 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 
+/**
+ * 
+ * An object of this class is created for a CQ with the purpose to relate 
+ * atoms and their variables to tables and column names.
+ * 
+ * E.g., for a CQ
+ *   
+ * 		ans1(t1) :- student(t1, t2, t3, t4), EQ(t4,2)
+ * 
+ * and a DB table 
+ * 
+ * 		student(id, name, email, type)
+ * 
+ * it would relate atom student(t1, t2, t3, t4) to the table student(id, name, email, type), and
+ * variable t1 to "id", t2 to "name", t3 to "email" and t4 to "type".
+ *
+ */
 public class QueryVariableIndex {
 
 	Map<Variable, String> variableColumnIndex = new HashMap<Variable, String>();
@@ -53,7 +70,7 @@ public class QueryVariableIndex {
 		}
 		
 		if (atom.getTerms().size() != def.getAttributes().size()) {
-			throw new RuntimeException("Mismatch between " + atom + " and database metadata " + metadata);
+			throw new RuntimeException("Mismatch between " + atom + " and database metadata " + metadata + " arities!");
 		}
 		
 		int i=0;

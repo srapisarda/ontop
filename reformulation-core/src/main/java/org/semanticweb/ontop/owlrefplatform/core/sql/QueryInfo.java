@@ -9,12 +9,18 @@ import org.semanticweb.ontop.sql.DBMetadata;
 import org.semanticweb.ontop.sql.DataDefinition;
 import org.semanticweb.ontop.sql.ViewDefinition;
 
+import com.google.common.collect.ImmutableMap;
+
+/**
+ *  TODO: describe
+ *
+ */
 public class QueryInfo {
 
-	private boolean isDistinct;
-	private boolean isOrderBy;
-	Map<Predicate, String> sqlAnsViewMap;
-	DBMetadata viewMetadata; 
+	private final boolean isDistinct;
+	private final boolean isOrderBy;
+	private final ImmutableMap<Predicate, String> sqlAnsViewMap;
+	private final DBMetadata viewMetadata; 
 
 	public QueryInfo(boolean isDistinct, boolean isOrderBy, Map<Predicate, String> sqlAnsViewMap) {
 		this(isDistinct, isOrderBy, sqlAnsViewMap, new DBMetadata());
@@ -23,7 +29,7 @@ public class QueryInfo {
 	public QueryInfo(boolean isDistinct, boolean isOrderBy, Map<Predicate, String> sqlAnsViewMap, DBMetadata metadata) {
 		this.isDistinct = isDistinct;
 		this.isOrderBy = isOrderBy;
-		this.sqlAnsViewMap = new HashMap<>(sqlAnsViewMap);
+		this.sqlAnsViewMap = ImmutableMap.copyOf(sqlAnsViewMap);
 		this.viewMetadata = metadata.clone();
 	}
 
@@ -34,7 +40,6 @@ public class QueryInfo {
 	}
 
 	public static QueryInfo addViewDefinition(QueryInfo queryInfo, ViewDefinition viewU) {
-
 		DBMetadata metadata = queryInfo.viewMetadata.clone();
 		metadata.add(viewU);
 		return new QueryInfo(queryInfo.isDistinct, queryInfo.isOrderBy, queryInfo.sqlAnsViewMap, metadata);

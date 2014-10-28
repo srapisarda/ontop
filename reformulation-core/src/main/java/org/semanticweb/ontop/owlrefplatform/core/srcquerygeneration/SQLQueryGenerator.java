@@ -53,5 +53,6 @@ public interface SQLQueryGenerator extends NativeQueryGenerator {
 
 	// public ViewManager getViewManager();
 
+	@Deprecated
     public SQLQueryGenerator cloneGenerator();
 }

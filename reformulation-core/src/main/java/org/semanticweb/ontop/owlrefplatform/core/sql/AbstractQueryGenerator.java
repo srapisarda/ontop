@@ -36,7 +36,7 @@ public abstract class AbstractQueryGenerator {
 	abstract public String getBooleanOperatorTemplate(Predicate functionSymbol);
 
 	
-	abstract public String getArithmeticOperatorString(Predicate arithmeticPredicate);
+	abstract public String getArithmeticOperatorTemplate(Predicate arithmeticPredicate);
 		
 		
 	/**
@@ -61,18 +61,23 @@ public abstract class AbstractQueryGenerator {
 	protected String getConditionString(Function atom, QueryVariableIndex index) {
 		
 		if (atom.isBooleanFunction()) {
+			//IS NULL, IS NOT NULL, IS TRUE, NOT, AND, OR, NEX, GET, LE
 			return getBooleanConditionString(atom, index);
 		} 
 		else if (atom.isDataTypeFunction()) {
+			//STRING, INTEGER, BOOLEAN
 			return getDataTypeConditionString(atom, index);
 		}
 		else if (atom.isArithmeticFunction()) {
+			//ADD, SUBSTRACT, MULTIPLY
 			return getArithmeticConditionString(atom, index);
 		}
 		else if (atom.isAlgebraFunction()) {
+			//TODO: do we need this?
 			return getAlgebraConditionString(atom, index);
 		}
 		else if (atom.getFunctionSymbol().isAggregationPredicate()) {
+			//COUNT, SUM, AVG, MAX, MIN
 			return getAggregateConditionString(atom, index);
 		}
 		else if (atom.getFunctionSymbol().equals(OBDAVocabulary.SPARQL_LANG)) {
@@ -84,10 +89,9 @@ public abstract class AbstractQueryGenerator {
 		else if (atom.getFunctionSymbol().equals(OBDAVocabulary.SPARQL_STR)) {
 			return getSTRConditionString(atom, index);
 		}
-		//TODO are they supposed to be in the body of the program?
 		else if (atom.getFunctionSymbol().getName().equals(OBDAVocabulary.QUEST_URI) ||
 				atom.getFunctionSymbol().getName().equals(OBDAVocabulary.QUEST_BNODE)) {
-			return convertTemplateToString(atom, index);
+			return convertTemplateToNativeString(atom, index);
 		}
 		else {
 			// a data predicate
@@ -99,7 +103,7 @@ public abstract class AbstractQueryGenerator {
 
 	protected abstract String getSTRConditionString(Function atom, QueryVariableIndex index);
 
-	protected abstract String convertTemplateToString(Function atom, QueryVariableIndex index);
+	protected abstract String convertTemplateToNativeString(Function atom, QueryVariableIndex index);
 
 	protected abstract String getLanguageConditionString(Function atom, QueryVariableIndex index);
 

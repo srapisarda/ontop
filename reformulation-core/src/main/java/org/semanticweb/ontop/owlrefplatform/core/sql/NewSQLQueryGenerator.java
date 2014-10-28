@@ -53,11 +53,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 
-public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQueryGenerator {
+public class NewSQLQueryGenerator extends AbstractQueryGenerator implements SQLQueryGenerator {
 
 	private static final String INDENT = "    ";
 	
-	static final Map<Predicate, String> booleanPredicateToQueryString;
+	static final ImmutableMap<Predicate, String> booleanPredicateToQueryString;
 	static {
 		Map<Predicate, String> temp = new HashMap<>();
 		
@@ -80,7 +80,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		booleanPredicateToQueryString = ImmutableMap.copyOf(temp);
 	}
 
-	static final Map<Predicate, String> arithmeticPredicateToQueryString;
+	static final ImmutableMap<Predicate, String> arithmeticPredicateToQueryString;
 	static {
 		Map<Predicate, String> temp = new HashMap<>();
 		
@@ -91,23 +91,23 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		arithmeticPredicateToQueryString = ImmutableMap.copyOf(temp);
 	}
 
-	static final Map<Predicate, Integer> predicateSQLTypes;
+	static final ImmutableMap<String, Integer> predicateSQLTypes;
 	static final int defaultSQLType = Types.VARCHAR;
 	static {
-		Map<Predicate, Integer> temp = new HashMap<>();
-		temp.put(OBDAVocabulary.XSD_INTEGER, new Integer(Types.INTEGER));
-		temp.put(OBDAVocabulary.XSD_DOUBLE, new Integer(Types.DOUBLE));
-		temp.put(OBDAVocabulary.XSD_BOOLEAN, new Integer(Types.BOOLEAN));
-		temp.put(OBDAVocabulary.XSD_DECIMAL, new Integer(Types.DECIMAL));
-		temp.put(OBDAVocabulary.XSD_DATETIME, new Integer(Types.DATE));		
-		temp.put(OBDAVocabulary.XSD_STRING, new Integer(Types.VARCHAR));
-		temp.put(OBDAVocabulary.RDFS_LITERAL, new Integer(Types.VARCHAR));		
-		temp.put(OBDAVocabulary.SPARQL_AVG, Types.DECIMAL);
-		temp.put(OBDAVocabulary.SPARQL_SUM, Types.DECIMAL);
-		temp.put(OBDAVocabulary.SPARQL_COUNT, Types.DECIMAL);
-		temp.put(OBDAVocabulary.SPARQL_MAX,Types.DECIMAL);
-		temp.put(OBDAVocabulary.SPARQL_MIN, Types.DECIMAL);
-		//OBDAVocabulary.XSD_INT_URI: no appropriate predicate for that
+		Map<String, Integer> temp = new HashMap<>();
+		temp.put(OBDAVocabulary.XSD_INTEGER_URI, new Integer(Types.INTEGER));
+		temp.put(OBDAVocabulary.XSD_INT_URI, new Integer(Types.INTEGER));
+		temp.put(OBDAVocabulary.XSD_DOUBLE_URI, new Integer(Types.DOUBLE));
+		temp.put(OBDAVocabulary.XSD_BOOLEAN_URI, new Integer(Types.BOOLEAN));
+		temp.put(OBDAVocabulary.XSD_DECIMAL_URI, new Integer(Types.DECIMAL));
+		temp.put(OBDAVocabulary.XSD_DATETIME_URI, new Integer(Types.DATE));		
+		temp.put(OBDAVocabulary.XSD_STRING_URI, new Integer(Types.VARCHAR));
+		temp.put(OBDAVocabulary.RDFS_LITERAL_URI, new Integer(Types.VARCHAR));		
+		temp.put(OBDAVocabulary.SPARQL_AVG_URI, new Integer(Types.DECIMAL));
+		temp.put(OBDAVocabulary.SPARQL_SUM_URI, new Integer(Types.DECIMAL));
+		temp.put(OBDAVocabulary.SPARQL_COUNT_URI, new Integer(Types.DECIMAL));
+		temp.put(OBDAVocabulary.SPARQL_MAX_URI, new Integer(Types.DECIMAL));
+		temp.put(OBDAVocabulary.SPARQL_MIN_URI, new Integer(Types.DECIMAL));
 		
 		predicateSQLTypes = ImmutableMap.copyOf(temp);
 	}
@@ -150,8 +150,9 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		temp.put(OBDAVocabulary.XSD_DECIMAL_URI, new Integer(5));
 		temp.put(OBDAVocabulary.XSD_INTEGER_URI, new Integer(4));
 		temp.put(OBDAVocabulary.RDFS_LITERAL_URI, new Integer(3));
-		temp.put(OBDAVocabulary.QUEST_BNODE, 2);
-     	temp.put(OBDAVocabulary.QUEST_URI, 1);
+		temp.put(OBDAVocabulary.QUEST_BNODE, new Integer(2));
+     	temp.put(OBDAVocabulary.QUEST_URI, new Integer(1));
+     	temp.put(OBDAVocabulary.NULL.toString(), new Integer(0));
 		
 		predicateCodeTypes = ImmutableMap.copyOf(temp);
 	}
@@ -166,41 +167,74 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 	private static final String QUEST_TYPE = "QuestType";
 
 	
-	// Non-static fields
-	private final JDBCUtility jdbcutil;
-	private final SQLDialectAdapter sqladapter;
+	//*********************\\
+	// Instance attributes \\
+	//*********************\\
+	
+	/**
+	 * Query independent
+	 */
+	private final JDBCUtility jdbcUtil;
+	
+	/**
+	 * Query independent
+	 */
+	private final SQLDialectAdapter sqlAdapter;
 
-    private final boolean generateREPLACE;
+	/**
+	 * Query independent
+	 * A flag whether to replace non-alpha characters in URIs with their unicodes
+	 */
+	private final boolean generateReplace;
     
-	private final boolean isSematicIndex;
+	/**
+	 * Query independent
+	 * Flag for semantic indexing mode
+	 */
+	private final boolean isSemanticIndex;
+	
+	/**
+	 * Query independent
+	 *   used in the semantic indexing mode
+	 *   maps URIs to their IDs
+	 * TODO: make it immutable (to be done first in Quest.java)
+	 */
 	private final Map<String, Integer> uriRefIds;
 
     
     
-	public MySQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, 
+	public NewSQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, 
 								boolean sqlGenerateReplace) {
 		this(metadata, jdbcutil, sqladapter, sqlGenerateReplace, false, null);
 	}
 
-	public MySQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, 
+	public NewSQLQueryGenerator(DBMetadata metadata, JDBCUtility jdbcutil, SQLDialectAdapter sqladapter, 
 								boolean sqlGenerateReplace, boolean isSemanticIndex, Map<String, Integer> uriRefIds) {
 		super(metadata);
 		
-		this.jdbcutil = jdbcutil;
-		this.sqladapter = sqladapter;
+		this.jdbcUtil = jdbcutil;
+		this.sqlAdapter = sqladapter;
 		
-		this.generateREPLACE = sqlGenerateReplace;
+		this.generateReplace = sqlGenerateReplace;
 		
-		this.isSematicIndex = isSemanticIndex;
-		if (uriRefIds != null) 
-			this.uriRefIds = new HashMap<>(uriRefIds);
+		this.isSemanticIndex = isSemanticIndex;
+		if (uriRefIds != null) { 
+			//TODO : this does not work!! seems that uriRedIds is modified later
+			//this.uriRefIds = new HashMap<>(uriRefIds);
+			this.uriRefIds = uriRefIds;
+		}
 		else
 			this.uriRefIds = null;
 	}
 
+	/**
+	 * This implementation is query-independent, so no need to clone it
+	 * Returns itself.
+	 */
 	@Override
 	public SQLQueryGenerator cloneGenerator() {
-	    return new MySQLQueryGenerator(metadata.clone(), jdbcutil, sqladapter, generateREPLACE, isSematicIndex, uriRefIds);
+	    return this;
+	    //new NewSQLQueryGenerator(metadata.clone(), jdbcUtil, sqlAdapter, generateReplace, isSemanticIndex, uriRefIds);
 	}
 
 	@Override
@@ -213,7 +247,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 	}
 	
 	@Override
-	public String getArithmeticOperatorString(Predicate arithmeticPredicate) {
+	public String getArithmeticOperatorTemplate(Predicate arithmeticPredicate) {
 		if (arithmeticPredicateToQueryString.containsKey(arithmeticPredicate)) {
 			return arithmeticPredicateToQueryString.get(arithmeticPredicate);
 		}
@@ -221,6 +255,9 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		throw new RuntimeException("Unknown arithmetic operator: " + arithmeticPredicate);
 	}
 
+	/**
+	 * TODO: should we rename it generateNativeQuery?
+	 */
 	@Override
 	public String generateSourceQuery(DatalogProgram query, List<String> signature) throws OBDAException {
 		
@@ -271,13 +308,13 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 		String modifier = "";
 		if (!conditions.isEmpty()) {
-			modifier += sqladapter.sqlOrderBy(conditions, outerViewName)
+			modifier += sqlAdapter.sqlOrderBy(conditions, outerViewName)
 					+ "\n";
 		}
 		long limit = queryProgram.getQueryModifiers().getLimit();
 		long offset = queryProgram.getQueryModifiers().getOffset();
 		if (limit != -1 || offset != -1) {
-			modifier += sqladapter.sqlSlice(limit, offset) + "\n";
+			modifier += sqlAdapter.sqlSlice(limit, offset) + "\n";
 		}
 
 		String subquery = generateQuery(queryProgram, signature);
@@ -290,6 +327,12 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return sql;
 	}
 
+	/**
+	 * Generates a UNION of SELECT FROM WHERE queries (with no modifier) 
+	 * 
+	 * This method is used by createQueryInfo, when creating Ans views 
+	 * 
+	 */
 	private String generateQuery(DatalogProgram query, List<String> signature) {
 
 		DatalogDependencyGraphGenerator depGraph = new DatalogDependencyGraphGenerator(query);
@@ -316,9 +359,18 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 			queryStrings.add(querystr);
 		}
 
-		return createUnionFromSQLList(queryStrings, queryInfo);
+		return createUnionFromSQLList(queryStrings, queryInfo.isDistinct());
 	}
 
+	/**
+	 * Creates query meta information, such as
+	 *  - isDistinct
+	 *  - isOrderBy
+	 *  - view definitions of ans predicates other than ans1
+	 * @param query
+	 * @param depGraph
+	 * @return
+	 */
 	private QueryInfo createQueryInfo(DatalogProgram query, DatalogDependencyGraphGenerator depGraph) {
 		
 		boolean isDistinct = hasSelectDistinctStatement(query);
@@ -329,31 +381,28 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return createAnsViews(depGraph, query, queryInfo);
 	}
 
-	private String createUnionFromSQLList(List<String> queryStrings, QueryInfo queryInfo) {
-		Iterator<String> queryStringIterator = queryStrings.iterator();
-		StringBuilder result = new StringBuilder();
-		if (queryStringIterator.hasNext()) {
-			result.append(queryStringIterator.next());
-		}
-
+	private String createUnionFromSQLList(List<String> queryStrings, boolean isDistinct) {
 		String UNION = null;
-		if (queryInfo.isDistinct()) {
+		if (isDistinct) {
 			UNION = "UNION";
 		} else {
 			UNION = "UNION ALL";
 		}
-		while (queryStringIterator.hasNext()) {
-			result.append("\n");
-			result.append(UNION);
-			result.append("\n");
-			result.append(queryStringIterator.next());
-		}
+		
+		StringBuilder result = new StringBuilder();
+		result.append("(");
+		Joiner.on(")\n " + UNION + " \n (").appendTo(result, queryStrings);
+		result.append(")");
+
 		return result.toString();
 	}
 
-	/*
-	 * creates a view for every ans predicate in the Datalog input program,
-	 * except for ans1
+	/**
+	 * Creates a view for every ans predicate in the Datalog input program,
+	 * except for ans1. 
+	 * 
+	 * It does so in bottom-up fashion since the views for higher level 
+	 * predicates need to use the view definitions of the lower level predicates
 	 */
 	private QueryInfo createAnsViews(DatalogDependencyGraphGenerator depGraph, DatalogProgram query,
 									QueryInfo queryInfo) {
@@ -376,7 +425,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 				 */
 			} else {
 				boolean isAns1 = false;
-				currentQueryInfo = createViewFrom(pred, depGraph.getRuleIndex().get(pred), isAns1, currentQueryInfo);
+				currentQueryInfo = createView(pred, depGraph.getRuleIndex().get(pred), isAns1, currentQueryInfo);
 			}
 			i++;
 		}
@@ -384,7 +433,19 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return currentQueryInfo;
 	}
 
-	private QueryInfo createViewFrom(Predicate pred, Collection<CQIE> ruleList, boolean isAns1, QueryInfo queryInfo) {
+	/**
+	 * Creates a view for the predicate pred from the rule list, and 
+	 * returns a new queryInfo augmented with the new view definition
+	 * 
+	 * @param pred
+	 * @param ruleList
+	 * @param isAns1
+	 * @param queryInfo
+	 * 		the previously created queryInfo, that is, it contains the view definitions for the 
+	 * 		lower level predicates
+	 * @return
+	 */
+	private QueryInfo createView(Predicate pred, Collection<CQIE> ruleList, boolean isAns1, QueryInfo queryInfo) {
 		/* Creates BODY of the view query */
 
 		List<Predicate> headDataTypes = getHeadDataTypes(ruleList);
@@ -406,14 +467,9 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 			sqls.add(sqlQuery);
 		}
 
-		String viewname = String.format(VIEW_ANS_NAME, pred);
 
-		String unionView;
-		if (sqls.size() == 1) {
-			unionView = sqls.iterator().next();
-		} else {
-			unionView = "(" + Joiner.on(")\n UNION \n (").join(sqls) + ")";
-		}
+		String viewName = String.format(VIEW_ANS_NAME, pred);
+		String unionView = createUnionFromSQLList(sqls, false);
 
 		// Hard coded variable names
 		List<String> columns = Lists.newArrayListWithExpectedSize(3 * headArity);
@@ -424,7 +480,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		}
 
 		/* Creates the View itself */
-		ViewDefinition viewU = metadata.createViewDefinition(viewname, unionView, columns);
+		ViewDefinition viewU = metadata.createViewDefinition(viewName, unionView, columns);
 		QueryInfo newQueryInfo = QueryInfo.addViewDefinition(queryInfo, viewU);
 		newQueryInfo =  QueryInfo.addAnsView(newQueryInfo, pred, unionView);
 		return newQueryInfo;
@@ -432,19 +488,19 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 	private String generateQueryFromSingleRule(CQIE cq, List<String> signature,
 			boolean isAns1, List<Predicate> headDataTypes, QueryInfo queryInfo) {
-		SQLQueryVariableIndex index = new SQLQueryVariableIndex(cq, metadata, queryInfo, sqladapter);
+		SQLQueryVariableIndex index = new SQLQueryVariableIndex(cq, metadata, queryInfo, sqlAdapter);
 
-		String SELECT = getSelectClause(signature, cq, index, isAns1, headDataTypes, queryInfo);
-		String FROM = getFROM(cq.getBody(), index);
-		String WHERE = getWHERE(cq.getBody(), index);
-		String GROUP = getGroupBy(cq.getBody(), index);
-		String HAVING = getHaving(cq.getBody(), index);;
+		String SELECT = generateSelectClause(signature, cq, index, isAns1, headDataTypes, queryInfo);
+		String FROM = generateFROM(cq.getBody(), index);
+		String WHERE = generateWHERE(cq.getBody(), index);
+		String GROUP = generateGroupBy(cq.getBody(), index);
+		String HAVING = generateHaving(cq.getBody(), index);
 		
 		String querystr = SELECT + FROM + WHERE + GROUP + HAVING;
 		return querystr;
 	}
 
-	private String getGroupBy(List<Function> body, SQLQueryVariableIndex index) {
+	private String generateGroupBy(List<Function> body, SQLQueryVariableIndex index) {
 
 		List<Variable> varsInGroupBy = Lists.newArrayList();
 		for (Function atom : body) {
@@ -468,7 +524,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return result.toString();
 	}
 
-	private String getHaving(List<Function> body, QueryVariableIndex index) {
+	private String generateHaving(List<Function> body, QueryVariableIndex index) {
 		List <Term> conditions = new LinkedList<Term> ();
 		List <Function> condFunctions = new LinkedList<Function> ();
 
@@ -489,15 +545,11 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		Set<String> condSet = getConditionsString(condFunctions, index);
 		
 		StringBuilder result = new StringBuilder();
-		result.append(" HAVING ( ");
-		for (String c: condSet) {
-			result.append(c);
-		} 
-		result.append(" ) ");
+		result.append(" HAVING ( ").append(Joiner.on("").join(condSet)).append(" ) ");
 		return result.toString();
 	}
 	
-	private String getSelectClause(List<String> signature, CQIE query,
+	private String generateSelectClause(List<String> signature, CQIE query,
 			SQLQueryVariableIndex index, boolean isAns1,
 			List<Predicate> headDataTypes, QueryInfo queryInfo) {
 		/*
@@ -536,7 +588,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 			}
 
 			String typeColumn = getTypeColumnForSELECT(headTerm, varName, index);
-			String mainColumn = getMainColumnForSELECT(headTerm, varName, index, headDataType, queryInfo);
+			String mainColumn = getMainColumnForSELECT(headTerm, varName, index, headDataType);
 			String langColumn = getLangColumnForSELECT(headTerm, varName, index);
 
 			selectString.append("\n   ");
@@ -568,10 +620,10 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 			return getCompositeTermType((Function) projectedTerm, varName);
 		}
         else if (projectedTerm instanceof URIConstant) {
-			return String.format(TYPE_STR, 1, varName);
+			return String.format(TYPE_STR, predicateCodeTypes.get(OBDAVocabulary.QUEST_URI), varName);
 		}
         else if (projectedTerm == OBDAVocabulary.NULL) {
-			return String.format(TYPE_STR, 0, varName);
+			return String.format(TYPE_STR, predicateCodeTypes.get(OBDAVocabulary.NULL.toString()), varName);
 		}
         else if (projectedTerm instanceof Variable) {
 			return getTypeFromVariable((Variable) projectedTerm, index, varName);
@@ -580,7 +632,6 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
         // Unusual term
 		throw new RuntimeException("Cannot generate SELECT for term: "
 				+ projectedTerm.toString());
-
 	}
 	
     /**
@@ -595,17 +646,17 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
      *   Basically, it tries to infer the type by looking at function symbols.
      *
      */
-    private String getCompositeTermType(Function compositeTerm, String varName) {
-        Predicate mainFunctionSymbol = compositeTerm.getFunctionSymbol();
-
+    private static String getCompositeTermType(Function compositeTerm, String varName) {
+        
         int typeCode = UNDEFINED_TYPE_CODE;
 
+        Predicate mainFunctionSymbol = compositeTerm.getFunctionSymbol();
         switch(mainFunctionSymbol.getName()) {
             /**
              * Aggregation cases
              */
             case OBDAVocabulary.SPARQL_COUNT_URI:
-                typeCode = predicateCodeTypes.get(OBDAVocabulary.XSD_INTEGER_URI);
+                typeCode = getCodeTypeFromFunctionSymbol(OBDAVocabulary.XSD_INTEGER);
                 break;
 
             case OBDAVocabulary.SPARQL_SUM_URI:
@@ -617,7 +668,6 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
                 Term subTerm = compositeTerm.getTerm(0);
                 if (subTerm instanceof Function) {
                     Function compositeSubTerm = (Function) subTerm;
-
                     typeCode = getCodeTypeFromFunctionSymbol(compositeSubTerm.getFunctionSymbol());
                 }
 
@@ -628,7 +678,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
                  * (any number can be promoted to a double http://www.w3.org/TR/xpath20/#promotion) .
                  */
                 if (typeCode == UNDEFINED_TYPE_CODE) {
-                    typeCode = predicateCodeTypes.get(OBDAVocabulary.XSD_DOUBLE_URI);
+                    typeCode = getCodeTypeFromFunctionSymbol(OBDAVocabulary.XSD_DOUBLE);
                 }
                 break;
 
@@ -654,7 +704,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
      * @param predicate
      * @return
      */
-    private int getCodeTypeFromFunctionSymbol(Predicate predicate) {
+    private static int getCodeTypeFromFunctionSymbol(Predicate predicate) {
     	String predName = predicate.getName();
         return predicateCodeTypes.containsKey(predName) ? predicateCodeTypes.get(predName) : UNDEFINED_TYPE_CODE;
     }
@@ -679,12 +729,11 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
         }
 
         /**
-         * By default, we assume that the variable is an IRI.
+         * By default, we assume that the variable is a URI.
          *
          * TODO: why?
-         * TODO: do not use such a "magical" number.
          */
-        String typeCode = "1";
+        String typeCode = predicateCodeTypes.get(OBDAVocabulary.QUEST_URI).toString();
 
         /**
          * For each column reference corresponding to the variable.
@@ -692,15 +741,10 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
          * For instance, columnRef is `Qans4View`.`v1` .
          */
         for (String columnRef : columnRefs) {
-            String columnType, tableColumnType;
-
-            String[] splits = columnRef.split("\\.");
-
-            String quotedTable = splits[0];
-            String table = removeQuotes(splits[0]);
-            String column = removeQuotes(splits[1]);
-
-            DataDefinition definition = metadata.getDefinition(table);
+        	String[] tableAndColumn = getTableAndColumn(columnRef);
+            String quotedTable = getQuotedTable(columnRef);
+            
+            DataDefinition definition = findDataDefinition(tableAndColumn[0], index);
             /**
              * If the var is defined in a ViewDefinition, then there is a
              * column for the type and we just need to refer to that column.
@@ -708,9 +752,9 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
              * For instance, tableColumnType becomes `Qans4View`.`v1QuestType` .
              */
             if (definition instanceof ViewDefinition) {
-                columnType = column + QUEST_TYPE;
-                tableColumnType = sqladapter.sqlQualifiedColumn(quotedTable, columnType);
-                typeCode = tableColumnType ;
+            	String columnType = tableAndColumn[1] + QUEST_TYPE;
+            	String tableColumnType = sqlAdapter.sqlQualifiedColumn(quotedTable, columnType);
+                typeCode = tableColumnType;
                 break;
             }
         }
@@ -718,15 +762,53 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
         return String.format(TYPE_STR, typeCode, varName);
     }
 
-	private String getMainColumnForSELECT(Term headTerm, String varName, SQLQueryVariableIndex index, Predicate typePredicate, QueryInfo queryInfo) {
+	private static String getQuotedTable(String columnRef) {
+		String[] splits = columnRef.split("\\.");
+		return splits[0];
+	}
+
+	private static String[] getTableAndColumn(String columnRef) {
+		String[] splits = columnRef.split("\\.");
+		splits[0] = removeQuotes(splits[0]);
+		splits[1] = removeQuotes(splits[1]);
+		return splits;
+	}
+
+	private DataDefinition findDataDefinition(String table, SQLQueryVariableIndex index) {
+		DataDefinition definition = metadata.getDefinition(table);
+		if (definition == null) {
+			definition = index.getQueryInfo().getViewDefinition(table);
+		}
+		return definition;
+	}
+
+	private String findTableName(String table, SQLQueryVariableIndex index) {
+		String tableN = table;
+		
+		if (table.startsWith("QVIEW")) {
+			Map<Function, String> views = index.getViewNames();
+			for (Map.Entry<Function, String> pair : views.entrySet()) {
+				if (pair.getValue().equals(table)) {
+					Function function = pair.getKey();
+					tableN = function.getFunctionSymbol().toString();
+					break;
+				}
+			}
+		}
+		
+		return tableN;
+	}
+
+	private String getMainColumnForSELECT(Term headTerm, String varName, 
+			SQLQueryVariableIndex index, Predicate typePredicate) {
 
 		String mainColumn = null;
 		String mainTemplate = "%s AS %s";
 
-		if (headTerm instanceof URIConstant || headTerm instanceof Variable) {
-			mainColumn = getNativeString(headTerm, index);
-		} else if (headTerm == OBDAVocabulary.NULL) {
+		if (headTerm == OBDAVocabulary.NULL) {
 			mainColumn = "NULL";
+		} else if (headTerm instanceof URIConstant || headTerm instanceof Variable) {
+			mainColumn = getNativeString(headTerm, index);
 		} else if (headTerm instanceof Function) {
 			/*
 			 * if it's a function we need to get the nested value if its a
@@ -744,8 +826,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 				/*
 				 * New template based URI or BNODE building functions
 				 */
-				mainColumn = getSQLStringForTemplateFunction(atom, index, queryInfo);
-			
+				mainColumn = convertTemplateToNativeString(atom, index);			
 			} 
 			
 			else if (predicate instanceof DataTypePredicate) {
@@ -754,25 +835,19 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 				 * case for all literal columns
 				 */
 				//TODO can we simplify here? Why Literal? Not RDFS_Literal?
-				String termStr = null;
+			/*	String termStr = null;
 				if ((predicate instanceof Literal) || atom.getTerms().size() > 2) {
-					termStr = getSQLStringForTemplateFunction(atom, index, queryInfo);
+					termStr = convertTemplateToNativeString(atom, index);
 				} else {
-					Term term = atom.getTerm(0);
-					termStr = getNativeString(term, index);
+					termStr = getNativeString(atom.getTerm(0), index);
 				}
-				mainColumn = termStr;
-
+				mainColumn = termStr;	*/	
+				mainColumn = convertTemplateToNativeString(atom, index);
 			}
 			
-			// Aggregates
-			else if (predicateString.equals(OBDAVocabulary.SPARQL_COUNT_URI) ||
-					predicateString.equals(OBDAVocabulary.SPARQL_SUM_URI) ||
-					predicateString.equals(OBDAVocabulary.SPARQL_AVG_URI) || 
-					predicateString.equals(OBDAVocabulary.SPARQL_MIN_URI) ||
-					predicateString.equals(OBDAVocabulary.SPARQL_MAX_URI)) {
+			// Aggregates COUNT, SUM, AVG, MIN, MAX
+			else if (predicate.isAggregationPredicate()) {
 				mainColumn = predicateString.toUpperCase() + "("+ getNativeString(atom.getTerm(0), index) + ")";
-		
 			}
 			
 			else {
@@ -786,238 +861,18 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		}
 
 		/*
-		 * If the we have a column we need to still CAST to VARCHAR
+		 * If we have a column we need to still CAST to VARCHAR
 		 */
 		if (mainColumn.charAt(0) != '\'' && mainColumn.charAt(0) != '(') {
-
 			if (typePredicate != null){
 				
 				int sqlType = getNativeType(typePredicate);				
-				mainColumn = sqladapter.sqlCast(mainColumn, sqlType);
-			}
-			
+				mainColumn = sqlAdapter.sqlCast(mainColumn, sqlType);
+			}			
 		}
 				
-		String format = String.format(mainTemplate, mainColumn, sqladapter.sqlQuote(varName));
+		String format = String.format(mainTemplate, mainColumn, sqlAdapter.sqlQuote(varName));
 		return format;
-	}
-
-	/**
-	 * this method is used for URI, BNODE, Literal predicates, and 
-	 * for Datatype predicates with arity > 2
-	 *  
-	 * @param atom
-	 * @param index
-	 * @param queryInfo 
-	 * @return
-	 */
-	public String getSQLStringForTemplateFunction(Function atom, SQLQueryVariableIndex index, QueryInfo queryInfo) {
-		/*
-		 * The first inner term determines the form of the result
-		 */
-		Term term1 = atom.getTerm(0);
-
-		if (term1 instanceof ValueConstant || term1 instanceof BNode) {
-			/*
-			 * The function is actually a template. The first parameter is a
-			 * string of the form http://.../.../ or empty "{}" with place
-			 * holders of the form {}. The rest are variables or constants that
-			 * should be put in place of the place holders. We need to tokenize
-			 * and form the CONCAT
-			 */
-			return getConcatFromTemplate(atom, term1, index, queryInfo);
-			
-		} else if (term1 instanceof Variable) {
-			/*
-			 * The function is of the form uri(x), we need to simply return the
-			 * value of X
-			 */
-			return getNativeString(term1, index);
-
-		} else if (term1 instanceof URIConstant) {
-			/*
-			 * The function is of the form uri("http://some.uri/"), i.e., a
-			 * concrete URI, we return the string representing that URI.
-			 */
-			return getNativeString(term1, index);
-		}
-
-		/*
-		 * Unsupported case
-		 */
-		throw new IllegalArgumentException(
-				"Error, cannot generate URI constructor clause for a term: "
-						+ atom.toString());
-
-	}
-
-
-	private String getConcatFromTemplate(Function atom, Term term1, SQLQueryVariableIndex index, QueryInfo queryInfo) {
-		String literalValue = "";
-		if (term1 instanceof BNode) {
-            literalValue = ((BNode) term1).getValue();
-		} else {
-            literalValue = ((ValueConstant) term1).getValue();
-		}
-		
-		Predicate pred = atom.getFunctionSymbol();
-
-
-		String replace1;
-        String replace2;
-        if(generateREPLACE) {
-
-            replace1 = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
-                    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(";
-
-            replace2 = ",' ', '%20')," +
-                    "'!', '%21')," +
-                    "'@', '%40')," +
-                    "'#', '%23')," +
-                    "'$', '%24')," +
-                    "'&', '%26')," +
-                    "'*', '%42'), " +
-                    "'(', '%28'), " +
-                    "')', '%29'), " +
-                    "'[', '%5B'), " +
-                    "']', '%5D'), " +
-                    "',', '%2C'), " +
-                    "';', '%3B'), " +
-                    "':', '%3A'), " +
-                    "'?', '%3F'), " +
-                    "'=', '%3D'), " +
-                    "'+', '%2B'), " +
-                    "'''', '%22'), " +
-                    "'/', '%2F')";
-        } else {
-            replace1 = replace2 = "";
-        }
-
-        String template = removeAllQuotes(literalValue);
-
-		String[] split = template.split("[{][}]");
-
-		List<String> vex = new LinkedList<String>();
-		if (split.length > 0 && !split[0].isEmpty()) {
-			vex.add(jdbcutil.getSQLLexicalForm(split[0]));
-		}
-
-		/*
-		 * New we concat the rest of the function, note that if there is
-		 * only 1 element there is nothing to concatenate
-		 */
-		if (atom.getTerms().size() > 1) {
-			int size = atom.getTerms().size();
-			if (pred.equals(OBDAVocabulary.RDFS_LITERAL)
-					|| pred.equals(OBDAVocabulary.RDFS_LITERAL_LANG)) {
-				size--;
-			}
-			for (int termIndex = 1; termIndex < size; termIndex++) {
-				Term currentTerm = atom.getTerms().get(termIndex);
-				String repl = "";
-				if (isStringColType(currentTerm, index)) {
-					repl = replace1
-							+ getNativeString(currentTerm, index)
-							+ replace2;
-				} else {
-					repl = replace1
-							+ sqladapter.sqlCast(getNativeString(currentTerm, index), Types.VARCHAR) 
-							+ replace2;
-				}
-				vex.add(repl);
-				if (termIndex < split.length) {
-					vex.add(jdbcutil.getSQLLexicalForm(split[termIndex]));
-				}
-			}
-		}
-
-		if (vex.size() == 1) {
-			return vex.get(0);
-		}
-		
-		String[] params = new String[vex.size()];
-		int i = 0;
-		for (String param : vex) {
-			params[i] = param;
-			i++;
-		}
-		return MySQLQueryGenerator.getStringConcatenation(sqladapter, params, queryInfo);
-	}
-
-	private boolean isStringColType(Term term, SQLQueryVariableIndex index) {
-		/*
-		 * term is a Function
-		 */
-		if (term instanceof Function) {
-			Function function = (Function) term;
-			Predicate predicate = function.getFunctionSymbol();
-			
-			if (predicate instanceof URITemplatePredicate) {
-				/*
-				 * A URI function always returns a string, thus it is a string
-				 * column type.
-				 */
-				//if (isSI)
-				//	return false;
-				return true;
-			}
-			
-			else {
-				if (function.getTerms().size() == 1) {
-					if (predicate.getName().equals(OBDAVocabulary.SPARQL_COUNT_URI)) {
-						return false;
-					}
-					/*
-					 * Update the term with the parent term's first parameter.
-					 * Note: this method is confusing :(
-					 */
-					Term term1 = function.getTerm(0);
-					return isStringColType(term1, index);
-				}
-			}
-		}
-		/*
-		 * term is a Variable
-		 */
-		else if (term instanceof Variable) {
-		 
-			Collection<String> viewdef = index.getColumnReferences((Variable) term);
-			String def = viewdef.iterator().next();
-			String col = removeAllQuotes(def.split("\\.")[1]);
-			String table = def.split("\\.")[0];
-			if (def.startsWith("QVIEW")) {
-				Map<Function, String> views = index.getViewNames();
-				for (Function func : views.keySet()) {
-					String value = views.get(func);
-					if (value.equals(def.split("\\.")[0])) {
-						table = func.getFunctionSymbol().toString();
-						break;
-					}
-				}
-			}
-			List<TableDefinition> tables = metadata.getTableList();
-			for (TableDefinition tabledef : tables) {
-				if (tabledef.getName().equals(table)) {
-					List<Attribute> attr = tabledef.getAttributes();
-					for (Attribute a : attr) {
-						if (a.getName().equals(col)) {
-							switch (a.getType()) {
-							case Types.VARCHAR:
-							case Types.CHAR:
-							case Types.LONGNVARCHAR:
-							case Types.LONGVARCHAR:
-							case Types.NVARCHAR:
-							case Types.NCHAR:
-								return true;
-							default:
-								return false;
-							}
-						}
-					}
-				}
-			}
-		}
-		return false;
 	}
 
     /**
@@ -1028,7 +883,6 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 		String langStr = "%s AS \"%sLang\"";
 
-		// String varName = signature.get(hpos);
 		if (headTerm instanceof Function) {
 			Function atom = (Function) headTerm;
 			Predicate function = atom.getFunctionSymbol();
@@ -1050,7 +904,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 					Term langTerm = atom.getTerms().get(last);
 					if (langTerm == OBDAVocabulary.NULL) {
 
-						if (sqladapter instanceof HSQLSQLDialectAdapter) {
+						if (sqlAdapter instanceof HSQLSQLDialectAdapter) {
 							lang = "CAST(NULL AS VARCHAR(3))";
 						} else {
 							lang = "NULL";
@@ -1065,13 +919,14 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		}
 
 
-		if (sqladapter instanceof HSQLSQLDialectAdapter) {
+		//TODO get rid of this
+		if (sqlAdapter instanceof HSQLSQLDialectAdapter) {
 			return (String.format(langStr, "CAST(NULL AS VARCHAR(3))", varName));
 		} 
 		return (String.format(langStr,  "NULL", varName));
 	}
 
-	private String getFROM(List<Function> atoms, SQLQueryVariableIndex index) {
+	private String generateFROM(List<Function> atoms, SQLQueryVariableIndex index) {
 		String tableDefinitions = getTableDefinitions(atoms, index, true, false, "");
 		return "\n FROM \n" + tableDefinitions;
 	}
@@ -1098,6 +953,8 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 	 *            argument will be ignored.
 	 * 
 	 * @return
+	 * 
+	 * TODO: simplify
 	 */
 	private String getTableDefinitions(List<Function> inneratoms,
 			SQLQueryVariableIndex index, boolean isTopLevel, boolean isLeftJoin,
@@ -1128,17 +985,12 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		int size = tableDefinitions.size();
 		if (isTopLevel) {
 			if (size == 0) {
-				tableDefinitionsString.append("(" + jdbcutil.getDummyTable() + ") tdummy ");
+				tableDefinitionsString.append("(" + jdbcUtil.getDummyTable() + ") tdummy ");
 
 			} else {
-				Iterator<String> tableDefinitionsIterator = tableDefinitions.iterator();
 				tableDefinitionsString.append(indent);
-				tableDefinitionsString.append(tableDefinitionsIterator.next());
-				while (tableDefinitionsIterator.hasNext()) {
-					tableDefinitionsString.append(",\n");
-					tableDefinitionsString.append(indent);
-					tableDefinitionsString.append(tableDefinitionsIterator.next());
-				}
+				Iterator<String> tableDefinitionsIterator = tableDefinitions.iterator();
+				Joiner.on(",\n" + indent).appendTo(tableDefinitionsString, tableDefinitionsIterator);
 			}
 		} else {
 			/*
@@ -1155,7 +1007,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 //			String JOIN = "\n" + indent + "(\n" + indent + "%s\n" + indent
 //					+ JOIN_KEYWORD + "\n" + indent + "%s\n" + indent + ")";
 
-			String JOIN = "" + indent + "" + indent + "%s\n" + indent
+			String JOIN = indent + indent + "%s\n" + indent
 					+ JOIN_KEYWORD + "\n" + indent + "%s" + indent + "";
 			
 			
@@ -1202,7 +1054,7 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 	}
 
 	private String getConjunctionOfConditions(Collection<String> conditions) {
-		return Joiner.on(" , ").join(conditions);
+		return Joiner.on(" AND\n").join(conditions);
 	}
 
 	/**
@@ -1245,23 +1097,13 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return def;
 	}
 
-	private String getWHERE(List<Function> atoms, QueryVariableIndex index) {
+	private String generateWHERE(List<Function> atoms, QueryVariableIndex index) {
 		Set<String> conditions = getConditionsString(atoms, index);
 		if (conditions.isEmpty()) {
 			return "";
 		}
 		
-		StringBuilder conditionsString = new StringBuilder();
-		Iterator<String> conditionsIterator = conditions.iterator();
-		if (conditionsIterator.hasNext()) {
-			conditionsString.append(conditionsIterator.next());
-		}
-		while (conditionsIterator.hasNext()) {
-			conditionsString.append(" AND\n");
-			conditionsString.append(conditionsIterator.next());
-		}
-	
-		return "\nWHERE \n" + conditionsString.toString();
+		return "\nWHERE \n" + getConjunctionOfConditions(conditions);
 	}
 
 	private boolean hasOrderByClause(DatalogProgram query) {
@@ -1300,10 +1142,11 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return ansTypes;
 	}
 
+	//TODO: simplify here
     private void getHeadTermDataType(Term term, List<Predicate> ansTypes, int j) {
     	if (term instanceof Function) {
-			Function f = (Function) term;
-			Predicate typePred = f.getFunctionSymbol();
+			Function atom = (Function) term;
+			Predicate typePred = atom.getFunctionSymbol();
 
 			if (typePred.isDataTypePredicate()
 					|| typePred.getName().equals(OBDAVocabulary.QUEST_URI)) {
@@ -1313,12 +1156,10 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 			} else if (typePred.getName().equals(OBDAVocabulary.QUEST_BNODE)) {
 				ansTypes.set(j, OBDAVocabulary.XSD_STRING);
 
-			} else if ((typePred.getName().equals(OBDAVocabulary.SPARQL_AVG_URI))
-					|| (typePred.getName().equals(OBDAVocabulary.SPARQL_SUM_URI))
-					|| (typePred.getName().equals(OBDAVocabulary.SPARQL_MAX_URI))
-					|| (typePred.getName().equals(OBDAVocabulary.SPARQL_MIN_URI))) {
+			} else if (typePred.isAggregationPredicate() && 
+					! typePred.getName().equals(OBDAVocabulary.SPARQL_COUNT_URI)) {
 
-				Term agTerm = f.getTerm(0);
+				Term agTerm = atom.getTerm(0);
 				if (agTerm instanceof Function) {
 					Function agFunc = (Function) agTerm;
 					typePred = agFunc.getFunctionSymbol();
@@ -1391,9 +1232,8 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		}
 		
 		Term term1 = atom.getTerms().get(0);
-		//TODO: is the following correct? 
-		//in SQL, we do not impose typing constraints in the WHERE clause
-		//what about URI? can it appear in the body of the program after unfolding?
+		//TODO: is the following correct?
+		//What about the type, actually?
 		return getNativeString(term1, index);
 	}
 
@@ -1444,13 +1284,39 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		String expressionFormat = getBooleanOperatorTemplate(booleanPredicate);
 
 		Term term1 = atom.getTerms().get(0);
-		
+
+		if (expressionFormat.contains("NOT %s")) {
+			return getNotString(term1, index, expressionFormat);
+		}
 		if (expressionFormat.contains("IS TRUE")) {
 			return getIsTrueString(term1, index);
 		}
 		
 		String op = getNativeString(term1, index);//, true);
 		return String.format(expressionFormat, op);
+	}
+
+	private String getNotString(Term term1, QueryVariableIndex index, String expressionFormat) {
+		String column = getNativeString(term1, index);
+
+		if (term1 instanceof Function) {
+			Function f = (Function) term1;
+			if (!f.isDataTypeFunction())
+				return String.format(expressionFormat, column);
+		}
+
+		int type = getVariableDataType(term1);
+		
+		// find data type of term and evaluate accordingly
+		if (type == Types.INTEGER)
+			return String.format("NOT %s > 0", column);
+		if (type == Types.DOUBLE)
+			return String.format("NOT %s > 0", column);
+		if (type == Types.BOOLEAN)
+			return String.format("NOT %s", column);
+		if (type == Types.VARCHAR)
+			return String.format("NOT LENGTH(%s) > 0", column);
+		return "0";
 	}
 
 	private String getIsTrueString(Term term1, QueryVariableIndex index) {
@@ -1489,15 +1355,15 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		
 		String column = getNativeString(p1, index);
 		String pattern = getNativeString(p2, index);
-		return sqladapter.sqlRegex(column, pattern, caseinSensitive, multiLine, dotAllMode);
+		return sqlAdapter.sqlRegex(column, pattern, caseinSensitive, multiLine, dotAllMode);
 	}
 
 	private int getVariableDataType(Term term) {
 
 		if (term instanceof Function){
-			Function f = (Function) term;
-			if (f.isDataTypeFunction()) {
-				return getNativeType(f.getFunctionSymbol());
+			Function atom = (Function) term;
+			if (atom.isDataTypeFunction()) {
+				return getNativeType(atom.getFunctionSymbol());
 			}
 		} else if (term instanceof Variable){
 			throw new RuntimeException("Cannot return the SQL type for: " + term);
@@ -1509,23 +1375,24 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 	//TODO: find a proper place for this method 
 	private int getNativeType(Predicate p) {
-		return predicateSQLTypes.containsKey(p) ? predicateSQLTypes.get(p).intValue() : defaultSQLType;
+		return predicateSQLTypes.containsKey(p.getName()) ? predicateSQLTypes.get(p.getName()).intValue() : defaultSQLType;
 	}
 
+	
 	@Override
 	protected String getNativeLexicalForm(URIConstant uc) {
-		if (isSematicIndex) {
+		if (isSemanticIndex) {
 			String uri = uc.toString();
 			int id = getUriID(uri);
-			return jdbcutil.getSQLLexicalForm(String.valueOf(id));
+			return jdbcUtil.getSQLLexicalForm(String.valueOf(id));
 		}
 		
-		return jdbcutil.getSQLLexicalForm(uc.getURI());
+		return jdbcUtil.getSQLLexicalForm(uc.getURI());
 	}
 
 	@Override
 	protected String getNativeLexicalForm(ValueConstant ct) {
-		if (isSematicIndex) {
+		if (isSemanticIndex) {
 			if (ct.getType() == COL_TYPE.OBJECT || ct.getType() == COL_TYPE.LITERAL) {
 				int id = getUriID(ct.getValue());
 				if (id >= 0) {
@@ -1533,13 +1400,12 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 					return String.valueOf(id);
 				}
 				else {
-					//TODO throw something?
-					return String.valueOf(id);
+					return jdbcUtil.getSQLLexicalForm(ct);
 				}
 			}
 		}
 		
-		return jdbcutil.getSQLLexicalForm(ct);
+		return jdbcUtil.getSQLLexicalForm(ct);
 	}
 
 	/***
@@ -1562,8 +1428,11 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 
 	
 	@Override
+	/**
+	 * Functions	 
+	 */
 	protected String getArithmeticConditionString(Function atom, QueryVariableIndex index) {
-		String expressionFormat = getArithmeticOperatorString(atom.getFunctionSymbol());
+		String expressionFormat = getArithmeticOperatorTemplate(atom.getFunctionSymbol());
 
 		Term term1 = atom.getTerm(0);
 		Term term2 = atom.getTerm(1);
@@ -1618,24 +1487,6 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 		return string;
 	}
 
-	private static String getStringConcatenation(SQLDialectAdapter adapter,
-			String[] params, QueryInfo queryInfo) {
-		String toReturn = adapter.strconcat(params);
-		if (adapter instanceof DB2SQLDialectAdapter) {
-			/*
-			 * A work around to handle DB2 (>9.1) issue SQL0134N: Improper use
-			 * of a string column, host variable, constant, or function name.
-			 * http
-			 * ://publib.boulder.ibm.com/infocenter/db2luw/v9r5/index.jsp?topic
-			 * =%2Fcom.ibm.db2.luw.messages.sql.doc%2Fdoc%2Fmsql00134n.html
-			 */
-			if (queryInfo.isDistinct() || queryInfo.isOrderBy()) {
-				return adapter.sqlCast(toReturn, Types.VARCHAR);
-			}
-		}
-		return toReturn;
-	}
-
 	@Override
 	protected String getLanguageConditionString(Function atom, QueryVariableIndex index) {
 		Variable var = (Variable) atom.getTerm(0);
@@ -1660,22 +1511,262 @@ public class MySQLQueryGenerator extends AbstractQueryGenerator implements SQLQu
 			if (datatype.equals(OBDAVocabulary.XSD_STRING_URI)) {
 				sqlDatatype = Types.VARCHAR;
 			}
-			return sqladapter.sqlCast(columnName, sqlDatatype);
+			return sqlAdapter.sqlCast(columnName, sqlDatatype);
 		}
 	}
 
 	@Override
-	protected String getSTRConditionString(Function atom,
-			QueryVariableIndex index) {
-		// TODO Auto-generated method stub
-		return null;
+	protected String getSTRConditionString(Function atom, QueryVariableIndex index) {
+		String columnName = getNativeString(atom.getTerm(0), index);
+		if (isStringColType(atom, (SQLQueryVariableIndex) index)) {
+			return columnName;
+		} else {
+			return sqlAdapter.sqlCast(columnName, Types.VARCHAR);
+		}
 	}
 
 	@Override
-	protected String convertTemplateToString(Function atom,
-			QueryVariableIndex index) {
-		// TODO Auto-generated method stub
-		return null;
+	/**
+	 * this method is used for URI, BNODE, Literal predicates, and 
+	 * for Datatype predicates with arity > 2
+	 *  
+	 * @param atom
+	 * @param index
+	 * @return
+	 */
+	protected String convertTemplateToNativeString(Function atom, QueryVariableIndex index) {
+		/*
+		 * The first inner term determines the form of the result
+		 */
+		Term term1 = atom.getTerm(0);
+
+		if (term1 instanceof ValueConstant || term1 instanceof BNode) {
+			/*
+			 * The function is actually a template. The first parameter is a
+			 * string of the form http://.../.../ or empty "{}" with place
+			 * holders of the form {}. The rest are variables or constants that
+			 * should be put in place of the place holders. We need to tokenize
+			 * and form the CONCAT
+			 */
+			return getConcatFromTemplate(atom, term1, (SQLQueryVariableIndex) index);
+			
+		} else if (term1 instanceof Variable) {
+			/*
+			 * The function is of the form uri(x), we need to simply return the
+			 * value of X
+			 */
+			return getNativeString(term1, index);
+
+		} else if (term1 instanceof URIConstant) {
+			/*
+			 * The function is of the form uri("http://some.uri/"), i.e., a
+			 * concrete URI, we return the string representing that URI.
+			 */
+			return getNativeString(term1, index);
+		}
+
+		/*
+		 * Unsupported case
+		 */
+		throw new IllegalArgumentException(
+				"Error, cannot generate URI constructor clause for a term: "
+						+ atom.toString());
+
+	}
+
+	private String getConcatFromTemplate(Function atom, Term term1, SQLQueryVariableIndex index) {
+		String literalValue = "";
+		if (term1 instanceof BNode) {
+            literalValue = ((BNode) term1).getValue();
+		} else {
+            literalValue = ((ValueConstant) term1).getValue();
+		}
+		
+		Predicate pred = atom.getFunctionSymbol();
+
+
+		String replace1;
+        String replace2;
+        if(generateReplace) {
+
+            replace1 = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
+                    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(";
+
+            replace2 = ",' ', '%20')," +
+                    "'!', '%21')," +
+                    "'@', '%40')," +
+                    "'#', '%23')," +
+                    "'$', '%24')," +
+                    "'&', '%26')," +
+                    "'*', '%42'), " +
+                    "'(', '%28'), " +
+                    "')', '%29'), " +
+                    "'[', '%5B'), " +
+                    "']', '%5D'), " +
+                    "',', '%2C'), " +
+                    "';', '%3B'), " +
+                    "':', '%3A'), " +
+                    "'?', '%3F'), " +
+                    "'=', '%3D'), " +
+                    "'+', '%2B'), " +
+                    "'''', '%22'), " +
+                    "'/', '%2F')";
+        } else {
+            replace1 = replace2 = "";
+        }
+
+        String template = removeAllQuotes(literalValue);
+
+		String[] split = template.split("[{][}]");
+
+		List<String> vex = new LinkedList<String>();
+		if (split.length > 0 && !split[0].isEmpty()) {
+			vex.add(jdbcUtil.getSQLLexicalForm(split[0]));
+		}
+
+		/*
+		 * New we concat the rest of the function, note that if there is
+		 * only 1 element there is nothing to concatenate
+		 */
+		if (atom.getTerms().size() > 1) {
+			int size = atom.getTerms().size();
+			if (pred.equals(OBDAVocabulary.RDFS_LITERAL)
+					|| pred.equals(OBDAVocabulary.RDFS_LITERAL_LANG)) {
+				size--;
+			}
+			for (int termIndex = 1; termIndex < size; termIndex++) {
+				Term currentTerm = atom.getTerms().get(termIndex);
+				String repl = "";
+				if (isStringColType(currentTerm, index)) {
+					repl = replace1
+							+ getNativeString(currentTerm, index)
+							+ replace2;
+				} else {
+					repl = replace1
+							+ sqlAdapter.sqlCast(getNativeString(currentTerm, index), Types.VARCHAR) 
+							+ replace2;
+				}
+				vex.add(repl);
+				if (termIndex < split.length) {
+					vex.add(jdbcUtil.getSQLLexicalForm(split[termIndex]));
+				}
+			}
+		}
+
+		if (vex.size() == 1) {
+			return vex.get(0);
+		}
+		
+		String[] params = new String[vex.size()];
+		int i = 0;
+		for (String param : vex) {
+			params[i] = param;
+			i++;
+		}
+		boolean isDistinctOrOrderBy = index.getQueryInfo().isDistinct() || index.getQueryInfo().isOrderBy();
+		return NewSQLQueryGenerator.getStringConcatenation(sqlAdapter, params, isDistinctOrOrderBy );
+	}
+	
+	private boolean isStringColType(Term term, SQLQueryVariableIndex index) {
+		/*
+		 * term is a Function
+		 */
+		if (term instanceof Function) {
+			Function function = (Function) term;
+			Predicate predicate = function.getFunctionSymbol();
+			
+			if (predicate instanceof URITemplatePredicate) {
+				/*
+				 * A URI function always returns a string, thus it is a string
+				 * column type.
+				 */
+				if (isSemanticIndex)
+					return false;
+				return true;
+			}
+			
+			else {
+				if (function.getTerms().size() == 1) {
+					if (predicate.getName().equals(OBDAVocabulary.SPARQL_COUNT_URI)) {
+						return false;
+					}
+					/*
+					 * Update the term with the parent term's first parameter.
+					 * Note: this method is confusing :(
+					 */
+					Term term1 = function.getTerm(0);
+					return isStringColType(term1, index);
+				}
+			}
+		}
+		/*
+		 * term is a Variable
+		 */
+		else if (term instanceof Variable) {
+			Collection<String> columnRefs = index.getColumnReferences((Variable) term);
+			
+			//TODO check if there is next
+			String columnRef = columnRefs.iterator().next();
+			
+			String[] tableAndColumn = getTableAndColumn(columnRef);
+			String table = findTableName(tableAndColumn[0], index);
+
+			return isStringColType(table, tableAndColumn[1]);
+		}
+		return false;
+	}
+
+	private boolean isStringColType(String table, String col) {
+		List<TableDefinition> tables = metadata.getTableList();
+		for (TableDefinition tabledef : tables) {
+			
+			if (tabledef.getName().equals(table)) {
+				List<Attribute> attr = tabledef.getAttributes();
+				for (Attribute a : attr) {
+			
+					if (a.getName().equals(col)) {
+						switch (a.getType()) {
+						case Types.VARCHAR:
+						case Types.CHAR:
+						case Types.LONGNVARCHAR:
+						case Types.LONGVARCHAR:
+						case Types.NVARCHAR:
+						case Types.NCHAR:
+							return true;
+						default:
+							return false;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 
+	 * @param adapter
+	 * @param params
+	 * @param isDistinctOrOrderBy
+	 * 		needed to handle DB2 issue SQL0134N
+	 * @return
+	 */
+	private static String getStringConcatenation(SQLDialectAdapter adapter, String[] params, 
+												boolean isDistinctOrOrderBy) {
+		String toReturn = adapter.strconcat(params);
+		if (adapter instanceof DB2SQLDialectAdapter) {
+			/*
+			 * A work around to handle DB2 (>9.1) issue SQL0134N: Improper use
+			 * of a string column, host variable, constant, or function name.
+			 * http
+			 * ://publib.boulder.ibm.com/infocenter/db2luw/v9r5/index.jsp?topic
+			 * =%2Fcom.ibm.db2.luw.messages.sql.doc%2Fdoc%2Fmsql00134n.html
+			 */
+			if (isDistinctOrOrderBy) {
+				return adapter.sqlCast(toReturn, Types.VARCHAR);
+			}
+		}
+		return toReturn;
 	}
 
 
