@@ -44,9 +44,7 @@ import org.semanticweb.ontop.model.Variable;
 import org.semanticweb.ontop.model.impl.OBDADataFactoryImpl;
 import org.semanticweb.ontop.model.impl.OBDAVocabulary;
 import org.semanticweb.ontop.owlrefplatform.core.basicoperations.DatalogNormalizer;
-import org.semanticweb.ontop.owlrefplatform.core.queryevaluation.DB2SQLDialectAdapter;
-import org.semanticweb.ontop.owlrefplatform.core.queryevaluation.JDBCUtility;
-import org.semanticweb.ontop.owlrefplatform.core.queryevaluation.SQLDialectAdapter;
+import org.semanticweb.ontop.owlrefplatform.core.queryevaluation.*;
 import org.semanticweb.ontop.owlrefplatform.core.srcquerygeneration.SQLQueryGenerator;
 import org.semanticweb.ontop.sql.DBMetadata;
 import org.semanticweb.ontop.sql.DataDefinition;
@@ -66,7 +64,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.openrdf.model.Literal;
-import org.semanticweb.ontop.owlrefplatform.core.queryevaluation.HSQLSQLDialectAdapter;
 import org.semanticweb.ontop.utils.DatalogDependencyGraphGenerator;
 import org.semanticweb.ontop.utils.QueryUtils;
 import org.slf4j.LoggerFactory;
@@ -864,11 +861,11 @@ public class SQLGenerator implements SQLQueryGenerator {
 				String expressionFormat = getBooleanOperatorString(functionSymbol);
 				Term left = atom.getTerm(0);
 				Term right = atom.getTerm(1);
+
 				String leftOp = getSQLString(left, index, true);
 				String rightOp = getSQLString(right, index, true);
 
-				return String.format("(" + expressionFormat + ")", leftOp,
-						rightOp);
+				return  sqladapter.sqlBooleanOperator(leftOp, rightOp, expressionFormat);
 
 				// TODO: do this more efficient !!!!
 
@@ -2369,7 +2366,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 	private String getBooleanOperatorString(Predicate functionSymbol) {
 		String operator = null;
 		if (functionSymbol.equals(OBDAVocabulary.EQ)) {
-			operator = EQ_OPERATOR;
+                operator = EQ_OPERATOR;
 		} else if (functionSymbol.equals(OBDAVocabulary.NEQ)) {
 			operator = NEQ_OPERATOR;
 		} else if (functionSymbol.equals(OBDAVocabulary.GT)) {
@@ -2470,7 +2467,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 		}
 
 		/***
-		 * We assiciate each atom to a view definition. This will be
+		 * We associate each atom to a view definition. This will be
 		 * <p>
 		 * "tablename" as "viewX" or
 		 * <p>

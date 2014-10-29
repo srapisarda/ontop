@@ -1,0 +1,22 @@
+[PrefixDeclaration]
+:		http://www.example.org/test#
+
+[SourceDeclaration]
+sourceUri	person
+connectionUrl	jdbc:postgresql://10.7.20.39/datatypes
+username	postgres
+password	postgres
+driverClass	org.postgresql.Driver
+
+[MappingDeclaration] @collection [[
+mappingId	MAPID-name
+target		:{id} a :Person ; :name {type_varchar}  .
+source		select "id", "type_varchar" from "Characters"
+
+
+mappingId	MAPID-age
+target		:{type_char} a :Person ; :age {type_name} .
+source		select "type_char", "type_name" from "Characters"
+
+]]
+

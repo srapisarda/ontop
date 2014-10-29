@@ -140,7 +140,12 @@ public class SQL99DialectAdapter implements SQLDialectAdapter {
 		return sql;
 	}
 
-	@Override
+    @Override
+    public String sqlBooleanOperator(String leftOp, String rightOp, String expressionFormat) {
+        return String.format(expressionFormat, leftOp, rightOp);
+    }
+
+    @Override
 	public String sqlCast(String value, int type) {
 		String strType = null;
 		
@@ -251,4 +256,6 @@ public class SQL99DialectAdapter implements SQLDialectAdapter {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+
 }

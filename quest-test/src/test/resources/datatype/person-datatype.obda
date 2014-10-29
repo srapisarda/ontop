@@ -1,0 +1,22 @@
+[PrefixDeclaration]
+:		http://www.example.org/test#
+
+[SourceDeclaration]
+sourceUri	person
+connectionUrl	jdbc:h2:mem:sqldatatypes
+username	sa
+password	
+driverClass	org.h2.Driver
+
+[MappingDeclaration] @collection [[
+mappingId	MAPID-name
+target		:{id} a :Person ; :name {name}  .
+source		select "id", "name" from "PeopleName"
+
+
+mappingId	MAPID-age
+target		:{id}  :age {age} .
+source		select "id", "age" from "PeopleAges"
+
+]]
+
