@@ -43,10 +43,11 @@ export OPENRDF_SESAME_FILENAME=openrdf-sesame
 export OPENRDF_WORKBENCH_FILENAME=openrdf-workbench
                 
 # folder names of the output
-export PROTEGE_DIST=ontopPro
-export QUEST_SESAME_DIST=QuestSesame
-export QUEST_JETTY_DIST=QuestJetty
-export OWL_API_DIST=QuestOWL
+export ONTOP_DIST_DIR=${BUILD_ROOT}/quest-distribution
+export PROTEGE_DIR=${ONTOP_DIST_DIR}/ontopPro
+export QUEST_SESAME_DIR=${ONTOP_DIST_DIR}/QuestSesame
+export QUEST_JETTY_DIR=${ONTOP_DIST_DIR}/QuestJetty
+export OWL_API_DIR=${ONTOP_DIST_DIR}/QuestOWL
 
 export VERSION=1.13
 export REVISION=2-SNAPSHOT
@@ -69,18 +70,18 @@ mvn install -DskipTests
 cd $BUILD_ROOT/obdalib-protege41/
 mvn bundle:bundle -DskipTests
 
-rm -fr $BUILD_ROOT/quest-distribution/$PROTEGE_DIST
-mkdir $BUILD_ROOT/quest-distribution/$PROTEGE_DIST
-cp target/it.unibz.inf.obda.p4plugin-$VERSION.$REVISION.jar $BUILD_ROOT/quest-distribution/$PROTEGE_DIST/it.unibz.inf.obda.p4plugin-$VERSION.$REVISION.jar
-cp $PROTEGE_COPY_PATH/$PROTEGE_COPY_FILENAME.zip $BUILD_ROOT/quest-distribution/$PROTEGE_DIST/
+rm -fr $PROTEGE_DIR
+mkdir $PROTEGE_DIR
+cp target/it.unibz.inf.obda.p4plugin-$VERSION.$REVISION.jar $PROTEGE_DIR/it.unibz.inf.obda.p4plugin-$VERSION.$REVISION.jar
+cp $PROTEGE_COPY_PATH/$PROTEGE_COPY_FILENAME.zip $PROTEGE_DIR/
 
-cd $BUILD_ROOT/quest-distribution/$PROTEGE_DIST/
+cd $PROTEGE_DIR
 
 mkdir -p $PROTEGE_MAIN_FOLDER_NAME/plugins
 cp it.unibz.inf.obda.p4plugin-$VERSION.$REVISION.jar $PROTEGE_MAIN_FOLDER_NAME/plugins/
 cp $JDBC_PLUGINS_PATH/org.protege.osgi.jdbc.jar $PROTEGE_MAIN_FOLDER_NAME/plugins/
 cp $JDBC_PLUGINS_PATH/org.protege.osgi.jdbc.prefs.jar $PROTEGE_MAIN_FOLDER_NAME/plugins/
-zip $BUILD_ROOT/quest-distribution/$PROTEGE_DIST/$PROTEGE_MAIN_PLUGIN-$VERSION.$REVISION.zip $PROTEGE_MAIN_FOLDER_NAME/plugins/*.*
+zip $PROTEGE_DIR/$PROTEGE_MAIN_PLUGIN-$VERSION.$REVISION.zip $PROTEGE_MAIN_FOLDER_NAME/plugins/*.*
 
 zip $PROTEGE_COPY_FILENAME.zip $PROTEGE_MAIN_FOLDER_NAME/plugins/*
 mv $PROTEGE_COPY_FILENAME.zip $PROTEGE_MAIN_PLUGIN-with-protege-$VERSION.$REVISION.zip
@@ -94,20 +95,20 @@ echo ""
 echo "========================================="
 echo " Making Sesame distribution package"
 echo "-----------------------------------------"
-rm -fr $QUEST_SESAME_DIST
-mkdir -p $QUEST_SESAME_DIST/WEB-INF/lib
+rm -fr $QUEST_SESAME_DIR
+mkdir -p ${QUEST_SESAME_DIR}/WEB-INF/lib
 mvn assembly:assembly -DskipTests
-cp target/ontop-distribution-$VERSION.$REVISION-sesame-bin.jar $QUEST_SESAME_DIST/WEB-INF/lib/ontop-distribution-$VERSION.$REVISION.jar
-unzip -q -d $QUEST_SESAME_DIST/WEB-INF/lib/ target/ontop-distribution-$VERSION.$REVISION-dependencies.zip
-cp $OPENRDF_SESAME_PATH/$OPENRDF_SESAME_FILENAME.war $QUEST_SESAME_DIST/
-cp $OPENRDF_WORKBENCH_PATH/$OPENRDF_WORKBENCH_FILENAME.war $QUEST_SESAME_DIST/
+cp target/ontop-distribution-$VERSION.$REVISION-sesame-bin.jar $QUEST_SESAME_DIR/WEB-INF/lib/ontop-distribution-$VERSION.$REVISION.jar
+#unzip -q -d $QUEST_SESAME_DIST/WEB-INF/lib/ target/ontop-distribution-$VERSION.$REVISION-dependencies.zip
+cp $OPENRDF_SESAME_PATH/$OPENRDF_SESAME_FILENAME.war $QUEST_SESAME_DIR/
+cp $OPENRDF_WORKBENCH_PATH/$OPENRDF_WORKBENCH_FILENAME.war $QUEST_SESAME_DIR/
 
 echo ""
 echo "[INFO] Adding Quest-specific forms to the openrdf-workbench.war file"
 cd ${BUILD_ROOT}/quest-sesame/src/main/resources/workbench/
-jar -uf ${QUEST_SESAME_DIST}/${OPENRDF_SESAME_FILENAME}.war *
+jar -uf ${QUEST_SESAME_DIR}/${OPENRDF_WORKBENCH_FILENAME}.war *
 
-cd $QUEST_SESAME_DIST
+cd ${QUEST_SESAME_DIR}
 echo ""
 echo "[INFO] Adding QuestSesame and dependency JARs to openrdf-sesame.war"
 jar -uf $OPENRDF_SESAME_FILENAME.war WEB-INF/lib/*
@@ -124,15 +125,15 @@ echo ""
 echo "========================================="
 echo " Making Sesame Jetty distribution package"
 echo "-----------------------------------------"
-rm -fr $QUEST_JETTY_DIST
-mkdir $QUEST_JETTY_DIST
-cp $JETTY_COPY_PATH/$JETTY_COPY_FILENAME.zip $QUEST_JETTY_DIST/ontop-with-jetty-$VERSION.$REVISION.zip
+rm -fr $QUEST_JETTY_DIR
+mkdir $QUEST_JETTY_DIR
+cp $JETTY_COPY_PATH/$JETTY_COPY_FILENAME.zip $QUEST_JETTY_DIR/ontop-with-jetty-$VERSION.$REVISION.zip
 
 export JETTY_FOLDER=$JETTY_INNER_FOLDERNAME
-cd $QUEST_JETTY_DIST
+cd $QUEST_JETTY_DIR
 mkdir -p $JETTY_INNER_FOLDERNAME/webapps
-cp $BUILD_ROOT/quest-distribution/$QUEST_SESAME_DIST/$OPENRDF_SESAME_FILENAME.war $JETTY_FOLDER/webapps
-cp $BUILD_ROOT/quest-distribution/$QUEST_SESAME_DIST/$OPENRDF_WORKBENCH_FILENAME.war $JETTY_FOLDER/webapps
+cp $QUEST_SESAME_DIR/$OPENRDF_SESAME_FILENAME.war $JETTY_FOLDER/webapps
+cp $QUEST_SESAME_DIR/$OPENRDF_WORKBENCH_FILENAME.war $JETTY_FOLDER/webapps
 
 zip ontop-with-jetty-$VERSION.$REVISION.zip $JETTY_FOLDER/webapps/*
 
@@ -145,10 +146,10 @@ echo ""
 echo "========================================="
 echo " Making OWL-API distribution package"
 echo "-----------------------------------------"
-rm -fr $OWL_API_DIST
-mkdir $OWL_API_DIST
+rm -fr $OWL_API_DIR
+mkdir $OWL_API_DIR
 echo "[INFO] Copying files..."
-cp target/ontop-distribution-$VERSION.$REVISION-bin.zip $OWL_API_DIST/ontop-distribution-$VERSION.$REVISION.zip
+cp target/ontop-distribution-$VERSION.$REVISION-bin.zip $OWL_API_DIR/ontop-distribution-$VERSION.$REVISION.zip
 
 echo ""
 echo "Done."
