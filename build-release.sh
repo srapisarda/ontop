@@ -99,7 +99,7 @@ rm -fr $QUEST_SESAME_DIR
 mkdir -p ${QUEST_SESAME_DIR}/WEB-INF/lib
 mvn assembly:assembly -DskipTests
 cp target/ontop-distribution-$VERSION.$REVISION-sesame-bin.jar $QUEST_SESAME_DIR/WEB-INF/lib/ontop-distribution-$VERSION.$REVISION.jar
-#unzip -q -d $QUEST_SESAME_DIST/WEB-INF/lib/ target/ontop-distribution-$VERSION.$REVISION-dependencies.zip
+unzip -q -d $QUEST_SESAME_DIR/WEB-INF/lib/ target/ontop-distribution-$VERSION.$REVISION-dependencies.zip
 cp $OPENRDF_SESAME_PATH/$OPENRDF_SESAME_FILENAME.war $QUEST_SESAME_DIR/
 cp $OPENRDF_WORKBENCH_PATH/$OPENRDF_WORKBENCH_FILENAME.war $QUEST_SESAME_DIR/
 
