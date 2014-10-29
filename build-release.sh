@@ -3,8 +3,7 @@
 ########################################################################################################################
 # README:                                                                                                              #
 #                                                                                                                      #
-# The required components for building the release can be found: http://obda.inf.unibz.it/files/dev/Dependencies.zip   #
-# Unzip it and locate the folder in ONTOP_DEP_HOME variable.                                                           #
+# The required components for building the release can be obtained by running the script fetch-dependencies.sh.        #
 #                                                                                                                      #
 # Clone the repository from GitHub: https://github.com/ontop/ontop. Locate the source folder in BUILD_ROOT variable    #
 # Update the repository to the TAG release for stable version.                                                         #
@@ -26,13 +25,13 @@ export JDBC_PLUGINS_PATH=$ONTOP_DEP_HOME
 
 # location for protege clean folder (Protege 4.3)
 export PROTEGE_COPY_PATH=$ONTOP_DEP_HOME
-export PROTEGE_COPY_FILENAME=protege-4.3.0-304
+export PROTEGE_COPY_FILENAME=protege
 export PROTEGE_MAIN_FOLDER_NAME=Protege_4.3
 export PROTEGE_MAIN_PLUGIN=ontopro-plugin
 
 # location and name for jetty distribution (should be ZIP)
 export JETTY_COPY_PATH=$ONTOP_DEP_HOME
-export JETTY_COPY_FILENAME=jetty-distribution-8.1.9
+export JETTY_COPY_FILENAME=jetty-distribution
 export JETTY_INNER_FOLDERNAME=jetty-distribution-8.1.9
 
 #location for sesame and workbench WEB-APP jars
@@ -50,7 +49,7 @@ export QUEST_JETTY_DIST=QuestJetty
 export OWL_API_DIST=QuestOWL
 
 export VERSION=1.13
-export REVISION=1
+export REVISION=2-SNAPSHOT
 
 
 # Start building the packages
@@ -102,6 +101,11 @@ cp target/ontop-distribution-$VERSION.$REVISION-sesame-bin.jar $QUEST_SESAME_DIS
 unzip -q -d $QUEST_SESAME_DIST/WEB-INF/lib/ target/ontop-distribution-$VERSION.$REVISION-dependencies.zip
 cp $OPENRDF_SESAME_PATH/$OPENRDF_SESAME_FILENAME.war $QUEST_SESAME_DIST/
 cp $OPENRDF_WORKBENCH_PATH/$OPENRDF_WORKBENCH_FILENAME.war $QUEST_SESAME_DIST/
+
+echo ""
+echo "[INFO] Adding Quest-specific forms to the openrdf-workbench.war file"
+cd ${BUILD_ROOT}/quest-sesame/src/main/resources/workbench/
+jar -uf ${QUEST_SESAME_DIST}/${OPENRDF_SESAME_FILENAME}.war *
 
 cd $QUEST_SESAME_DIST
 echo ""
