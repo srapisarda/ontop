@@ -10,48 +10,8 @@
 #                                                                                                                      #
 ########################################################################################################################
 
-# location for the build ROOT folder
-export BUILD_ROOT=/build/ontop
-
-# location for the build dependencies home 
-export ONTOP_DEP_HOME=/build/dependencies
-
-#------------------------------------------# 
-# DO NOT touch the following command lines #
-#------------------------------------------#
-
-# location for the JDBC plugin jars
-export JDBC_PLUGINS_PATH=$ONTOP_DEP_HOME
-
-# location for protege clean folder (Protege 4.3)
-export PROTEGE_COPY_PATH=$ONTOP_DEP_HOME
-export PROTEGE_COPY_FILENAME=protege
-export PROTEGE_MAIN_FOLDER_NAME=Protege_4.3
-export PROTEGE_MAIN_PLUGIN=ontopro-plugin
-
-# location and name for jetty distribution (should be ZIP)
-export JETTY_COPY_PATH=$ONTOP_DEP_HOME
-export JETTY_COPY_FILENAME=jetty-distribution
-export JETTY_INNER_FOLDERNAME=jetty-distribution-8.1.9
-
-#location for sesame and workbench WEB-APP jars
-export OPENRDF_WORKBENCH_PATH=$ONTOP_DEP_HOME
-export OPENRDF_SESAME_PATH=$ONTOP_DEP_HOME      
-
-# name of the wars for sesame and workbench WEB-APPs  (these have to be already customized with stylesheets)
-export OPENRDF_SESAME_FILENAME=openrdf-sesame
-export OPENRDF_WORKBENCH_FILENAME=openrdf-workbench
-                
-# folder names of the output
-export ONTOP_DIST_DIR=${BUILD_ROOT}/quest-distribution
-export PROTEGE_DIR=${ONTOP_DIST_DIR}/ontopPro
-export QUEST_SESAME_DIR=${ONTOP_DIST_DIR}/QuestSesame
-export QUEST_JETTY_DIR=${ONTOP_DIST_DIR}/QuestJetty
-export OWL_API_DIR=${ONTOP_DIST_DIR}/QuestOWL
-
-export VERSION=1.13
-export REVISION=2-SNAPSHOT
-
+# Loads the variables
+source variables.sh
 
 # Start building the packages
 #
@@ -127,7 +87,7 @@ echo " Making Sesame Jetty distribution package"
 echo "-----------------------------------------"
 rm -fr $QUEST_JETTY_DIR
 mkdir $QUEST_JETTY_DIR
-cp $JETTY_COPY_PATH/$JETTY_COPY_FILENAME.zip $QUEST_JETTY_DIR/ontop-with-jetty-$VERSION.$REVISION.zip
+cp ${JETTY_COPY_PATH}/${JETTY_FILE} ${QUEST_JETTY_DIR}/ontop-with-jetty-${VERSION}.${REVISION}.zip
 
 export JETTY_FOLDER=$JETTY_INNER_FOLDERNAME
 cd $QUEST_JETTY_DIR
