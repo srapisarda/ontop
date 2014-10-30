@@ -73,5 +73,5 @@ public interface SQLDialectAdapter {
 
 	public String sqlGroupBy(List<Variable> groupby, String viewname);
 
-    public String sqlBooleanOperator(String leftOp, String rightOp, String expressionFormat);
+    public String sqlBooleanOperator(String expressionFormat, String leftOp, String rightOp, int rightType);
 }

@@ -862,10 +862,18 @@ public class SQLGenerator implements SQLQueryGenerator {
 				Term left = atom.getTerm(0);
 				Term right = atom.getTerm(1);
 
+                int leftType= getSQLTypeForTerm(left, index);
+                int rightType = getSQLTypeForTerm(right, index);
 				String leftOp = getSQLString(left, index, true);
 				String rightOp = getSQLString(right, index, true);
 
-				return  sqladapter.sqlBooleanOperator(leftOp, rightOp, expressionFormat);
+                //if the type does not match cast with the second term type for postgresql
+                if(leftType!=rightType) {
+                    return sqladapter.sqlBooleanOperator(expressionFormat, leftOp, rightOp, rightType);
+                }
+                else{
+                    return String.format("(" + expressionFormat + ")", leftOp, rightOp);
+                }
 
 				// TODO: do this more efficient !!!!
 
@@ -918,7 +926,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 				String column = getSQLString(p1, index, false);
 				String pattern = getSQLString(p2, index, false);
 				String sqlRegex = sqladapter.sqlRegex(column, pattern, caseinSensitive,
-						multiLine, dotAllMode);
+                        multiLine, dotAllMode);
 				return sqlRegex;
 			} else {
 				throw new RuntimeException("The builtin function "
@@ -1908,7 +1916,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 	}
 
 	/**
-	 * Returns the sql type of a term in the head of a datalog rule, such as decimal, string...
+	 * Returns the sql type of a term, such as decimal, string...
 	 * 
 	 * @param term
 	 * @param index
@@ -1932,25 +1940,20 @@ public class SQLGenerator implements SQLQueryGenerator {
 					
 					return dataTypePredicateToSQLType(functionSymbol);
 					
-					/*
-					 * Update the term with the parent term's first parameter.
-					 * Note: this method is confusing :(
-					 */
-					//term = function.getTerm(0);
-					//return isStringColType(term, index);
+
 				}
 			}
 		} else if (term instanceof Variable) {
 			Collection<String> viewdef = index
 					.getColumnReferences((Variable) term);
 			String def = viewdef.iterator().next();
-			String col = trim(def.split("\\.")[1]);
-			String table = def.split("\\.")[0];
-			if (def.startsWith("QVIEW")) {
+			String col = unquote(def.split("\\.")[1]);
+			String table = unquote(def.split("\\.")[0]);
+			if (table.matches("Q.*VIEW(\\d*)")) {
 				Map<Function, String> views = index.viewNames;
 				for (Function func : views.keySet()) {
 					String value = views.get(func);
-					if (value.equals(def.split("\\.")[0])) {
+					if (value.equals(table)) {
 						table = func.getFunctionSymbol().toString();
 						break;
 					}
@@ -1958,21 +1961,12 @@ public class SQLGenerator implements SQLQueryGenerator {
 			}
 			List<TableDefinition> tables = metadata.getTableList();
 			for (TableDefinition tabledef : tables) {
-				if (tabledef.getName().equals(table)) {
+				if (unquote(tabledef.getName()).equals(table)) {
 					List<Attribute> attr = tabledef.getAttributes();
 					for (Attribute a : attr) {
 						if (a.getName().equals(col)) {
-							switch (a.getType()) {
-							case Types.VARCHAR:
-							case Types.CHAR:
-							case Types.LONGNVARCHAR:
-							case Types.LONGVARCHAR:
-							case Types.NVARCHAR:
-							case Types.NCHAR:
 								return a.getType();
-							default:
-								return a.getType();
-							}
+
 						}
 					}
 				}
@@ -2064,21 +2058,21 @@ public class SQLGenerator implements SQLQueryGenerator {
 			Collection<String> viewdef = index
 					.getColumnReferences((Variable) term);
 			String def = viewdef.iterator().next();
-			String col = trim(def.split("\\.")[1]);
-			String table = def.split("\\.")[0];
-			if (def.startsWith("QVIEW")) {
-				Map<Function, String> views = index.viewNames;
-				for (Function func : views.keySet()) {
-					String value = views.get(func);
-					if (value.equals(def.split("\\.")[0])) {
-						table = func.getFunctionSymbol().toString();
-						break;
-					}
-				}
-			}
-			List<TableDefinition> tables = metadata.getTableList();
-			for (TableDefinition tabledef : tables) {
-				if (tabledef.getName().equals(table)) {
+            String col = unquote(def.split("\\.")[1]);
+            String table = unquote(def.split("\\.")[0]);
+            if (table.matches("Q.*VIEW(\\d*)")) {
+                Map<Function, String> views = index.viewNames;
+                for (Function func : views.keySet()) {
+                    String value = views.get(func);
+                    if (value.equals(table)) {
+                        table = func.getFunctionSymbol().toString();
+                        break;
+                    }
+                }
+            }
+            List<TableDefinition> tables = metadata.getTableList();
+            for (TableDefinition tabledef : tables) {
+                if (unquote(tabledef.getName()).equals(table)) {
 					List<Attribute> attr = tabledef.getAttributes();
 					for (Attribute a : attr) {
 						if (a.getName().equals(col)) {
@@ -2589,7 +2583,7 @@ public class SQLGenerator implements SQLQueryGenerator {
 			// Should be an ans atom.
 			Predicate pred = atom.getFunctionSymbol();
 			String view = sqlAnsViewMap.get(pred);
-			viewname = "Q" + pred + "View";
+            viewname =  String.format(VIEW_ANS_NAME, pred);
 			viewname = sqladapter.sqlQuote(viewname);
 
 			if (view != null) {

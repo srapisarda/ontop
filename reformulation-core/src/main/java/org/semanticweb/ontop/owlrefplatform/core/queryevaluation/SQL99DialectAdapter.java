@@ -141,8 +141,8 @@ public class SQL99DialectAdapter implements SQLDialectAdapter {
 	}
 
     @Override
-    public String sqlBooleanOperator(String leftOp, String rightOp, String expressionFormat) {
-        return String.format(expressionFormat, leftOp, rightOp);
+    public String sqlBooleanOperator(String expressionFormat, String leftOp, String rightOp, int type) {
+        return String.format("(" + expressionFormat + ")", leftOp, rightOp);
     }
 
     @Override

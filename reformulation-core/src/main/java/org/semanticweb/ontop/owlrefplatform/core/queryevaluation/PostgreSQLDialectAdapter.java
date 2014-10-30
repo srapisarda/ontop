@@ -44,9 +44,9 @@ public class PostgreSQLDialectAdapter extends SQL99DialectAdapter {
 		}
 	}
 
-    @Override
-    public String sqlBooleanOperator(String leftOp, String rightOp, String expressionFormat) {
-        return String.format(expressionFormat, sqlCast(leftOp, Types.VARCHAR), sqlCast(rightOp, Types.VARCHAR));
+    @Override  //if the type does not match cast with the second term type
+    public String sqlBooleanOperator(String expressionFormat, String leftOp, String rightOp, int rightType) {
+        return String.format("(" + expressionFormat + ")", sqlCast(leftOp, rightType), rightOp);
     }
 
 	@Override

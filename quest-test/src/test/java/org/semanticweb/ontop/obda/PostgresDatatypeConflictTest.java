@@ -65,7 +65,7 @@ public class PostgresDatatypeConflictTest {
         String query =  "PREFIX : <http://www.example.org/test#> SELECT ?x\n" +
                 "WHERE {\n" +
                 "   ?x a :Person; :name ?y ;\n" +
-                "  :age ?w )\n" +
+                "  :age ?w .\n" +
                 "}";
 
 
