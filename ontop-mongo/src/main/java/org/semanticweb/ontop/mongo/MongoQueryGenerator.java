@@ -22,6 +22,7 @@ import org.semanticweb.ontop.owlrefplatform.core.sql.QueryVariableIndex;
 import org.semanticweb.ontop.owlrefplatform.core.srcquerygeneration.NativeQueryGenerator;
 import org.semanticweb.ontop.sql.DBMetadata;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 
 
@@ -82,10 +83,8 @@ public class MongoQueryGenerator extends AbstractQueryGenerator implements Nativ
 		StringBuilder conditions = new StringBuilder();
 		for (CQIE cq : query.getRules()) {
 			QueryVariableIndex index = new QueryVariableIndex(cq, metadata);
-			Set<String> booleanTypeConditions = getConditionsString(cq.getBody(), index);
-			for(String condition : booleanTypeConditions ) {
-				conditions.append(condition).append(", ");
-			}
+			Set<String> queryConditions = getConditionsString(cq.getBody(), index);
+			Joiner.on(", ").appendTo(conditions, queryConditions);
 		}
 		
 		String mongo = "{%s}";
