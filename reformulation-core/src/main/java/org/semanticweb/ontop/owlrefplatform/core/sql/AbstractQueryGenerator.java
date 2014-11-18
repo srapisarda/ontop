@@ -40,12 +40,15 @@ public abstract class AbstractQueryGenerator {
 		
 		
 	/**
-	 * Returns the string representation of conditions. The most interesting ones are Boolean conditions.
+	 * Returns the string representation of conditions for the SELECT part. 
+	 * The most interesting ones are Boolean conditions.
+	 * 
 	 * @param atoms
+	 * 	query atoms including plain data assertions and those representing conditions
 	 * @param index
+	 * 	index of query variables
 	 * @return
-	 */
-	 
+	 */	 
 	protected Set<String> getConditionsString(List<Function> atoms, QueryVariableIndex index) {
 		Set<String> conditions = new HashSet<String>();
 		for (Function atom : atoms) {
@@ -58,6 +61,15 @@ public abstract class AbstractQueryGenerator {
 	}
 
 
+	/**
+	 * Returns the string representation of the condition given by the atom. 
+	 * 
+	 * Note that a simple data atom imposes no condition, so a null is return in that case.
+	 * 
+	 * @param atom
+	 * @param index
+	 * @return
+	 */
 	protected String getConditionString(Function atom, QueryVariableIndex index) {
 		
 		if (atom.isBooleanFunction()) {
@@ -118,6 +130,9 @@ public abstract class AbstractQueryGenerator {
 	protected abstract String getBooleanConditionString(Function atom, QueryVariableIndex index);
 
 	
+	/**
+	 * 
+	 */
 	protected String getNativeString(Term term, QueryVariableIndex index) {
 		if (term instanceof Function) {
 			return getConditionString((Function)term, index);

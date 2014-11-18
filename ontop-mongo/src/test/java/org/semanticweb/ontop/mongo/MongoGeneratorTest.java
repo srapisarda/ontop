@@ -30,7 +30,7 @@ import org.semanticweb.ontop.sql.TableDefinition;
 import org.semanticweb.ontop.sql.api.Attribute;
 
 public class MongoGeneratorTest {
-
+/*
 	final String mongofile = "/simpleMapping.json";
 	MongoQueryGenerator queryGenerator;
 
@@ -181,5 +181,5 @@ public class MongoGeneratorTest {
 		CQIE query = dataFactory.getCQIE(ans1, functR, condY, condZ);
 		DatalogProgram program = dataFactory.getDatalogProgram(query);
 		String sourceQuery = queryGenerator.generateSourceQuery(program, null);
-	}
+	}*/
 }

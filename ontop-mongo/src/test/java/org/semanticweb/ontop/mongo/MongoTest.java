@@ -72,7 +72,7 @@ public class MongoTest {
 	QuestOWLStatement statement;
 	MongoQueryGenerator queryGenerator;
 	
-	@Test
+//	@Test
 	public void connectToMongoDB() throws UnknownHostException {
 		MongoClient mongoClient = new MongoClient( "localhost" , 27017 );
 
@@ -136,7 +136,7 @@ public class MongoTest {
 		}
 	}
 	
-	@Before
+/*	@Before
 	public void setUpOBDA() throws InvalidMappingExceptionWithIndicator, IOException, InvalidPredicateDeclarationException, OBDAException, OWLException, InvalidMongoMappingException {
 		OBDADataFactory dataFactory = OBDADataFactoryImpl.getInstance();
 		SQLOBDAModel obdaModel = dataFactory.getOBDAModel();
@@ -233,5 +233,5 @@ public class MongoTest {
 		testAndAssertQuery(sparqlQuery, expectedResult);
 	}
 
-
+*/
 }
