@@ -1638,9 +1638,8 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 
 			
 			//if (isSecondAtomOfLeftJoin && rulesGeneratedSoFar > 1 ) {
-			//if (isSecondAtomOfLeftJoin ) {
-			if (isLeftJoin) {
-				// guohui: I changed it to not unfold inside the leftjoin, regardless of the position 
+			if (isSecondAtomOfLeftJoin ) {
+			//if (isLeftJoin) { // guohui: I changed it to not unfold inside the leftjoin, regardless of the position
 				
 				/*
 				 * We had disjunction on the second atom of the lejoin, that is,
@@ -1979,7 +1978,7 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 
 		/***
 		 * As the result of optimizing PKs, it can be that JOINs become invalid,
-		 * i.e., they contian one single data item (no longer a join). In this
+		 * i.e., they contain one single data item (no longer a join). In this
 		 * case we need to eliminate the join atom attach the inner atoms to the
 		 * parent of the join (body or another join/leftjoin). This is done with
 		 * the normalizer.
