@@ -1525,8 +1525,8 @@ public class DatalogUnfolder implements UnfoldingMechanism {
 				 * The rules must be untouched, no partial evaluation is
 				 * possible. We must return the original rule.
 				 */
-				return null;
-
+				log.warn("This version of Ontop does not support correctly multiple mappings in the second argument of Left Join. " +
+						"Problem with atom " + focusAtom);
 			}
 
 			result.add(partialEvalution);
