@@ -190,6 +190,7 @@ public class SQL99DialectAdapter implements SQLDialectAdapter {
 	 * not supported there.
 	 *
 	 */
+	@Override
 	public String getSQLLexicalFormDatetime(String v) {
 		// TODO: check whether this implementation inherited from JDBCUtility is correct
 		
@@ -225,5 +226,6 @@ public class SQL99DialectAdapter implements SQLDialectAdapter {
 		
 		return bf.toString();
 	}
+
 	
 }

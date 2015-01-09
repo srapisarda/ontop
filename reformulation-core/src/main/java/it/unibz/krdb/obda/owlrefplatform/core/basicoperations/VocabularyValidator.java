@@ -25,7 +25,6 @@ import it.unibz.krdb.obda.model.CQIE;
 import it.unibz.krdb.obda.model.DatalogProgram;
 import it.unibz.krdb.obda.model.OBDADataFactory;
 import it.unibz.krdb.obda.model.OBDAMappingAxiom;
-import it.unibz.krdb.obda.model.OBDASQLQuery;
 import it.unibz.krdb.obda.model.Predicate;
 import it.unibz.krdb.obda.model.Term;
 import it.unibz.krdb.obda.model.impl.OBDADataFactoryImpl;
@@ -131,9 +130,9 @@ public class VocabularyValidator {
 				if (atom.isBooleanFunction())
 					continue;
 
-				T newatom = (T)getNormal(atom);
+				T newAtom = (T)getNormal(atom);
 
-				body.set(i, newatom);
+				body.set(i, newAtom);
 			}
 		}
 	}
