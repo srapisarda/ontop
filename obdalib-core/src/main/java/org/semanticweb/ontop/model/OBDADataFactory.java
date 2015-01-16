@@ -160,6 +160,11 @@ public interface OBDADataFactory extends Serializable {
 	public Function getFunctionLike(Term term1, Term term2);
 	
 	public Function getFunctionRegex(Term term1, Term term2, Term term3);
+
+	/**
+	 * Experimental. TODO: make sure it makes sense.
+	 */
+	public Function getFunctionJoin(Term term1, Term term2, Term joinBooleanCondition);
 	
 
 	/*

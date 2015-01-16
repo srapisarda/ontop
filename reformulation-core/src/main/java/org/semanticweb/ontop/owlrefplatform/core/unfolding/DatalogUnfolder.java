@@ -1376,7 +1376,11 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
             if (focusedLiteral.isBooleanFunction() || focusedLiteral.isArithmeticFunction() || focusedLiteral.isDataTypeFunction()) {
                     termidx.pop();
                     continue;
-            } else if (focusedLiteral.isAlgebraFunction()) {
+            }
+			/**
+			 * Algebraic "atom"
+			 */
+			else if (focusedLiteral.isAlgebraFunction()) {
                     nonBooleanAtomCounter += 1;
                     /*
                      * These may contain data atoms that need to be unfolded, we
@@ -1416,7 +1420,13 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
                             return result;
                     }
 
-            } else if (focusedLiteral.isDataFunction()) {
+            }
+			/**
+			 *
+			 * Data atom
+			 *
+			 */
+			else if (focusedLiteral.isDataFunction()) {
                     nonBooleanAtomCounter += 1;
 
                     /*
@@ -1450,6 +1460,11 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
                                     "Error during unfolding, trying to unfold a non-algrbra/non-data function. Offending atom: "
                                                     + focusedLiteral.toString());
             }
+
+			/**
+			 * No result (empty list).
+			 *
+			 */
             termidx.pop();
 	    }
 
@@ -1462,6 +1477,7 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 	
 
 	/***
+	 *
 	 * * Normalizes a rule that has multiple data atoms to a rule in which there
 	 * is one single Join atom by creating a nested Join structure. Required to
 	 * resolve atoms in LeftJoins (any, left or right) to avoid ending up with
@@ -1470,66 +1486,102 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 	 * example:
 	 * 
 	 * <pre>
-	 * m(x,y) :- R(x,y), R(y,z), R(z,m)
+	 * m(x,y) :- R(x,y), R(y,z), R(z,m), GT(z,0)
 	 * 
 	 * into
 	 * 
-	 * m(x,y) :- Join(R(x,y), Join(R(y,z), R(z,m))
+	 * m(x,y) :- Join(R(x,y), Join(R(y,z), R(z,m), AND(true, true)), GT(z,0))
 	 * </pre>
 	 * 
-	 * @param mapping
+	 * @param initialRule
 	 *            <bold>null</bold> if the body contains 0 or 1 data atoms,
 	 *            otherwhise returns a new query with the nested joins.
 	 * @return
 	 */
-	private CQIE foldJOIN(CQIE mapping) {
-		// Checking if the rule has more that 1 data atom, otherwise we do
-		// nothing. Now we count, and at the same time collect the atoms we
-		// will need to manipulate in 2 temporal lists.
+	private CQIE foldJOIN(CQIE initialRule) {
 
-		// Data atoms in the list will be folded, boolean atoms will be
-		// added to the bod in the end
+		List<Function> dataAtoms = new ArrayList<>();
+		List<Function> filterConditionAtoms = new ArrayList<>();
+		//List<Function> otherAtomsList = new ArrayList<Function>();
 
-		int dataAtoms = 0;
-
-		List<Function> body = mapping.getBody();
-
-		List<Function> dataAtomsList = new LinkedList<Function>();
-		List<Function> otherAtomsList = new ArrayList<Function>(body.size() * 2);
-
-		for (Function subAtom : body) {
-			if (subAtom.isDataFunction() || subAtom.isAlgebraFunction()) {
-				dataAtoms += 1;
-				dataAtomsList.add(subAtom);
-			} else {
-				otherAtomsList.add(subAtom);
+		/**
+		 * First, splits data atoms and filter conditions.
+		 */
+		for (Function atom : initialRule.getBody()) {
+			if (atom.isDataFunction() || atom.isAlgebraFunction()) {
+				dataAtoms.add(atom);
+			} else if (atom.isBooleanFunction()) {
+				filterConditionAtoms.add(atom);
+			}
+			else {
+				// TODO: See if it makes sense
+				throw new RuntimeException("Non data, algebra nor boolean atom found: " + atom.toString());
 			}
 		}
-		if (dataAtoms == 1) {
-			return null;
-		}
 
-		/*
-		 * This mapping can be transformed into a normal join with ON
-		 * conditions. Doing so.
+		/**
+		 * If not necessary, Join folding is rejected (only one data atom).
 		 */
-		Function foldedJoinAtom = null;
-
-		while (dataAtomsList.size() > 1) {
-			foldedJoinAtom = termFactory.getFunction(OBDAVocabulary.SPARQL_JOIN, (Term) dataAtomsList.remove(0),
-					(Term) dataAtomsList.remove(0));
-			dataAtomsList.add(0, foldedJoinAtom);
+		if (dataAtoms.size() == 1) {
+			return initialRule;
 		}
 
-		List<Function> newBodyMapping = new LinkedList<Function>();
+
+		int lastIndex = dataAtoms.size() - 1;
+
+		// Initial value
+		Function foldedJoinAtom = dataAtoms.get(lastIndex);
+
+		/**
+		 * "Intermediate" data atoms (first and last excluded).
+		 *
+		 * Recursive constructor of the folded join atom.
+		 */
+		for (int i=(lastIndex - 1); i > 0; i--) {
+			//TODO: find a more elegant solution (in order to have a functional term)
+			Function defaultBooleanExpression = termFactory.getFunctionAND(OBDAVocabulary.TRUE, OBDAVocabulary.TRUE);
+
+			foldedJoinAtom = termFactory.getFunctionJoin(dataAtoms.get(i), foldedJoinAtom, defaultBooleanExpression);
+		}
+		/**
+		 * Basic "naive" approach: we introduce the filter terms as a boolean expression
+		 * only to the top JOIN.
+		 *
+		 */
+		Term booleanExpression = buildBooleanExpression(filterConditionAtoms);
+		foldedJoinAtom = termFactory.getFunctionJoin(dataAtoms.get(0), foldedJoinAtom, booleanExpression);
+
+		List<Function> newBodyMapping = new ArrayList<>();
 		newBodyMapping.add(foldedJoinAtom);
-		newBodyMapping.addAll(otherAtomsList);
+		//newBodyMapping.addAll(otherAtomsList);
 
-		CQIE newrule = termFactory.getCQIE(mapping.getHead(), newBodyMapping);
+		CQIE newRule = termFactory.getCQIE(initialRule.getHead(), newBodyMapping);
 
-		return newrule;
+		return newRule;
 
 	}
+
+	private static Function buildBooleanExpression(List<Function> booleanAtoms) {
+		/**
+		 * By default, the boolean expression is True
+		 */
+		if (booleanAtoms.size() == 0) {
+			//TODO: find a more elegant solution
+			return termFactory.getFunctionAND(OBDAVocabulary.TRUE, OBDAVocabulary.TRUE);
+		}
+
+		int lastIndex = booleanAtoms.size() - 1;
+		Function foldedBooleanExpression = booleanAtoms.get(lastIndex);
+
+		/**
+		 * Recursive
+		 */
+		for (int i=(lastIndex - 1); i >= 0 ; i--) {
+			foldedBooleanExpression = termFactory.getFunctionAND(booleanAtoms.get(i), foldedBooleanExpression);
+		}
+		return foldedBooleanExpression;
+	}
+
 
 	/***
 	 * Helper method for resolveDataAtom. Do not use anywhere else. This method
@@ -1559,9 +1611,26 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 			Collection<CQIE> rulesDefiningTheAtom, boolean isLeftJoin, boolean isSecondAtomOfLeftJoin,
             Multimap<Predicate, Integer> multiTypedFunctionSymbolIndex) {
 
+		/**
+		 * No unfolding in there is multiple rules for the right term of the LJ.
+		 *
+		 * Indeed, we had disjunction on the second atom of the leftjoin, that is,
+		 * more than two rules that unified. LeftJoin is not
+		 * distributable on the right component, hence, we cannot simply
+		 * generate 2 rules for the second atom.
+		 *
+		 * The rules must be untouched, no partial evaluation is
+		 * possible. We must return the original rule.
+		 *
+		 */
+		if (isSecondAtomOfLeftJoin && (rulesDefiningTheAtom.size() > 1)) {
+			return null;
+		}
+
 		List<CQIE> candidateMatches = new LinkedList<CQIE>(rulesDefiningTheAtom);
 //		List<CQIE> result = new ArrayList<CQIE>(candidateMatches.size() * 2);
 		List<CQIE> result = new LinkedList<CQIE>();
+
 
 		int rulesGeneratedSoFar = 0;
 		for (CQIE candidateRule : candidateMatches) {
@@ -1587,9 +1656,7 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 			// if we are in a left join, we need to make sure the fresh rule
 			// has only one data atom
 			if (isLeftJoin) {
-				CQIE foldedJoinsRule = foldJOIN(freshRule);
-				if (foldedJoinsRule != null)
-					freshRule = foldedJoinsRule;
+				freshRule = foldJOIN(freshRule);
 			}
 
 			/*
@@ -1601,11 +1668,16 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 			 * locating the list that contains the current Function (either body
 			 * or inner term) and replacing the current atom, with the body of
 			 * the matching rule.
+			 *
+			 * TODO: this part is problematic with nested LJ and Joins. LJ and Join arities are often violated.
+			 *
 			 */
-
 			List innerAtoms = getNestedList(termidx, partialEvalution);
-			
-		
+
+			/**
+			 * Apparently,  the stack is used to track positions inside a "complex atom"
+			 * (using a tree of algebraic functional terms)
+			 */
 			innerAtoms.remove((int) termidx.peek());
 			
 			while (innerAtoms.contains(focusAtom)){
@@ -1634,25 +1706,6 @@ private boolean detectAggregateinSingleRule( CQIE rule) {
 
 			rulesGeneratedSoFar += 1;
 
-
-
-			
-			//if (isSecondAtomOfLeftJoin && rulesGeneratedSoFar > 1 ) {
-			if (isSecondAtomOfLeftJoin ) {
-			//if (isLeftJoin) { // guohui: I changed it to not unfold inside the leftjoin, regardless of the position
-				
-				/*
-				 * We had disjunction on the second atom of the lejoin, that is,
-				 * more than two rules that unified. LeftJoin is not
-				 * distributable on the right component, hence, we cannot simply
-				 * generate 2 rules for the seocnd atom.
-				 * 
-				 * The rules must be untouched, no partial evaluation is
-				 * possible. We must return the original rule.
-				 */
-				return null;
-
-			}
 
 			result.add(partialEvalution);
 		}// end for candidate matches

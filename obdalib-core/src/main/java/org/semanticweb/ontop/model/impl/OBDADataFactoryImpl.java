@@ -455,6 +455,12 @@ public class OBDADataFactoryImpl implements OBDADataFactory {
 	public Function getFunctionRegex(Term term1, Term term2, Term term3) {
 		return getFunction(OBDAVocabulary.SPARQL_REGEX, term1, term2, term3 );
 	}
+
+	@Override
+	public Function getFunctionJoin(Term term1, Term term2, Term joinBooleanCondition) {
+		return getFunction(OBDAVocabulary.SPARQL_JOIN, term1, term2, joinBooleanCondition);
+	}
+
 	
 	@Override
 	public Function getFunctionMinus(Term term1) {
