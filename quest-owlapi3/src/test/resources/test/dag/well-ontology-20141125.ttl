@@ -1,0 +1,2137 @@
+@prefix : <http://www.optique-project.eu/ontology/subsurface-exploration/Ont-20141125#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.optique-project.eu/ontology/subsurface-exploration/Ont-20141125> .
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Ont-20141125> rdf:type owl:Ontology ;
+                                                                             
+                                                                             rdfs:label "Subsurface Exploration Ontology" .
+
+
+#################################################################
+#
+#    Object Properties
+#
+#################################################################
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/administers
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/administers> rdf:type owl:FunctionalProperty ,
+                                                                                     owl:ObjectProperty ;
+                                                                            
+                                                                            rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea> ;
+                                                                            
+                                                                            rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity> .
+[ rdf:type owl:FunctionalProperty ;
+  owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/concededBy
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/concededBy> rdf:type owl:FunctionalProperty ,
+                                                                                    owl:ObjectProperty ;
+                                                                           
+                                                                           rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> ;
+                                                                           
+                                                                           rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Country> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/concededTo
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/concededTo> rdf:type owl:FunctionalProperty ,
+                                                                                    owl:ObjectProperty ;
+                                                                           
+                                                                           rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Company> ;
+                                                                           
+                                                                           rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/contains
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/contains> rdf:type owl:ObjectProperty ;
+                                                                         
+                                                                         rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ;
+                                                                         
+                                                                         rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Place> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/extractedFrom
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/extractedFrom> rdf:type owl:ObjectProperty ;
+                                                                              
+                                                                              rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Core> ;
+                                                                              
+                                                                              rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+[ rdf:type owl:FunctionalProperty ;
+  owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/extractedFrom>
+] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasBottomDepthMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasBottomDepthMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                          
+                                                                                          rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ;
+                                                                                          
+                                                                                          rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDepthMeasurement> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasContent
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasContent> rdf:type owl:ObjectProperty ;
+                                                                           
+                                                                           rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                           
+                                                                           rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasContentInMinorPart
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasContentInMinorPart> rdf:type owl:ObjectProperty ;
+                                                                                      
+                                                                                      rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasContent> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasCoreSample
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasCoreSample> rdf:type owl:ObjectProperty ;
+                                                                              
+                                                                              rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Core> ;
+                                                                              
+                                                                              rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> .
+[ rdf:type owl:FunctionalProperty ;
+  owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasCoreSample>
+] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasDepthMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasDepthMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                    
+                                                                                    rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/DepthMeasurementResult> ;
+                                                                                    
+                                                                                    rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> rdf:type owl:ObjectProperty ;
+                                                                             
+                                                                             rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ;
+                                                                             
+                                                                             rdfs:domain owl:Thing ;
+                                                                             
+                                                                             rdfs:subPropertyOf owl:topObjectProperty .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasFormationPressure
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasFormationPressure> rdf:type owl:ObjectProperty ;
+                                                                                     
+                                                                                     rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/FormationPressure> ;
+                                                                                     
+                                                                                     rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                                     
+                                                                                     rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasLengthMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasLengthMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                     
+                                                                                     rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/LengthMeasurementResult> ;
+                                                                                     
+                                                                                     rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasPermeabilityMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasPermeabilityMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                           
+                                                                                           rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                                           
+                                                                                           rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult> ;
+                                                                                           
+                                                                                           rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasPlatform
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasPlatform> rdf:type owl:ObjectProperty ;
+                                                                            
+                                                                            rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Platform> ;
+                                                                            
+                                                                            rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasPorosityMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasPorosityMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                       
+                                                                                       rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                                       
+                                                                                       rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult> ;
+                                                                                       
+                                                                                       rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasTopDepthMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasTopDepthMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                       
+                                                                                       rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ;
+                                                                                       
+                                                                                       rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDepthMeasurement> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasTotalLength
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasTotalLength> rdf:type owl:ObjectProperty ;
+                                                                               
+                                                                               rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ;
+                                                                               
+                                                                               rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasTraceOf
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasTraceOf> rdf:type owl:ObjectProperty ;
+                                                                           
+                                                                           rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasContent> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasUnit
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasUnit> rdf:type owl:FunctionalProperty ,
+                                                                                 owl:ObjectProperty ;
+                                                                        
+                                                                        rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ;
+                                                                        
+                                                                        rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicZone> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasWaterSaturationMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasWaterSaturationMeasurement> rdf:type owl:ObjectProperty ;
+                                                                                              
+                                                                                              rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                                              
+                                                                                              rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult> ;
+                                                                                              
+                                                                                              rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasWellbore> rdf:type owl:ObjectProperty ;
+                                                                            
+                                                                            rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ;
+                                                                            
+                                                                            rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasWellboreInterval
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasWellboreInterval> rdf:type owl:ObjectProperty ;
+                                                                                    
+                                                                                    rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                                    
+                                                                                    rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+[ rdf:type owl:FunctionalProperty ;
+  owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasWellboreInterval>
+] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/inField
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/inField> rdf:type owl:ObjectProperty ;
+                                                                        
+                                                                        rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ;
+                                                                        
+                                                                        rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/inWellboreInterval
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/inWellboreInterval> rdf:type owl:ObjectProperty ;
+                                                                                   
+                                                                                   rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/MeasuredDepth> ;
+                                                                                   
+                                                                                   rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/injectedMaterial
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/injectedMaterial> rdf:type owl:ObjectProperty ;
+                                                                                 
+                                                                                 rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ;
+                                                                                 
+                                                                                 rdfs:subPropertyOf owl:topObjectProperty .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/isParentUnitOf
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/isParentUnitOf> rdf:type owl:ObjectProperty ;
+                                                                               
+                                                                               rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ;
+                                                                               
+                                                                               rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/localizes
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/localizes> rdf:type owl:ObjectProperty ;
+                                                                          
+                                                                          rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> ;
+                                                                          
+                                                                          rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalPosition> ;
+                                                                          
+                                                                          rdfs:subPropertyOf [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                             ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/locatedIn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/locatedIn> rdf:type owl:ObjectProperty ;
+                                                                          
+                                                                          rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ;
+                                                                          
+                                                                          rdfs:domain owl:Thing .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ofStratigraphicColumn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ofStratigraphicColumn> rdf:type owl:FunctionalProperty ,
+                                                                                               owl:ObjectProperty ;
+                                                                                      
+                                                                                      rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ;
+                                                                                      
+                                                                                      rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/overlapsGeographicalArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/overlapsGeographicalArea> rdf:type owl:ObjectProperty ;
+                                                                                         
+                                                                                         rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> ;
+                                                                                         
+                                                                                         rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> ;
+                                                                                         
+                                                                                         rdfs:subPropertyOf [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/overlapsGeographicalArea>
+                                                                                                            ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/overlapsWellboreInterval
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/overlapsWellboreInterval> rdf:type owl:ObjectProperty ,
+                                                                                                  owl:SymmetricProperty ;
+                                                                                         
+                                                                                         rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ;
+                                                                                         
+                                                                                         rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/reclassifiedTo
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/reclassifiedTo> rdf:type owl:ObjectProperty ;
+                                                                               
+                                                                               rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore> ;
+                                                                               
+                                                                               rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/ReclassifiedWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/refersToFacility
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/refersToFacility> rdf:type owl:ObjectProperty ;
+                                                                                 
+                                                                                 rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> ;
+                                                                                 
+                                                                                 rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wellLicense
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wellLicense> rdf:type owl:ObjectProperty ;
+                                                                            
+                                                                            rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/License> ;
+                                                                            
+                                                                            rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wellOperatedBy
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wellOperatedBy> rdf:type owl:ObjectProperty ;
+                                                                               
+                                                                               rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Company> ;
+                                                                               
+                                                                               rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wellboreDocument
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wellboreDocument> rdf:type owl:ObjectProperty ;
+                                                                                 
+                                                                                 rdfs:comment "Links a wellbore to relevant documents about it" ;
+                                                                                 
+                                                                                 rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Document> ;
+                                                                                 
+                                                                                 rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wellboreInReservoir
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wellboreInReservoir> rdf:type owl:ObjectProperty ;
+                                                                                    
+                                                                                    rdfs:range <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ;
+                                                                                    
+                                                                                    rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+
+
+#################################################################
+#
+#    Data properties
+#
+#################################################################
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/EPDSdocURL
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/EPDSdocURL> rdf:type owl:DatatypeProperty ;
+                                                                           
+                                                                           rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                           
+                                                                           rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasURL> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WKT
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WKT> rdf:type owl:DatatypeProperty ;
+                                                                    
+                                                                    rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ;
+                                                                    
+                                                                    rdfs:range rdfs:Literal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/actualRelinquishmentDate
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/actualRelinquishmentDate> rdf:type owl:DatatypeProperty ,
+                                                                                                  owl:FunctionalProperty ;
+                                                                                         
+                                                                                         rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> ;
+                                                                                         
+                                                                                         rdfs:range xsd:dateTime .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/averageWaterDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/averageWaterDepth> rdf:type owl:DatatypeProperty ;
+                                                                                  
+                                                                                  rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/waterDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/awardDate
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/awardDate> rdf:type owl:DatatypeProperty ,
+                                                                                   owl:FunctionalProperty ;
+                                                                          
+                                                                          rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> ;
+                                                                          
+                                                                          rdfs:range xsd:dateTime .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/completionDate
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/completionDate> rdf:type owl:DatatypeProperty ,
+                                                                                        owl:FunctionalProperty ;
+                                                                               
+                                                                               rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/CompletedWellbore> ;
+                                                                               
+                                                                               rdfs:range xsd:dateTime .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/coreNumber
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/coreNumber> rdf:type owl:DatatypeProperty ,
+                                                                                    owl:FunctionalProperty ;
+                                                                           
+                                                                           rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Core> ;
+                                                                           
+                                                                           rdfs:range xsd:integer .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/currentWellboreTrack
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/currentWellboreTrack> rdf:type owl:DatatypeProperty ,
+                                                                                              owl:FunctionalProperty ;
+                                                                                     
+                                                                                     rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                                     
+                                                                                     rdfs:range xsd:string .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/fluidZoneContent
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/fluidZoneContent> rdf:type owl:DatatypeProperty ;
+                                                                                 
+                                                                                 rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/FluidZone> ;
+                                                                                 
+                                                                                 rdfs:range xsd:string .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasPermeability
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasPermeability> rdf:type owl:DatatypeProperty ;
+                                                                                
+                                                                                rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult> ;
+                                                                                
+                                                                                rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/valueInStandardUnit> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasPorosity
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasPorosity> rdf:type owl:DatatypeProperty ;
+                                                                            
+                                                                            rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult> ;
+                                                                            
+                                                                            rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/valueInStandardUnit> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasTotalCoreLength
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasTotalCoreLength> rdf:type owl:DatatypeProperty ;
+                                                                                   
+                                                                                   rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/TotalCoreLength> ;
+                                                                                   
+                                                                                   rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/valueInStandardUnit> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hasURL
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hasURL> rdf:type owl:DatatypeProperty ;
+                                                                       
+                                                                       rdfs:comment "Various urls constructed for different pruposes in wiki and presentation. This is a crude hack, and should not be in the ontology" .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/latitude
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/latitude> rdf:type owl:DatatypeProperty ,
+                                                                                  owl:FunctionalProperty ;
+                                                                         
+                                                                         rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalPosition> ;
+                                                                         
+                                                                         rdfs:range rdfs:Literal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/longitude
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/longitude> rdf:type owl:DatatypeProperty ,
+                                                                                   owl:FunctionalProperty ;
+                                                                          
+                                                                          rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalPosition> ;
+                                                                          
+                                                                          rdfs:range rdfs:Literal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/maxWaterDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/maxWaterDepth> rdf:type owl:DatatypeProperty ;
+                                                                              
+                                                                              rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/waterDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/minWaterDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/minWaterDepth> rdf:type owl:DatatypeProperty ;
+                                                                              
+                                                                              rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/waterDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/name
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/name> rdf:type owl:DatatypeProperty ;
+                                                                     
+                                                                     rdfs:range xsd:string ;
+                                                                     
+                                                                     rdfs:domain owl:Thing .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/netToGrossRatio
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/netToGrossRatio> rdf:type owl:DatatypeProperty ;
+                                                                                
+                                                                                rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ;
+                                                                                
+                                                                                rdfs:range xsd:decimal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/officialName
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/officialName> rdf:type owl:DatatypeProperty ;
+                                                                             
+                                                                             rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/name> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/originalUnitOfMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/originalUnitOfMeasurement> rdf:type owl:DatatypeProperty ,
+                                                                                                   owl:FunctionalProperty ;
+                                                                                          
+                                                                                          rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/unitOfMeasurement> ;
+                                                                                          
+                                                                                          rdfs:range xsd:string .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/plannedRelinquishmentDate
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/plannedRelinquishmentDate> rdf:type owl:DatatypeProperty ,
+                                                                                                   owl:FunctionalProperty ;
+                                                                                          
+                                                                                          rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> ;
+                                                                                          
+                                                                                          rdfs:range xsd:dateTime .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/sampleNumber
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/sampleNumber> rdf:type owl:DatatypeProperty ,
+                                                                                      owl:FunctionalProperty ;
+                                                                             
+                                                                             rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                             
+                                                                             rdfs:range xsd:integer .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/spudDate
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/spudDate> rdf:type owl:DatatypeProperty ,
+                                                                                  owl:FunctionalProperty ;
+                                                                         
+                                                                         rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ;
+                                                                         
+                                                                         rdfs:range xsd:dateTime .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/standardUnitOfMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/standardUnitOfMeasurement> rdf:type owl:DatatypeProperty ,
+                                                                                                   owl:FunctionalProperty ;
+                                                                                          
+                                                                                          rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/unitOfMeasurement> ;
+                                                                                          
+                                                                                          rdfs:range xsd:string .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/statoilName
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/statoilName> rdf:type owl:DatatypeProperty ;
+                                                                            
+                                                                            rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/name> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/timestamp
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/timestamp> rdf:type owl:DatatypeProperty ,
+                                                                                   owl:FunctionalProperty ;
+                                                                          
+                                                                          rdfs:range xsd:dateTime .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/unitOfMeasurement
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/unitOfMeasurement> rdf:type owl:DatatypeProperty ;
+                                                                                  
+                                                                                  rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/valueInOriginalUnit
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/valueInOriginalUnit> rdf:type owl:DatatypeProperty ,
+                                                                                             owl:FunctionalProperty ;
+                                                                                    
+                                                                                    rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ;
+                                                                                    
+                                                                                    rdfs:range xsd:decimal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/valueInStandardUnit
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/valueInStandardUnit> rdf:type owl:DatatypeProperty ,
+                                                                                             owl:FunctionalProperty ;
+                                                                                    
+                                                                                    rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ;
+                                                                                    
+                                                                                    rdfs:range xsd:decimal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/waterDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/waterDepth> rdf:type owl:DatatypeProperty ;
+                                                                           
+                                                                           rdfs:range xsd:decimal .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wellResourcesURL
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wellResourcesURL> rdf:type owl:DatatypeProperty ;
+                                                                                 
+                                                                                 rdfs:comment "Link to internal statoil page with lists of links to various resources on a wellbore" ;
+                                                                                 
+                                                                                 rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasURL> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wellWaterDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wellWaterDepth> rdf:type owl:DatatypeProperty ;
+                                                                               
+                                                                               rdfs:domain <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ;
+                                                                               
+                                                                               rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/waterDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/wikiURL
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/wikiURL> rdf:type owl:DatatypeProperty ;
+                                                                        
+                                                                        rdfs:comment "Gives the address to the wiki page for the object in the optique platform installation at Statoil" ;
+                                                                        
+                                                                        rdfs:subPropertyOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasURL> .
+
+
+
+
+
+#################################################################
+#
+#    Classes
+#
+#################################################################
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/AbandonedWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/AbandonedWellbore> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore> ;
+                                                                                  
+                                                                                  owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/SuspendedWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/AbandonedWellboreForMechanicalReason
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/AbandonedWellboreForMechanicalReason> rdf:type owl:Class ;
+                                                                                                     
+                                                                                                     rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AbandonedWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea> rdf:type owl:Class ;
+                                                                                   
+                                                                                   rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> ,
+                                                                                                   [ rdf:type owl:Restriction ;
+                                                                                                     owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                                    ] ;
+                                                                                                     owl:someValuesFrom owl:Thing
+                                                                                                   ] ;
+                                                                                   
+                                                                                   owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> ,
+                                                                                                    <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeEntity
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeEntity> rdf:type owl:Class ;
+                                                                                     
+                                                                                     owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Core> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/AppraisalWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/AppraisalWellbore> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore> ;
+                                                                                  
+                                                                                  owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ProductionWellbore> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/ShallowWellbore> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/WildcatWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/AwardArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/AwardArea> rdf:type owl:Class ;
+                                                                          
+                                                                          rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> ;
+                                                                          
+                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/BAAArea> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/DiscoveryArea> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/ProductionLicenseArea> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/BAAArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/BAAArea> rdf:type owl:Class ;
+                                                                        
+                                                                        rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> ;
+                                                                        
+                                                                        owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/DiscoveryArea> ,
+                                                                                         <http://www.optique-project.eu/ontology/subsurface-exploration/ProductionLicenseArea> ,
+                                                                                         <http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/BioStratigraphicColumn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/BioStratigraphicColumn> rdf:type owl:Class ;
+                                                                                       
+                                                                                       rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ;
+                                                                                       
+                                                                                       owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ChronoStratigraphicColumn> ,
+                                                                                                        <http://www.optique-project.eu/ontology/subsurface-exploration/LithoStratigraphicColumn> ,
+                                                                                                        <http://www.optique-project.eu/ontology/subsurface-exploration/SequenceStratigraphicColumn> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Block
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Block> rdf:type owl:Class ;
+                                                                      
+                                                                      rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> ,
+                                                                                      [ rdf:type owl:Restriction ;
+                                                                                        owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                       ] ;
+                                                                                        owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant> ;
+                                                                                        owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                      ] ,
+                                                                                      [ rdf:type owl:Restriction ;
+                                                                                        owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                       ] ;
+                                                                                        owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant> ;
+                                                                                        owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                      ] ;
+                                                                      
+                                                                      owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/FieldArea> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/MainArea> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/BlownoutWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/BlownoutWellbore> rdf:type owl:Class ;
+                                                                                 
+                                                                                 rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore> ;
+                                                                                 
+                                                                                 owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PluggedWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> rdf:type owl:Class ;
+                                                                             
+                                                                             rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> ,
+                                                                                             [ rdf:type owl:Restriction ;
+                                                                                               owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/overlapsGeographicalArea> ;
+                                                                                               owl:someValuesFrom <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea>
+                                                                                             ] ,
+                                                                                             [ rdf:type owl:Class ;
+                                                                                               owl:unionOf ( <http://www.optique-project.eu/ontology/subsurface-exploration/AwardArea>
+                                                                                                             <http://www.optique-project.eu/ontology/subsurface-exploration/BAAArea>
+                                                                                                             <http://www.optique-project.eu/ontology/subsurface-exploration/DiscoveryArea>
+                                                                                                             <http://www.optique-project.eu/ontology/subsurface-exploration/ProductionLicenseArea>
+                                                                                                             <http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea>
+                                                                                                           )
+                                                                                             ] ;
+                                                                             
+                                                                             owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/BusinessEntity
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/BusinessEntity> rdf:type owl:Class ;
+                                                                               
+                                                                               rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeEntity> ;
+                                                                               
+                                                                               owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ChronoStratigraphicColumn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ChronoStratigraphicColumn> rdf:type owl:Class ;
+                                                                                          
+                                                                                          rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ;
+                                                                                          
+                                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/LithoStratigraphicColumn> ,
+                                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/SequenceStratigraphicColumn> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/CoOperatorLicense
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/CoOperatorLicense> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/License> ;
+                                                                                  
+                                                                                  owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ConcessionCommitteeLicense> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/OperatrorLicense> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/PartnerLicense> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Company
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Company> rdf:type owl:Class ;
+                                                                        
+                                                                        rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessEntity> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/CompletedWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/CompletedWellbore> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                    owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/completionDate> ;
+                                                                                                    owl:someValuesFrom rdfs:Literal
+                                                                                                  ] ;
+                                                                                  
+                                                                                  owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PlanningWellbore> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/PredrilledWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Concession
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Concession> rdf:type owl:Class ;
+                                                                           
+                                                                           rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/concededBy> ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/concededTo> ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/awardDate> ;
+                                                                                             owl:someValuesFrom rdfs:Literal
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/refersToFacility> ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ;
+                                                                           
+                                                                           owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Core> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ConcessionCommitteeLicense
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ConcessionCommitteeLicense> rdf:type owl:Class ;
+                                                                                           
+                                                                                           rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/License> ;
+                                                                                           
+                                                                                           owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/OperatrorLicense> ,
+                                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/PartnerLicense> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Core
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Core> rdf:type owl:Class ;
+                                                                     
+                                                                     rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/coreNumber> ;
+                                                                                       owl:someValuesFrom rdfs:Literal
+                                                                                     ] ,
+                                                                                     [ rdf:type owl:Restriction ;
+                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/extractedFrom> ;
+                                                                                       owl:someValuesFrom <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval>
+                                                                                     ] ;
+                                                                     
+                                                                     owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> rdf:type owl:Class ;
+                                                                           
+                                                                           rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/hasWaterSaturationMeasurement> ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/hasPermeabilityMeasurement> ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Class ;
+                                                                                             owl:unionOf ( <http://www.optique-project.eu/ontology/subsurface-exploration/DrilledSample>
+                                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/FragmentSample>
+                                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/PlugSample>
+                                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/WholeSample>
+                                                                                                         )
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasCoreSample>
+                                                                                                            ] ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/hasPorosityMeasurement> ;
+                                                                                             owl:someValuesFrom owl:Thing
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/sampleNumber> ;
+                                                                                             owl:someValuesFrom rdfs:Literal
+                                                                                           ] ;
+                                                                           
+                                                                           owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                            <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Country
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Country> rdf:type owl:Class ;
+                                                                        
+                                                                        rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity> ,
+                                                                                        [ rdf:type owl:Restriction ;
+                                                                                          owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                          owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/CountryArea> ;
+                                                                                          owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                        ] ,
+                                                                                        [ rdf:type owl:Restriction ;
+                                                                                          owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                          owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/CountryArea> ;
+                                                                                          owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                        ] ;
+                                                                        
+                                                                        owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/County> ,
+                                                                                         <http://www.optique-project.eu/ontology/subsurface-exploration/Municipality> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/CountryArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/CountryArea> rdf:type owl:Class ;
+                                                                            
+                                                                            rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea> ,
+                                                                                            [ rdf:type owl:Restriction ;
+                                                                                              owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                             ] ;
+                                                                                              owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/Country> ;
+                                                                                              owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                            ] ,
+                                                                                            [ rdf:type owl:Restriction ;
+                                                                                              owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                             ] ;
+                                                                                              owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/Country> ;
+                                                                                              owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                            ] ;
+                                                                            
+                                                                            owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/CountyArea> ,
+                                                                                             <http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/County
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/County> rdf:type owl:Class ;
+                                                                       
+                                                                       rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity> ,
+                                                                                       [ rdf:type owl:Restriction ;
+                                                                                         owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                         owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/CountyArea> ;
+                                                                                         owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                       ] ,
+                                                                                       [ rdf:type owl:Restriction ;
+                                                                                         owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                         owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/CountyArea> ;
+                                                                                         owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                       ] ;
+                                                                       
+                                                                       owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Municipality> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/CountyArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/CountyArea> rdf:type owl:Class ;
+                                                                           
+                                                                           rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea> ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                            ] ;
+                                                                                             owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/County> ;
+                                                                                             owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                            ] ;
+                                                                                             owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/County> ;
+                                                                                             owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                            ] ;
+                                                                                             owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> ;
+                                                                                             owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                           ] ,
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                            ] ;
+                                                                                             owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> ;
+                                                                                             owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                           ] ;
+                                                                           
+                                                                           owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/DepthMeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/DepthMeasurementResult> rdf:type owl:Class ;
+                                                                                       
+                                                                                       rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Length> ,
+                                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> ,
+                                                                                                       [ rdf:type owl:Restriction ;
+                                                                                                         owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasDepthMeasurement>
+                                                                                                                        ] ;
+                                                                                                         owl:someValuesFrom owl:Thing
+                                                                                                       ] ;
+                                                                                       
+                                                                                       owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/LengthMeasurementResult> ,
+                                                                                                        <http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult> ,
+                                                                                                        <http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult> ,
+                                                                                                        <http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore> rdf:type owl:Class ;
+                                                                                    
+                                                                                    rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                                    
+                                                                                    owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore> ,
+                                                                                                     <http://www.optique-project.eu/ontology/subsurface-exploration/ShallowWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Dimension
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> rdf:type owl:Class ;
+                                                                          
+                                                                          rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                            owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/standardUnitOfMeasurement> ;
+                                                                                            owl:someValuesFrom rdfs:Literal
+                                                                                          ] ,
+                                                                                          [ rdf:type owl:Restriction ;
+                                                                                            owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/valueInStandardUnit> ;
+                                                                                            owl:someValuesFrom rdfs:Literal
+                                                                                          ] ,
+                                                                                          [ rdf:type owl:Restriction ;
+                                                                                            owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/valueInOriginalUnit> ;
+                                                                                            owl:someValuesFrom rdfs:Literal
+                                                                                          ] ,
+                                                                                          [ rdf:type owl:Restriction ;
+                                                                                            owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/originalUnitOfMeasurement> ;
+                                                                                            owl:someValuesFrom rdfs:Literal
+                                                                                          ] ,
+                                                                                          [ rdf:type owl:Restriction ;
+                                                                                            owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/unitOfMeasurement> ;
+                                                                                            owl:someValuesFrom rdfs:Literal
+                                                                                          ] ;
+                                                                          
+                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/DiscoveryArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/DiscoveryArea> rdf:type owl:Class ;
+                                                                              
+                                                                              rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> ;
+                                                                              
+                                                                              owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ProductionLicenseArea> ,
+                                                                                               <http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Document
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Document> rdf:type owl:Class .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/DrilledSample
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/DrilledSample> rdf:type owl:Class ;
+                                                                              
+                                                                              rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                              
+                                                                              owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/FragmentSample> ,
+                                                                                               <http://www.optique-project.eu/ontology/subsurface-exploration/PlugSample> ,
+                                                                                               <http://www.optique-project.eu/ontology/subsurface-exploration/WholeSample> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/DryWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/DryWellbore> rdf:type owl:Class ;
+                                                                            
+                                                                            rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AbandonedWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore> rdf:type owl:Class ;
+                                                                                    
+                                                                                    rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                                    
+                                                                                    owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ProductionWellbore> ,
+                                                                                                     <http://www.optique-project.eu/ontology/subsurface-exploration/ShallowWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Facility
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Facility> rdf:type owl:Class ;
+                                                                         
+                                                                         owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Field> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Field
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Field> rdf:type owl:Class ;
+                                                                      
+                                                                      owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/FieldArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/FieldArea> rdf:type owl:Class ;
+                                                                          
+                                                                          rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> ;
+                                                                          
+                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/MainArea> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/FluidZone
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/FluidZone> rdf:type owl:Class ;
+                                                                          
+                                                                          rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ;
+                                                                          
+                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/FormationPressure
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/FormationPressure> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/FragmentSample
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/FragmentSample> rdf:type owl:Class ;
+                                                                               
+                                                                               rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                               
+                                                                               owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PlugSample> ,
+                                                                                                <http://www.optique-project.eu/ontology/subsurface-exploration/WholeSample> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> rdf:type owl:Class ;
+                                                                                 
+                                                                                 rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                                 [ rdf:type owl:Class ;
+                                                                                                   owl:unionOf ( <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea>
+                                                                                                                 <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea>
+                                                                                                                 <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea>
+                                                                                                               )
+                                                                                                 ] ;
+                                                                                 
+                                                                                 owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalPosition> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalPosition
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalPosition> rdf:type owl:Class ;
+                                                                                     
+                                                                                     rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Place> ,
+                                                                                                     [ rdf:type owl:Restriction ;
+                                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/longitude> ;
+                                                                                                       owl:someValuesFrom rdfs:Literal
+                                                                                                     ] ,
+                                                                                                     [ rdf:type owl:Restriction ;
+                                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/localizes> ;
+                                                                                                       owl:someValuesFrom owl:Thing
+                                                                                                     ] ,
+                                                                                                     [ rdf:type owl:Restriction ;
+                                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/latitude> ;
+                                                                                                       owl:someValuesFrom rdfs:Literal
+                                                                                                     ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/GrossThickness
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/GrossThickness> rdf:type owl:Class ;
+                                                                               
+                                                                               rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Length> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/InitialWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/InitialWellbore> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/InjectionWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/InjectionWellbore> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/JunkedWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/JunkedWellbore> rdf:type owl:Class ;
+                                                                               
+                                                                               rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Length
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Length> rdf:type owl:Class ;
+                                                                       
+                                                                       rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/LengthMeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/LengthMeasurementResult> rdf:type owl:Class ;
+                                                                                        
+                                                                                        rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Length> ,
+                                                                                                        <http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> ;
+                                                                                        
+                                                                                        owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult> ,
+                                                                                                         <http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult> ,
+                                                                                                         <http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/License
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/License> rdf:type owl:Class ;
+                                                                        
+                                                                        rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Concession> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/LithoStratigraphicColumn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/LithoStratigraphicColumn> rdf:type owl:Class ;
+                                                                                         
+                                                                                         rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ;
+                                                                                         
+                                                                                         owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/SequenceStratigraphicColumn> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/MainArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/MainArea> rdf:type owl:Class ;
+                                                                         
+                                                                         rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                          ] ;
+                                                                                           owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/FieldArea> ;
+                                                                                           owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                         ] ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                          ] ;
+                                                                                           owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/FieldArea> ;
+                                                                                           owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                         ] ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/contains> ;
+                                                                                           owl:someValuesFrom <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant>
+                                                                                         ] ;
+                                                                         
+                                                                         owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/MeasuredDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/MeasuredDepth> rdf:type owl:Class ;
+                                                                              
+                                                                              rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DepthMeasurementResult> ;
+                                                                              
+                                                                              owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/TrueVerticalDepth> ,
+                                                                                               <http://www.optique-project.eu/ontology/subsurface-exploration/WaterDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Dimension> ,
+                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                    owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/timestamp> ;
+                                                                                                    owl:someValuesFrom rdfs:Literal
+                                                                                                  ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/MesuredDepthRKB
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/MesuredDepthRKB> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/MeasuredDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> rdf:type owl:Class ;
+                                                                              
+                                                                              rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeArea> ,
+                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                               ] ;
+                                                                                                owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/Municipality> ;
+                                                                                                owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                              ] ,
+                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/administers>
+                                                                                                               ] ;
+                                                                                                owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/Municipality> ;
+                                                                                                owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                              ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Municipality
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Municipality> rdf:type owl:Class ;
+                                                                             
+                                                                             rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity> ,
+                                                                                             [ rdf:type owl:Restriction ;
+                                                                                               owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                               owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> ;
+                                                                                               owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                             ] ,
+                                                                                             [ rdf:type owl:Restriction ;
+                                                                                               owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                               owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/MunicipalArea> ;
+                                                                                               owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                             ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/NetThickness
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/NetThickness> rdf:type owl:Class ;
+                                                                             
+                                                                             rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Length> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore> rdf:type owl:Class ;
+                                                                                     
+                                                                                     rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/OperatrorLicense
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/OperatrorLicense> rdf:type owl:Class ;
+                                                                                 
+                                                                                 rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/License> ;
+                                                                                 
+                                                                                 owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PartnerLicense> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/OutcropWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/OutcropWellbore> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PartnerLicense
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PartnerLicense> rdf:type owl:Class ;
+                                                                               
+                                                                               rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/License> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityKLHMeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityKLHMeasurementResult> rdf:type owl:Class ;
+                                                                                                 
+                                                                                                 rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PermeabilityMeasurementResult> rdf:type owl:Class ;
+                                                                                              
+                                                                                              rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> ,
+                                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                                owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasPermeabilityMeasurement>
+                                                                                                                               ] ;
+                                                                                                                owl:someValuesFrom owl:Thing
+                                                                                                              ] ;
+                                                                                              
+                                                                                              owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult> ,
+                                                                                                               <http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Place
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Place> rdf:type owl:Class ;
+                                                                      
+                                                                      owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                       <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PlanningWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PlanningWellbore> rdf:type owl:Class ;
+                                                                                 
+                                                                                 rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore> ;
+                                                                                 
+                                                                                 owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/PredrilledWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Platform
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Platform> rdf:type owl:Class ;
+                                                                         
+                                                                         rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Facility> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PlugSample
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PlugSample> rdf:type owl:Class ;
+                                                                           
+                                                                           rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> ;
+                                                                           
+                                                                           owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/WholeSample> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PluggedWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PluggedWellbore> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PoliticalEntity> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/AdministrativeEntity> ,
+                                                                                                [ rdf:type owl:Restriction ;
+                                                                                                  owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/administers> ;
+                                                                                                  owl:someValuesFrom owl:Thing
+                                                                                                ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PorosityMeasurementResult> rdf:type owl:Class ;
+                                                                                          
+                                                                                          rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> ,
+                                                                                                          [ rdf:type owl:Restriction ;
+                                                                                                            owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasPorosityMeasurement>
+                                                                                                                           ] ;
+                                                                                                            owl:someValuesFrom owl:Thing
+                                                                                                          ] ;
+                                                                                          
+                                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/PredrilledWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/PredrilledWellbore> rdf:type owl:Class ;
+                                                                                   
+                                                                                   rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ProductionLicenseArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ProductionLicenseArea> rdf:type owl:Class ;
+                                                                                      
+                                                                                      rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> ;
+                                                                                      
+                                                                                      owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ProductionWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ProductionWellbore> rdf:type owl:Class ;
+                                                                                   
+                                                                                   rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore> ;
+                                                                                   
+                                                                                   owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/ShallowWellbore> ,
+                                                                                                    <http://www.optique-project.eu/ontology/subsurface-exploration/WildcatWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant> rdf:type owl:Class ;
+                                                                         
+                                                                         rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/contains> ;
+                                                                                           owl:someValuesFrom <http://www.optique-project.eu/ontology/subsurface-exploration/Block>
+                                                                                         ] ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                          ] ;
+                                                                                           owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/MainArea> ;
+                                                                                           owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                         ] ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/contains>
+                                                                                                          ] ;
+                                                                                           owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/MainArea> ;
+                                                                                           owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                         ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ReclassifiedWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ReclassifiedWellbore> rdf:type owl:Class ;
+                                                                                     
+                                                                                     rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Reservoir> rdf:type owl:Class ;
+                                                                          
+                                                                          rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ;
+                                                                          
+                                                                          owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                           <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/SequenceStratigraphicColumn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/SequenceStratigraphicColumn> rdf:type owl:Class ;
+                                                                                            
+                                                                                            rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/ShallowWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/ShallowWellbore> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ;
+                                                                                
+                                                                                owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/WildcatWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> rdf:type owl:Class ;
+                                                                                    
+                                                                                    rdfs:subClassOf [ rdf:type owl:Class ;
+                                                                                                      owl:unionOf ( <http://www.optique-project.eu/ontology/subsurface-exploration/BioStratigraphicColumn>
+                                                                                                                    <http://www.optique-project.eu/ontology/subsurface-exploration/ChronoStratigraphicColumn>
+                                                                                                                    <http://www.optique-project.eu/ontology/subsurface-exploration/LithoStratigraphicColumn>
+                                                                                                                    <http://www.optique-project.eu/ontology/subsurface-exploration/SequenceStratigraphicColumn>
+                                                                                                                  )
+                                                                                                    ] ,
+                                                                                                    [ rdf:type owl:Restriction ;
+                                                                                                      owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/ofStratigraphicColumn>
+                                                                                                                     ] ;
+                                                                                                      owl:someValuesFrom owl:Thing
+                                                                                                    ] ;
+                                                                                    
+                                                                                    owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> ,
+                                                                                                     <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                                     <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                                     <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                                     <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicUnit> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                                    owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/name> ;
+                                                                                                    owl:someValuesFrom xsd:string
+                                                                                                  ] ,
+                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                    owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/ofStratigraphicColumn> ;
+                                                                                                    owl:onClass <http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicColumn> ;
+                                                                                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                                                                                  ] ;
+                                                                                  
+                                                                                  owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Well> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                                   <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicZone
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/StratigraphicZone> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> ,
+                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                    owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/hasUnit> ;
+                                                                                                    owl:someValuesFrom owl:Thing
+                                                                                                  ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/SurveyArea> rdf:type owl:Class ;
+                                                                           
+                                                                           rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/BusinessArea> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/SuspendedWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/SuspendedWellbore> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/NonOperatingWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/TestProductionWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/TestProductionWellbore> rdf:type owl:Class ;
+                                                                                       
+                                                                                       rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/TopologicalArea> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/GeographicalArea> ,
+                                                                                                [ rdf:type owl:Class ;
+                                                                                                  owl:unionOf ( <http://www.optique-project.eu/ontology/subsurface-exploration/Block>
+                                                                                                                <http://www.optique-project.eu/ontology/subsurface-exploration/FieldArea>
+                                                                                                                <http://www.optique-project.eu/ontology/subsurface-exploration/MainArea>
+                                                                                                                <http://www.optique-project.eu/ontology/subsurface-exploration/Quadrant>
+                                                                                                              )
+                                                                                                ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/TotalCoreLength
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/TotalCoreLength> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/Length> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/TrueVerticalDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/TrueVerticalDepth> rdf:type owl:Class ;
+                                                                                  
+                                                                                  rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DepthMeasurementResult> ;
+                                                                                  
+                                                                                  owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/WaterDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/TrueVerticalDepthMSL
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/TrueVerticalDepthMSL> rdf:type owl:Class ;
+                                                                                     
+                                                                                     rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/TrueVerticalDepth> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WasteDisposalWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WasteDisposalWellbore> rdf:type owl:Class ;
+                                                                                      
+                                                                                      rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DevelopmentWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WaterDepth
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WaterDepth> rdf:type owl:Class ;
+                                                                           
+                                                                           rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/DepthMeasurementResult> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WaterInjectorWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WaterInjectorWellbore> rdf:type owl:Class ;
+                                                                                      
+                                                                                      rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/InjectionWellbore> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WaterSaturationMeasurementResult> rdf:type owl:Class ;
+                                                                                                 
+                                                                                                 rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/MeasurementResult> ,
+                                                                                                                 [ rdf:type owl:Restriction ;
+                                                                                                                   owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasWaterSaturationMeasurement>
+                                                                                                                                  ] ;
+                                                                                                                   owl:someValuesFrom owl:Thing
+                                                                                                                 ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Well
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Well> rdf:type owl:Class ;
+                                                                     
+                                                                     rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/wellWaterDepth> ;
+                                                                                       owl:someValuesFrom rdfs:Literal
+                                                                                     ] ,
+                                                                                     [ rdf:type owl:Restriction ;
+                                                                                       owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/hasWellbore> ;
+                                                                                       owl:someValuesFrom owl:Thing
+                                                                                     ] ;
+                                                                     
+                                                                     owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                      <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/Wellbore> rdf:type owl:Class ;
+                                                                         
+                                                                         rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <http://www.optique-project.eu/ontology/subsurface-exploration/hasTotalLength> ;
+                                                                                           owl:someValuesFrom owl:Thing
+                                                                                         ] ,
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasWellbore>
+                                                                                                          ] ;
+                                                                                           owl:someValuesFrom owl:Thing
+                                                                                         ] ;
+                                                                         
+                                                                         owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                          <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> rdf:type owl:Class ;
+                                                                                
+                                                                                owl:disjointWith <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WellboreInterval> rdf:type owl:Class ;
+                                                                                 
+                                                                                 rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                                                                   owl:onProperty [ owl:inverseOf <http://www.optique-project.eu/ontology/subsurface-exploration/hasWellboreInterval>
+                                                                                                                  ] ;
+                                                                                                   owl:someValuesFrom owl:Thing
+                                                                                                 ] .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WholeSample
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WholeSample> rdf:type owl:Class ;
+                                                                            
+                                                                            rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/CoreSample> .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/WildcatWellbore
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/WildcatWellbore> rdf:type owl:Class ;
+                                                                                
+                                                                                rdfs:subClassOf <http://www.optique-project.eu/ontology/subsurface-exploration/ExplorationWellbore> .
+
+
+
+
+
+#################################################################
+#
+#    Individuals
+#
+#################################################################
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/co2
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/co2> rdf:type <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                             owl:NamedIndividual .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/condensate
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/condensate> rdf:type <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                    owl:NamedIndividual .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/gas
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/gas> rdf:type <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                             owl:NamedIndividual .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/hydrocarbons
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/hydrocarbons> rdf:type <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                                      owl:NamedIndividual .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/oil
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/oil> rdf:type <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                             owl:NamedIndividual .
+
+
+
+###  http://www.optique-project.eu/ontology/subsurface-exploration/water
+
+<http://www.optique-project.eu/ontology/subsurface-exploration/water> rdf:type <http://www.optique-project.eu/ontology/subsurface-exploration/WellboreContent> ,
+                                                                               owl:NamedIndividual .
+
+
+
+
+###  Generated by the OWL API (version 3.4.2) http://owlapi.sourceforge.net
+
