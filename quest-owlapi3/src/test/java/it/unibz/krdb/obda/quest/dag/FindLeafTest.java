@@ -64,7 +64,7 @@ public class FindLeafTest  {
 	}
 
     private void readFile() {
-        try (BufferedReader br = new BufferedReader(new FileReader("src/test/resources/test/dag/WithChildrenDataProperty.txt")))
+        try (BufferedReader br = new BufferedReader(new FileReader("src/test/resources/test/dag/completePredicateLog23Feb2015.txt")))
         {
 
             String sCurrentLine;
