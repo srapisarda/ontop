@@ -21,7 +21,6 @@ package it.unibz.krdb.obda.quest.dag;
  */
 
 
-import au.com.bytecode.opencsv.CSVWriter;
 import it.unibz.krdb.obda.ontology.ClassExpression;
 import it.unibz.krdb.obda.ontology.DataPropertyExpression;
 import it.unibz.krdb.obda.ontology.ObjectPropertyExpression;
@@ -31,7 +30,6 @@ import it.unibz.krdb.obda.owlrefplatform.core.dagjgrapht.Equivalences;
 import it.unibz.krdb.obda.owlrefplatform.core.dagjgrapht.EquivalencesDAG;
 import it.unibz.krdb.obda.owlrefplatform.core.dagjgrapht.TBoxReasoner;
 import it.unibz.krdb.obda.owlrefplatform.core.dagjgrapht.TBoxReasonerImpl;
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -58,7 +56,7 @@ public class FindLeafTest  {
 
         // generate DAG
         reasoner = new TBoxReasonerImpl(onto);
-//        writer = new CSVWriter(new FileWriter("src/test/resources/test/dag/WithChildren.csv"));
+
         writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("src/test/resources/test/dag/WithChildren.txt"), "utf-8"));
         readFile();
 	}
@@ -125,7 +123,7 @@ public class FindLeafTest  {
 
                     if(inputFile.contains(equivNode.toString())) {
                         System.out.println(equivNode + " not a leaf");
-//                        writer.writeNext(new String[]{equivNode.toString()});
+//
                         writer.write(equivNode.toString());
                         writer.newLine();
                     }
