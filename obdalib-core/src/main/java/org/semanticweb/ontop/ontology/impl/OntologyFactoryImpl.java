@@ -25,7 +25,8 @@ import org.semanticweb.ontop.model.OBDADataFactory;
 import org.semanticweb.ontop.model.ObjectConstant;
 import org.semanticweb.ontop.model.Predicate;
 import org.semanticweb.ontop.model.impl.OBDADataFactoryImpl;
-import org.semanticweb.ontop.ontology.*;;import java.util.Set;
+import org.semanticweb.ontop.ontology.*;
+import java.util.Set;
 
 
 public class OntologyFactoryImpl implements OntologyFactory {

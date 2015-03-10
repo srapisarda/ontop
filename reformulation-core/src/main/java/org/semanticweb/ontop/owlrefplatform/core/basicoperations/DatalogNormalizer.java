@@ -46,6 +46,11 @@ public class DatalogNormalizer {
 	private final static Map<Variable, Term> substitutionsTotal= new HashMap<Variable,Term>();
 	private static Random rand = new Random();
 	
+	private static boolean firstArgChecked;
+	private static	List<Function> eqGoOutsideSameLevel;
+	private static	List<Function> eqGoOutsideOneLevel; 
+	private static	List<Function> eqGoAllwayUp ;
+	
 	/***
 	 * Normalizes all the rules in a Datalog program, pushing equalities into
 	 * the atoms of the queries, when possible
@@ -243,11 +248,19 @@ public class DatalogNormalizer {
 	public static CQIE pullOutEqualities(CQIE query) {
 		Unifier substitutions = new Unifier();
 		int[] newVarCounter = { 1 };
-
+		
+		firstArgChecked = false;
+		eqGoAllwayUp =   new LinkedList<Function>();
+		eqGoOutsideOneLevel =  new LinkedList<Function>();
+		eqGoOutsideSameLevel =  new LinkedList<Function>();
+		
+		
 		List<Function> equalities = new LinkedList<Function>();
+		
 		pullOutEqualities(query.getBody(), substitutions, equalities, newVarCounter, false);
 		List<Function> body = query.getBody();
 		body.addAll(equalities);
+		body.addAll(eqGoAllwayUp);
 
 		/*
 		 * All new variables have been generated, the substitutions also, we
@@ -346,14 +359,15 @@ public class DatalogNormalizer {
 	 * @param substitutions
 	 */
 	@SuppressWarnings("unchecked")
-	private static List<Function> pullOutEqualities(List currentTerms, Unifier substitutions, List<Function> eqList, int[] newVarCounter,
+	private static void pullOutEqualities(List currentTerms, Unifier substitutions, List<Function> eqList, int[] newVarCounter,
 			boolean isLeftJoin) {
 
 
 		//Multimap<Variable, Function> mapVarAtom =  HashMultimap.create();
 		
-		List<Function> eqGoOutside = new LinkedList<Function>();
 
+
+		boolean secondLJArg = false ;
 		
 		for (int i = 0; i < currentTerms.size(); i++) {
 
@@ -373,13 +387,14 @@ public class DatalogNormalizer {
 
 			if (atom.isAlgebraFunction()) {
 				if (atom.getFunctionSymbol() == OBDAVocabulary.SPARQL_LEFTJOIN){
-					eqGoOutside.addAll(pullOutEqualities(subterms, substitutions, eqList, newVarCounter, true));
+					//eqGoOutsideSameLevel.addAll(
+					pullOutEqualities(subterms, substitutions, eqList, newVarCounter, true);
 					
 					Set<Variable> uniVarTm = new HashSet<Variable>();
 					getVariablesFromList(subterms, uniVarTm);
 					
 					//I find the scope of the equality
-					for (Function eq:eqGoOutside){
+					for (Function eq:eqGoOutsideSameLevel){
 						if (uniVarTm.containsAll(eq.getReferencedVariables())){
 							subterms.add(eq);
 							//eqGoOutside.remove(eq);
@@ -388,7 +403,8 @@ public class DatalogNormalizer {
 				}else if (atom.getFunctionSymbol() == OBDAVocabulary.SPARQL_GROUP){
 					continue;
 				}else{
-					eqGoOutside.addAll(pullOutEqualities(subterms, substitutions, eqList, newVarCounter, false));
+					//eqGoOutsideSameLevel.addAll(
+							pullOutEqualities(subterms, substitutions, eqList, newVarCounter, false);
 				}
 
 			} else if (atom.isBooleanFunction()) {
@@ -397,7 +413,8 @@ public class DatalogNormalizer {
 			}
 
 			// rename/substitute variables
-
+			
+			
 			for (int j = 0; j < subterms.size(); j++) {
 				Term subTerm = subterms.get(j);
 				if (subTerm instanceof Variable) {
@@ -415,6 +432,7 @@ public class DatalogNormalizer {
 					 */
 					// only relevant if in data function?
 					if (atom.isDataFunction()) {
+						
 						Variable var = fac.getVariable("f" + newVarCounter[0]);
 						newVarCounter[0] += 1;
 						Function equality = fac.getFunctionEQ(var, subTerm);
@@ -450,31 +468,50 @@ public class DatalogNormalizer {
 			
 			//TODO: WHat about the JOIN????
 			if (isLeftJoin){
-/*
-				Set<Variable> uniVarTm = new HashSet<Variable>();
-				getVariablesFromList(currentTerms, uniVarTm);
-
-				for (Function eq:eqList){
-					
-					//If the variables in the equality are contained in the current terms we add the equality
-					boolean containsVars = uniVarTm.contains(eq.getReferencedVariables());
-					if (containsVars){
-						
-						currentTerms.add(i + 1, eq);
-						eqList.remove(eq);
-					}
-				} //END FOR
-				*/
-				eqGoOutside.addAll(eqList);
-				eqList.clear();
+			
+				//Atom is the left-most data argument!
+				if ((atom.isDataFunction()) && (!firstArgChecked)){
+					firstArgChecked= true;
+					eqGoAllwayUp.addAll(eqList);
+				}
+				else if ((atom.isDataFunction()) && (firstArgChecked) && (!secondLJArg)){
+					eqGoOutsideOneLevel.addAll(eqList);
+					//the next data atom is the second argument
+				}else if ((atom.isDataFunction()) && (firstArgChecked) && (secondLJArg)){
+					eqGoOutsideSameLevel.addAll(eqList);
+				}else{
+					eqGoOutsideSameLevel.addAll(eqList);
+					eqList.clear();
+				}
 			}else{
 				currentTerms.addAll(i + 1, eqList);
 				i = i + eqList.size();
 				eqList.clear();
 			}
 			
+			
+			
+			
+			/*
+			Set<Variable> uniVarTm = new HashSet<Variable>();
+			getVariablesFromList(currentTerms, uniVarTm);
+
+			for (Function eq:eqList){
+				
+				//If the variables in the equality are contained in the current terms we add the equality
+				boolean containsVars = uniVarTm.contains(eq.getReferencedVariables());
+				if (containsVars){
+					
+					currentTerms.add(i + 1, eq);
+					eqList.remove(eq);
+				}
+			} //END FOR
+			*/
+			
+			
 		}//end for current terms
-		return eqGoOutside;
+		//return eqGoOutside;
+		currentTerms.addAll(eqGoOutsideOneLevel);
 	}
 
 	/**
