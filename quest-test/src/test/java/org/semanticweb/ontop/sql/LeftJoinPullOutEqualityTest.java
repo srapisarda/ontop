@@ -117,8 +117,9 @@ public class LeftJoinPullOutEqualityTest {
                 "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>" +
                 "SELECT ?p ?firstName ?lastName " +
                 "WHERE { " +
-                "    ?p a :Person . " +
+                "    ?p :gender ?g . " +
                 "    ?p :age \"33\"^^xsd:int . " +
+                "    FILTER (str(?g) = \"F\") " +
                 "    OPTIONAL { ?p :firstName ?firstName }" +
                 "    OPTIONAL { ?p :lastName ?lastName }" +
                 "}", 1);
