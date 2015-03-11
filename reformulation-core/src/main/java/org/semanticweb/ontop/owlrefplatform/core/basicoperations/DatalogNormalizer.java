@@ -242,6 +242,7 @@ public class DatalogNormalizer {
 	 * generating SQL queries and allows to avoid cross refrences in nested
 	 * JOINs, which generate wrong ON or WHERE conditions.
 	 * 
+	 * Test Cases: LeftJoinPullOutEqualityTest, 
 	 * 
 	 * @param query
 	 */
@@ -388,7 +389,13 @@ public class DatalogNormalizer {
 			if (atom.isAlgebraFunction()) {
 				if (atom.getFunctionSymbol() == OBDAVocabulary.SPARQL_LEFTJOIN){
 					//eqGoOutsideSameLevel.addAll(
+					
+					
 					pullOutEqualities(subterms, substitutions, eqList, newVarCounter, true);
+					if (isLeftJoin && !secondLJArg) {
+						secondLJArg = true;
+					}	
+					
 					
 					Set<Variable> uniVarTm = new HashSet<Variable>();
 					getVariablesFromList(subterms, uniVarTm);
@@ -473,13 +480,17 @@ public class DatalogNormalizer {
 				if ((atom.isDataFunction()) && (!firstArgChecked)){
 					firstArgChecked= true;
 					eqGoAllwayUp.addAll(eqList);
+					secondLJArg = true ; 
 				}
 				else if ((atom.isDataFunction()) && (firstArgChecked) && (!secondLJArg)){
 					eqGoOutsideOneLevel.addAll(eqList);
+					secondLJArg = true ; 
 					//the next data atom is the second argument
 				}else if ((atom.isDataFunction()) && (firstArgChecked) && (secondLJArg)){
 					eqGoOutsideSameLevel.addAll(eqList);
-				}else{
+					secondLJArg = false ; 
+				}
+				else{
 					eqGoOutsideSameLevel.addAll(eqList);
 					eqList.clear();
 				}
@@ -488,7 +499,8 @@ public class DatalogNormalizer {
 				i = i + eqList.size();
 				eqList.clear();
 			}
-			
+			eqList.clear();
+
 			
 			
 			
