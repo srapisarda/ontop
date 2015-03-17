@@ -23,6 +23,7 @@ package org.semanticweb.ontop.owlrefplatform.core.sql;
 
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
+import com.google.common.collect.*;
 import org.semanticweb.ontop.model.*;
 import org.semanticweb.ontop.model.OBDAQueryModifiers.OrderCondition;
 import org.semanticweb.ontop.model.Predicate.COL_TYPE;
@@ -60,10 +61,6 @@ import org.semanticweb.ontop.mapping.QueryUtils;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 /**
  * This class generates a SQL string from the datalog program coming from the
@@ -105,19 +102,23 @@ public class SQLGenerator implements NativeQueryGenerator {
 
 	private static final String IS_TRUE_OPERATOR = "%s IS TRUE";
 
-	private static final String langStrForSELECT = "%s AS \"%sLang\"";
-
 	/**
 	 * Formatting template
 	 */
-	private static final String VIEW_NAME = "Q%sVIEW%s";
-	private static final String VIEW_ANS_NAME = "Q%sView";
+    //private static final String VIEW_NAME = "Q%sVIEW%s";
+    //private static final String VIEW_ANS_NAME = "Q%sView";
+    private static final String VIEW_PREFIX = "Q";
+    private static final String VIEW_SUFFIX = "VIEW";
+    private static final String VIEW_ANS_SUFFIX = "View";
+
+    private static final String TYPE_STR = "%s AS %s" ;
+    private static final String TYPE_SUFFIX = "QuestType";
+    private static final String LANG_STR = "%s AS %s";
+    private static final String LANG_SUFFIX = "Lang";
+    private static final String MAIN_COLUMN_SUFFIX = "";
 
 	private final DBMetadata metadata;
 	private final SQLDialectAdapter sqladapter;
-	private final String QUEST_TYPE = "QuestType";
-
-	private static final String typeStrForSELECT = "%s AS \"%sQuestType\"" ;
 
 	private final ImmutableTable<Predicate, Predicate, Predicate> dataTypePredicateUnifyTable;
 	
@@ -404,6 +405,12 @@ public class SQLGenerator implements NativeQueryGenerator {
 		int i = 0;
 
 		/**
+		 * Remembers view names so as to avoid conflicts due to the possible DB engine
+		 * restrictions.
+		 */
+		 Set<String> viewNames = new HashSet<>();
+
+		/**
 		 * ANS i > 1
 		 */
 
@@ -417,7 +424,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 			} else {
 				boolean isAns1 = false;
 				createViewFrom(pred, metadata, ruleIndex,
-						ruleIndexByBodyPredicate, query, signature, isAns1);
+						ruleIndexByBodyPredicate, query, signature, isAns1, viewNames);
 			}
 			i++;
 		}
@@ -615,7 +622,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 
 		String SELECT = getSelectClause(signature, cq, index, innerdistincts, isAns1, headDataTypes);
 		String GROUP = getGroupBy(cq.getBody(), index);
-		String HAVING = getHaving(cq.getBody(), index);;
+		String HAVING = getHaving(cq.getBody(), index);
 
 		String querystr = SELECT + FROM + WHERE + GROUP + HAVING;
 		return querystr;
@@ -773,7 +780,8 @@ public class SQLGenerator implements NativeQueryGenerator {
 	private void createViewFrom(Predicate pred, DBMetadata metadata,
 								Multimap<Predicate, CQIE> ruleIndex,
 								Multimap<Predicate, CQIE> ruleIndexByBodyPredicate,
-								DatalogProgram query, List<String> signature, boolean isAns1)
+								DatalogProgram query, List<String> signature, boolean isAns1,
+								Set<String> viewNames)
 			throws OBDAException {
 
 		/* Creates BODY of the view query */
@@ -812,17 +820,18 @@ public class SQLGenerator implements NativeQueryGenerator {
 			unionView = "(" + Joiner.on(")\n UNION \n (").join(sqls) + ")";
 		}
 
-		String viewname = String.format(VIEW_ANS_NAME, pred);
+		//String viewname = String.format(VIEW_ANS_NAME, pred);
 		// String viewname = "Q" + pred + "View";
-		/* Creates the View itself */
+		String viewname = sqladapter.nameView(VIEW_PREFIX, pred.getName(), VIEW_ANS_SUFFIX, viewNames);
+		viewNames.add(viewname);
 
 		List<String> columns = Lists
 				.newArrayListWithExpectedSize(3 * headArity);
 
 		// Hard coded variable names
 		for (int i = 0; i < headArity; i++) {
-			columns.add("v" + i + QUEST_TYPE);
-			columns.add("v" + i + "lang");
+			columns.add("v" + i + TYPE_SUFFIX);
+			columns.add("v" + i + LANG_SUFFIX);
 			columns.add("v" + i);
 		}
 
@@ -1386,6 +1395,13 @@ public class SQLGenerator implements NativeQueryGenerator {
 
 		Iterator<Predicate> headDataTypeIter = headDataTypes.iterator();
 
+		/**
+		 * Set that contains all the variable names created on the top query.
+		 * It helps the dialect adapter to generate variable names according to its possible restrictions.
+		 * Currently, this is needed for the Oracle adapter (max. length of 30 characters).
+		 */
+		Set<String> sqlVariableNames = new HashSet<>();
+
 		while (hit.hasNext()) {
 			Term ht = hit.next();
 
@@ -1403,10 +1419,9 @@ public class SQLGenerator implements NativeQueryGenerator {
 				varName = "v" + hpos;
 			}
 
-			String typeColumn = getTypeColumnForSELECT(ht, varName, index);
-
-			String mainColumn = getMainColumnForSELECT(ht, varName, index, headDataTtype);
-			String langColumn = getLangColumnForSELECT(ht, varName, index);
+			String typeColumn = getTypeColumnForSELECT(ht, varName, index, sqlVariableNames);
+			String mainColumn = getMainColumnForSELECT(ht, varName, index, headDataTtype, sqlVariableNames);
+			String langColumn = getLangColumnForSELECT(ht, varName, index, sqlVariableNames);
 
 			sb.append("\n   ");
 			sb.append(typeColumn);
@@ -1422,8 +1437,12 @@ public class SQLGenerator implements NativeQueryGenerator {
 		return sb.toString();
 	}
 
-	private String getMainColumnForSELECT(Term ht, String varName,
-										  QueryAliasIndex index, Predicate typePredicate) {
+	private String getMainColumnForSELECT(Term ht, String signatureVarName,
+										  QueryAliasIndex index, Predicate typePredicate,
+										  Set<String> sqlVariableNames) {
+
+		final String varName = sqladapter.nameTopVariable(signatureVarName, MAIN_COLUMN_SUFFIX, sqlVariableNames);
+		sqlVariableNames.add(varName);
 
 		String mainColumn = null;
 
@@ -1530,8 +1549,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 		}
 
 
-		String format = String.format(mainTemplate, mainColumn,
-				sqladapter.sqlQuote(varName));
+		String format = String.format(mainTemplate, mainColumn, varName);
 
 		return format;
 	}
@@ -1540,8 +1558,11 @@ public class SQLGenerator implements NativeQueryGenerator {
 	 * Adding the ColType column to the projection (used in the result
 	 * set to know the type of constant)
 	 */
-	private String getLangColumnForSELECT(Term ht, String varName,
-										  QueryAliasIndex index) {
+	private String getLangColumnForSELECT(Term ht, String signatureVarName,
+										  QueryAliasIndex index,
+										  Set<String> sqlVariableNames) {
+		final String varName = sqladapter.nameTopVariable(signatureVarName, LANG_SUFFIX, sqlVariableNames);
+		sqlVariableNames.add(varName);
 
 		// String varName = signature.get(hpos);
 		if (ht instanceof Function) {
@@ -1575,15 +1596,15 @@ public class SQLGenerator implements NativeQueryGenerator {
 					} else {
 						lang = getSQLString(langTerm, index, false);
 					}
-					return (String.format(langStrForSELECT, lang, varName));
+					return (String.format(LANG_STR, lang, varName));
 				}
 		}
 
 
 		if (sqladapter instanceof HSQLSQLDialectAdapter) {
-			return (String.format(langStrForSELECT, "CAST(NULL AS VARCHAR(3))", varName));
+			return (String.format(LANG_STR, "CAST(NULL AS VARCHAR(3))", varName));
 		}
-		return (String.format(langStrForSELECT,  "NULL", varName));
+		return (String.format(LANG_STR,  "NULL", varName));
 
 	}
 
@@ -1635,12 +1656,17 @@ public class SQLGenerator implements NativeQueryGenerator {
 	 * Infers the type of a projected term.
 	 *
 	 * @param projectedTerm
-	 * @param varName Name of the variable
+	 * @param signatureVarName Name of the variable
 	 * @param index Used when the term correspond to a column name
+	 * @param sqlVariableNames Used for creating non conflicting variable names (when they have to be shorten)
 	 * @return A string like "5 AS ageQuestType"
 	 */
-	private String getTypeColumnForSELECT(Term projectedTerm, String varName,
-										  QueryAliasIndex index) {
+	private String getTypeColumnForSELECT(Term projectedTerm, String signatureVarName,
+										  QueryAliasIndex index, Set<String> sqlVariableNames) {
+
+		final String varName = sqladapter.nameTopVariable(signatureVarName, TYPE_SUFFIX, sqlVariableNames);
+		sqlVariableNames.add(varName);
+
 		String typeString = null;
 		COL_TYPE type = null;
 
@@ -1670,7 +1696,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 						+ projectedTerm.toString());
 		}
 
-		return String.format(typeStrForSELECT, typeString, varName);
+		return String.format(TYPE_STR, typeString, varName);
 
 	}
 
@@ -1792,7 +1818,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 			 * For instance, tableColumnType becomes `Qans4View`.`v1QuestType` .
 			 */
 			if (definition instanceof ViewDefinition) {
-				columnType = column + QUEST_TYPE;
+				columnType = column + TYPE_SUFFIX;
 				tableColumnType = sqladapter.sqlQualifiedColumn(
 						quotedTable, columnType);
 				typeString = tableColumnType ;
@@ -2495,18 +2521,23 @@ public class SQLGenerator implements NativeQueryGenerator {
 				 * view:
 				 */
 				// tableName = "Q"+tableName+"View";
-				tableName = String.format(VIEW_ANS_NAME, tableName);
-				def = metadata.getDefinition(tableName);
+				//tableName = String.format(VIEW_ANS_NAME, tableName);
+				final String viewName = sqladapter.nameView(VIEW_PREFIX, tableName, VIEW_ANS_SUFFIX, viewNames.values());
+				/**
+				 * TODO: understand this.
+				 */
+				def = metadata.getDefinition(viewName);
 				if (def == null) {
 					isEmpty = true;
 					return;
 				} else {
-					viewNames.put(atom, tableName);
+					viewNames.put(atom, viewName);
 				}
 			} else {
-
-				String simpleTableViewName = String.format(VIEW_NAME,
-						tableName, String.valueOf(dataTableCount));
+				//String simpleTableViewName = String.format(VIEW_NAME,
+				// tableName, String.valueOf(dataTableCount));
+				String suffix = VIEW_SUFFIX + String.valueOf(dataTableCount);
+				final String simpleTableViewName = sqladapter.nameView(VIEW_PREFIX, tableName, suffix, viewNames.values());
 				viewNames.put(atom, simpleTableViewName);
 			}
 			dataTableCount += 1;
@@ -2521,8 +2552,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 		private void indexVariables(Function atom) {
 			DataDefinition def = dataDefinitions.get(atom);
 			Predicate atomName = atom.getFunctionSymbol();
-			String viewName = viewNames.get(atom);
-			viewName = sqladapter.sqlQuote(viewName);
+			final String quotedViewName = sqladapter.sqlQuote(viewNames.get(atom));
 			for (int index = 0; index < atom.getTerms().size(); index++) {
 				Term term = atom.getTerms().get(index);
 
@@ -2543,7 +2573,7 @@ public class SQLGenerator implements NativeQueryGenerator {
 
 					columnName = trim(columnName);
 
-					String reference = sqladapter.sqlQualifiedColumn(viewName,
+					String reference = sqladapter.sqlQualifiedColumn(quotedViewName,
 							columnName);
 					columnReferences.put((Variable) term, reference);
 				}
@@ -2567,33 +2597,43 @@ public class SQLGenerator implements NativeQueryGenerator {
 		 * Generates the view definition, i.e., "tablename viewname".
 		 */
 		public String getViewDefinition(Function atom) {
+			/**
+			 * Normal case
+			 */
 			DataDefinition def = dataDefinitions.get(atom);
-			String viewname = viewNames.get(atom);
-			viewname = sqladapter.sqlQuote(viewname);
-
-			if (def instanceof TableDefinition) {
-				return sqladapter.sqlTableName(tableNames.get(atom), viewname);
-			} else if (def instanceof ViewDefinition) {
-				String viewdef = ((ViewDefinition) def).getStatement();
-				String formatView = String.format("(%s) %s", viewdef, viewname);
-				return formatView;
+			if (def != null) {
+				final String viewName = sqladapter.sqlQuote(viewNames.get(atom));
+				if (def instanceof TableDefinition) {
+					return sqladapter.sqlTableName(tableNames.get(atom), viewName);
+				} else if (def instanceof ViewDefinition) {
+					String viewdef = ((ViewDefinition) def).getStatement();
+					String formatView = String.format("(%s) %s", viewdef, viewName);
+					return formatView;
+				} else {
+					throw new RuntimeException("Unsupported data definition");
+				}
 			}
-
-			// Should be an ans atom.
-			Predicate pred = atom.getFunctionSymbol();
-			String view = sqlAnsViewMap.get(pred);
-			viewname = "Q" + pred + "View";
-			viewname = sqladapter.sqlQuote(viewname);
-
-			if (view != null) {
-				String formatView = String.format("(%s) %s", view, viewname);
-				return formatView;
-
+			/**
+			 * Special case.
+			 * For atoms nested in a LJ.
+			 *
+			 * TODO: unify with the normal case?
+			 */
+			else {
+				// Should be an ans atom.
+				Predicate pred = atom.getFunctionSymbol();
+				String view = sqlAnsViewMap.get(pred);
+				if (view != null) {
+					// TODO: check if it is correct not to consider other view names.
+					final String viewName = sqladapter.sqlQuote(sqladapter.nameView(VIEW_PREFIX, pred.getName(), VIEW_ANS_SUFFIX,
+							ImmutableSet.<String>of()));
+					String formatView = String.format("(%s) %s", view, viewName);
+					return formatView;
+				}
+				throw new RuntimeException(
+						"Impossible to get data definition for: " + atom
+								+ ", type: " + def);
 			}
-
-			throw new RuntimeException(
-					"Impossible to get data definition for: " + atom
-							+ ", type: " + def);
 		}
 
 		public String getView(Function atom) {
