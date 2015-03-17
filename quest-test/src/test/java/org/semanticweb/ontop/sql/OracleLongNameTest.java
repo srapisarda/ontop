@@ -23,7 +23,9 @@ package org.semanticweb.ontop.sql;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.semanticweb.ontop.io.ModelIOManager;
+import org.semanticweb.ontop.exception.DuplicateMappingException;
+import org.semanticweb.ontop.exception.InvalidMappingException;
+import org.semanticweb.ontop.io.InvalidDataSourceException;
 import org.semanticweb.ontop.model.OBDADataFactory;
 import org.semanticweb.ontop.model.OBDAException;
 import org.semanticweb.ontop.model.OBDAModel;
@@ -43,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
 /***
@@ -50,11 +53,9 @@ import java.util.Properties;
  */
 public class OracleLongNameTest {
 
-	private OBDADataFactory fac;
 	private QuestOWLConnection conn;
 
 	Logger log = LoggerFactory.getLogger(this.getClass());
-	private OBDAModel obdaModel;
 	private OWLOntology ontology;
 	private QuestOWLFactory factory;
 	
@@ -69,15 +70,6 @@ public class OracleLongNameTest {
 		// Loading the OWL file
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 		ontology = manager.loadOntologyFromOntologyDocument((new File(owlfile)));
-
-		// Loading the OBDA data
-		fac = OBDADataFactoryImpl.getInstance();
-		obdaModel = fac.getOBDAModel();
-		
-
-
-
-		
 	}
 
 	@After
@@ -87,19 +79,16 @@ public class OracleLongNameTest {
 	}
 	
 
-	private void runQuery(String varName) throws OBDAException, OWLException{
+	private void runQuery(String varName) throws OBDAException, OWLException, DuplicateMappingException, InvalidMappingException, InvalidDataSourceException, IOException {
 		
 		Properties p = new Properties();
 		p.put(QuestPreferences.ABOX_MODE, QuestConstants.VIRTUAL);
 		p.put(QuestPreferences.OBTAIN_FULL_METADATA, QuestConstants.FALSE);
 		// Creating a new instance of the reasoner
-		factory = new QuestOWLFactory();
-		factory.setOBDAController(obdaModel);
-
 		QuestPreferences preferences = new QuestPreferences(p);
-		factory.setPreferenceHolder(preferences);
+		factory = new QuestOWLFactory(new File(obdafile1), preferences);
 
-		reasoner = (QuestOWL) factory.createReasoner(ontology, new SimpleConfiguration());
+		reasoner = factory.createReasoner(ontology, new SimpleConfiguration());
 
 		// Now we are ready for querying
 		conn = reasoner.getConnection();
@@ -116,9 +105,6 @@ public class OracleLongNameTest {
 	 */
 	@Test
 	public void testShortVarName() throws Exception {
-		
-		ModelIOManager ioManager = new ModelIOManager(obdaModel);
-		ioManager.load(obdafile1);
 		runQuery("?x");
 	}
 
@@ -127,9 +113,6 @@ public class OracleLongNameTest {
 	 */
 	@Test
 	public void testLongVarName() throws Exception {
-
-		ModelIOManager ioManager = new ModelIOManager(obdaModel);
-		ioManager.load(obdafile1);
 		runQuery("?veryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongVarName");
 	}
 }
