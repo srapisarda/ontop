@@ -617,6 +617,19 @@ public class SparqlAlgebraToDatalogTranslator {
         // Projected variables --> for the head atom
 		List<Variable> projectedVariables = new ArrayList<>();
 		for (ProjectionElem var : project.getProjectionElemList().getElements()) {
+            // we assume here that the target name is "introduced" as one of the arguments of atom
+            // (this is normally done by an EXTEND inside the PROJECTION)
+            // first, we check whether this assumption can be made
+         /*   if (!var.getSourceName().equals(var.getTargetName())) {
+                boolean found = false;
+                for (Term a : atom.getTerms())
+                    if ((a instanceof Variable) && ((Variable)a).getName().equals(var.getSourceName())) {
+                        found = true;
+                        break;
+                    }
+                if (!found)
+                    throw new RuntimeException("Projection target of " + var + " not found in " + project.getArg());
+            }*/
 			projectedVariables.add(ofac.getVariable(var.getSourceName()));
 		}
 

@@ -102,7 +102,7 @@ public class QuestOWLExampleNotLatin {
 		 */
 		String sparqlQuery = 
 				"PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
-				"SELECT DISTINCT ?x ?title ?author ?genre ?edition \n" +
+				"SELECT DISTINCT (?edition as ?ed) ?x ?title ?author ?genre ?edition \n" +
 				"WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
 				"		 ?y a :作者; :name ?author. \n" +
 				"		 ?z a :Édition; :editionNumber ?edition }";
