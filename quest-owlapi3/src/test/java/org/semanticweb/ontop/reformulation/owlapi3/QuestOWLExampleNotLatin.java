@@ -57,8 +57,8 @@ public class QuestOWLExampleNotLatin {
 	 * Test with not latin Character
 	 * 
 	 */
-	final String owlfile = "src/test/resources/exampleBooks/exampleBooksNotLatin.owl";
-	final String obdafile = "src/test/resources/exampleBooks/exampleBooksNotLatin.obda";
+	final String owlfile = "/Users/elem/git/ontop/quest-owlapi3/src/test/resources/exampleBooks/exampleBooksNotLatin.owl";
+	final String obdafile = "/Users/elem/git/ontop/quest-owlapi3/src/test/resources/exampleBooks/exampleBooksNotLatin.obda";
 
 	public void runQuery() throws Exception {
 
