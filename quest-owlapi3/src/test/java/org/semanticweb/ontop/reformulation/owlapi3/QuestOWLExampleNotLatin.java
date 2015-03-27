@@ -57,8 +57,8 @@ public class QuestOWLExampleNotLatin {
 	 * Test with not latin Character
 	 * 
 	 */
-	final String owlfile = "/Users/elem/git/ontop/quest-owlapi3/src/test/resources/exampleBooks/exampleBooksNotLatin.owl";
-	final String obdafile = "/Users/elem/git/ontop/quest-owlapi3/src/test/resources/exampleBooks/exampleBooksNotLatin.obda";
+	final String owlfile = "src/test/resources/exampleBooks/exampleBooksNotLatin.owl";
+	final String obdafile = "src/test/resources/exampleBooks/exampleBooksNotLatin.obda";
 
 	public void runQuery() throws Exception {
 
@@ -102,7 +102,7 @@ public class QuestOWLExampleNotLatin {
 		 */
 		String sparqlQuery = 
 				"PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
-				"SELECT DISTINCT (?edition as ?ed) ?x ?title ?author ?y ?genre ?edition \n" +
+				"SELECT DISTINCT ?x ?title ?author ?y ?genre ?edition \n" +
 				"WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
 				"		 ?y a :作者; :name ?author. \n" +
 				"		 ?z a :Édition; :editionNumber ?edition }";
