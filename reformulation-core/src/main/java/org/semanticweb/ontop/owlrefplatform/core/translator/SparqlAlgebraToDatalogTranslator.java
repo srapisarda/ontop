@@ -864,7 +864,7 @@ public class SparqlAlgebraToDatalogTranslator {
 	 * @return
 	 */
 	public void translate(List<Variable> vars, StatementPattern triple,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		
 		Var obj = triple.getObjectVar();
 		Var pred = triple.getPredicateVar();
@@ -956,7 +956,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			newvars.add(var);
 		}
 
-		Predicate answerPred = ofac.getPredicate("ans" + i, vars.size());
+		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
 		Function head = ofac.getFunction(answerPred, newvars);
 
 		CQIE newrule = ofac.getCQIE(head, result);
