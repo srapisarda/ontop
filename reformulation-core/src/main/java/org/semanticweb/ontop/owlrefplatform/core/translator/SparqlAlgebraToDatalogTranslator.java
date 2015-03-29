@@ -658,7 +658,7 @@ public class SparqlAlgebraToDatalogTranslator {
          */
         List<Term> bodyAtomTerms = new ArrayList<Term>(allVariables);
 
-        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName, allVariables.size()); //i + 1
+        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName+"0", allVariables.size()); //i + 1
         Function bodyAtom = ofac.getFunction(bodyAtomFunctionSymbol, bodyAtomTerms);
 
         CQIE newRule = ofac.getCQIE(headAtom, bodyAtom);
@@ -667,7 +667,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		/**
          * Continue the nested tree
          */
-		translate(allVariables, te, pr, newHeadName, varcount); //i + 1
+		translate(allVariables, te, pr, newHeadName + "0", varcount); //i + 1
 	}
 
 	private void translate(List<Variable> vars, Slice slice,
