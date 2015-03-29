@@ -156,7 +156,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		}
 		int[] freshvarcount = { 1 };
 
-		translate(vars, te, result, 1, freshvarcount);
+		translate(vars, te, result, OBDAVocabulary.QUEST_QUERY + "0", freshvarcount);
 		return result;
 	}
 	
@@ -189,62 +189,62 @@ public class SparqlAlgebraToDatalogTranslator {
 //	}
 
 	private void translate(List<Variable> vars, TupleExpr te,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		if (te instanceof Slice) {
 
 			// Add LIMIT and OFFSET modifiers, if any
 			Slice slice = (Slice) te;
-			translate(vars, slice, pr, i, varcount);
+			translate(vars, slice, pr, newHeadName, varcount);
 
 		} else if (te instanceof Distinct) {
 
 			// Add DISTINCT modifier, if any
 			Distinct distinct = (Distinct) te;
-			translate(vars, distinct, pr, i, varcount);
+			translate(vars, distinct, pr, newHeadName, varcount);
 
 		} else if (te instanceof Projection) {
 
 			// Add PROJECTION modifier, if any
 			Projection project = (Projection) te;
-			translate(vars, project, pr, i, varcount);
+			translate(vars, project, pr, newHeadName, varcount);
 
 		} else if (te instanceof Order) {
 
 			// Add ORDER BY modifier, if any
 			Order order = (Order) te;
-			translate(vars, order, pr, i, varcount);
+			translate(vars, order, pr, newHeadName, varcount);
 		
 		} else if (te instanceof Group) { 
 			Group gr = (Group) te;
-			translate(vars, gr, pr, i, varcount);
+			translate(vars, gr, pr, newHeadName, varcount);
 			
 		} else if (te instanceof Filter) {
 			Filter filter = (Filter) te;
-			translate(vars, filter, pr, i, varcount);
+			translate(vars, filter, pr, newHeadName, varcount);
 
 		} else if (te instanceof StatementPattern) {
 
 			StatementPattern stmp = (StatementPattern) te;
-			translate(vars, stmp, pr, i, varcount);
+			translate(vars, stmp, pr, newHeadName, varcount);
 
 		} else if (te instanceof Join) {
 			Join join = (Join) te;
-			translate(vars, join, pr, i, varcount);
+			translate(vars, join, pr, newHeadName, varcount);
 
 		} else if (te instanceof Union) {
 			Union union = (Union) te;
-			translate(vars, union, pr, i, varcount);
+			translate(vars, union, pr, newHeadName, varcount);
 
 		} else if (te instanceof LeftJoin) {
 			LeftJoin join = (LeftJoin) te;
-			translate(vars, join, pr, i, varcount);
+			translate(vars, join, pr, newHeadName, varcount);
 		
 		} else if (te instanceof Reduced) {
-			translate(vars, ((Reduced) te).getArg(), pr, i, varcount);
+			translate(vars, ((Reduced) te).getArg(), pr, newHeadName, varcount);
 		
 		} else if (te instanceof Extension) { 
 			Extension extend = (Extension) te;
-			translate(vars, extend, pr, i, varcount);
+			translate(vars, extend, pr, newHeadName, varcount);
 		
 		} else {
 			try {
@@ -258,7 +258,7 @@ public class SparqlAlgebraToDatalogTranslator {
 	}
 
 	private void translate(List<Variable> vars, Extension extend,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr subte = extend.getArg();
 		List<ExtensionElem> elements = extend.getElements();
 		Set<Variable> atom2VarsSet = null;
@@ -292,7 +292,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 			int indexOfvar = atom1VarsList.indexOf(var);
 			atom1VarsList.set(indexOfvar,term);
-			Predicate leftAtomPred = ofac.getPredicate("ans" + (i),
+			Predicate leftAtomPred = ofac.getPredicate(newHeadName,
 					atom1VarsList.size());
 			Function head = ofac.getFunction(leftAtomPred, atom1VarsList);
 		
@@ -300,7 +300,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			
 			atom2VarsList.addAll(atom2VarsSet);
 			Collections.sort(atom2VarsList, comparator);
-			Predicate rightAtomPred = ofac.getPredicate("ans" + ((2 * i)),
+			Predicate rightAtomPred = ofac.getPredicate(newHeadName + "0",
 					atom2VarsList.size());
 			Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
 
@@ -326,9 +326,9 @@ public class SparqlAlgebraToDatalogTranslator {
         if (!atom2VarsList.isEmpty()){
             for (Term var1 : atom2VarsList)
                 vars1.add((Variable) var1);
-            translate(vars1, subte, pr, 2 * i, varcount);
+            translate(vars1, subte, pr, newHeadName + "0", varcount);
         } else{
-            translate(vars, subte, pr, i , varcount);
+            translate(vars, subte, pr, newHeadName , varcount);
         }
 	}
 
@@ -380,7 +380,7 @@ public class SparqlAlgebraToDatalogTranslator {
 	}
 
 	private void translate(List<Variable> vars, Union union,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr left = union.getLeftArg();
 		TupleExpr right = union.getRightArg();
 
@@ -390,7 +390,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<Term> atom1VarsList = new LinkedList<Term>();
 		atom1VarsList.addAll(atom1VarsSet);
 		Collections.sort(atom1VarsList, comparator);
-		Predicate leftAtomPred = ofac.getPredicate("ans" + (2 * i),
+		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
 				atom1VarsList.size());
 		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
 
@@ -398,7 +398,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<Term> atom2VarsList = new LinkedList<Term>();
 		atom2VarsList.addAll(atom2VarsSet);
 		Collections.sort(atom2VarsList, comparator);
-		Predicate rightAtomPred = ofac.getPredicate("ans" + ((2 * i) + 1),
+		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
 				atom2VarsList.size());
 		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
 
@@ -408,7 +408,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		for (Variable var : vars) {
 			headVars.add(var);
 		}
-		Predicate answerPred = ofac.getPredicate("ans" + i, vars.size());
+		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
 		Function head = ofac.getFunction(answerPred, headVars);
 
 		/*
@@ -452,19 +452,19 @@ public class SparqlAlgebraToDatalogTranslator {
 			List<Variable> vars1 = new LinkedList<Variable>();
 			for (Term var : atom1VarsList)
 				vars1.add((Variable) var);
-			translate(vars1, left, pr, 2 * i, varcount);
+			translate(vars1, left, pr, newHeadName + "0", varcount);
 		}
 		{
 			List<Variable> vars2 = new LinkedList<Variable>();
 			for (Term var : atom2VarsList)
 				vars2.add((Variable) var);
-			translate(vars2, right, pr, 2 * i + 1, varcount);
+			translate(vars2, right, pr, newHeadName + "1", varcount);
 		}
 
 	}
 
 	private void translate(List<Variable> vars, Join join, DatalogProgram pr,
-			long i, int[] varcount) {
+			String newHeadName, int[] varcount) {
 		TupleExpr left = join.getLeftArg();
 		TupleExpr right = join.getRightArg();
 
@@ -474,7 +474,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<Term> atom1VarsList = new LinkedList<Term>();
 		atom1VarsList.addAll(atom1VarsSet);
 		Collections.sort(atom1VarsList, comparator);
-		Predicate leftAtomPred = ofac.getPredicate("ans" + (2 * i),
+		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
 				atom1VarsList.size());
 		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
 
@@ -482,7 +482,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<Term> atom2VarsList = new LinkedList<Term>();
 		atom2VarsList.addAll(atom2VarsSet);
 		Collections.sort(atom2VarsList, comparator);
-		Predicate rightAtomPred = ofac.getPredicate("ans" + ((2 * i) + 1),
+		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
 				atom2VarsList.size());
 		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
 		/* The join, this is no longer necessary, we will try to avoid explicit joins
@@ -496,7 +496,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		for (Variable var : vars) {
 			headVars.add(var);
 		}
-		Predicate answerPred = ofac.getPredicate("ans" + i, vars.size());
+		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
 		Function head = ofac.getFunction(answerPred, headVars);
 
 		/*
@@ -513,18 +513,18 @@ public class SparqlAlgebraToDatalogTranslator {
 			List<Variable> vars1 = new LinkedList<Variable>();
 			for (Term var : atom1VarsList)
 				vars1.add((Variable) var);
-			translate(vars1, left, pr, 2 * i, varcount);
+			translate(vars1, left, pr, newHeadName + "0", varcount);
 		}
 		{
 			List<Variable> vars2 = new LinkedList<Variable>();
 			for (Term var : atom2VarsList)
 				vars2.add((Variable) var);
-			translate(vars2, right, pr, 2 * i + 1, varcount);
+			translate(vars2, right, pr, newHeadName + "1", varcount);
 		}
 	}
 
 	private void translate(List<Variable> vars, LeftJoin join,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr left = join.getLeftArg();
 		TupleExpr right = join.getRightArg();
 		ValueExpr filter = join.getCondition();
@@ -535,7 +535,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<Term> atom1VarsList = new LinkedList<Term>();
 		atom1VarsList.addAll(atom1VarsSet);
 		Collections.sort(atom1VarsList, comparator);
-		Predicate leftAtomPred = ofac.getPredicate("ans" + (2 * i),
+		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
 				atom1VarsList.size());
 		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
 
@@ -543,7 +543,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<Term> atom2VarsList = new LinkedList<Term>();
 		atom2VarsList.addAll(atom2VarsSet);
 		Collections.sort(atom2VarsList, comparator);
-		Predicate rightAtomPred = ofac.getPredicate("ans" + ((2 * i) + 1),
+		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
 				atom2VarsList.size());
 		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
 
@@ -567,7 +567,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		for (Variable var : vars) {
 			headVars.add(var);
 		}
-		Predicate answerPred = ofac.getPredicate("ans" + i, vars.size());
+		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
 		Function head = ofac.getFunction(answerPred, headVars);
 
 		/*
@@ -587,13 +587,13 @@ public class SparqlAlgebraToDatalogTranslator {
 			List<Variable> vars1 = new LinkedList<Variable>();
 			for (Term var : atom1VarsList)
 				vars1.add((Variable) var);
-			translate(vars1, left, pr, 2 * i, varcount);
+			translate(vars1, left, pr, newHeadName+"0", varcount);
 		}
 		{
 			List<Variable> vars2 = new LinkedList<Variable>();
 			for (Term var : atom2VarsList)
 				vars2.add((Variable) var);
-			translate(vars2, right, pr, 2 * i + 1, varcount);
+			translate(vars2, right, pr, newHeadName+"1", varcount);
 		}
 	}
 
@@ -610,7 +610,7 @@ public class SparqlAlgebraToDatalogTranslator {
      * Pursues by translating its child nodes (from the SPARQL tree).
      */
 	private void translate(List<Variable> vars, Projection project,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 
 		TupleExpr te = project.getArg();
 
@@ -641,7 +641,7 @@ public class SparqlAlgebraToDatalogTranslator {
         /**
          * Head: considers only the projected variables.
          */
-		Predicate predicate = ofac.getPredicate("ans" + i,
+		Predicate predicate = ofac.getPredicate(newHeadName,
 				projectedVariables.size());
 		Function headAtom = ofac.getFunction(predicate, new ArrayList<Term>(projectedVariables));
 
@@ -658,7 +658,7 @@ public class SparqlAlgebraToDatalogTranslator {
          */
         List<Term> bodyAtomTerms = new ArrayList<Term>(allVariables);
 
-        Predicate bodyAtomFunctionSymbol = ofac.getPredicate("ans" + (i + 1), allVariables.size());
+        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName, allVariables.size()); //i + 1
         Function bodyAtom = ofac.getFunction(bodyAtomFunctionSymbol, bodyAtomTerms);
 
         CQIE newRule = ofac.getCQIE(headAtom, bodyAtom);
@@ -667,28 +667,28 @@ public class SparqlAlgebraToDatalogTranslator {
 		/**
          * Continue the nested tree
          */
-		translate(allVariables, te, pr, i + 1, varcount);
+		translate(allVariables, te, pr, newHeadName, varcount); //i + 1
 	}
 
 	private void translate(List<Variable> vars, Slice slice,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr te;
 		pr.getQueryModifiers().setOffset(slice.getOffset());
 		pr.getQueryModifiers().setLimit(slice.getLimit());
 		te = slice.getArg(); // narrow down the query
-		translate(vars, te, pr, i, varcount);
+		translate(vars, te, pr, newHeadName, varcount);
 	}
 
 	private void translate(List<Variable> vars, Distinct distinct,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr te;
 		pr.getQueryModifiers().setDistinct();
 		te = distinct.getArg(); // narrow down the query
-		translate(vars, te, pr, i, varcount);
+		translate(vars, te, pr, newHeadName, varcount);
 	}
 
 	private void translate(List<Variable> vars, Order order,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr te;
 		for (OrderElem c : order.getElements()) {
 			
@@ -704,11 +704,11 @@ public class SparqlAlgebraToDatalogTranslator {
 			pr.getQueryModifiers().addOrderCondition(var, direction);
 		}
 		te = order.getArg(); // narrow down the query
-		translate(vars, te, pr, i, varcount);
+		translate(vars, te, pr, newHeadName, varcount);
 	}
 	
 	private void translate(List<Variable> vars, Group group,
-			DatalogProgram pr, long i, int[] varcount) {
+			DatalogProgram pr, String newHeadName, int[] varcount) {
 
 		TupleExpr te;
 		te = group.getArg(); // narrow down the query
@@ -732,7 +732,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			Function aggregateAtom = ofac.getFunction(OBDAVocabulary.SPARQL_GROUP,groupvar );
 
 			//Construction the head of the new rule
-			Predicate predicate = ofac.getPredicate("ans" + (i), vars.size());
+			Predicate predicate = ofac.getPredicate(newHeadName, vars.size());
 			List<Term> termVars = new LinkedList<Term>();
 			termVars.addAll(vars);
 			Function head = ofac.getFunction(predicate, termVars);
@@ -740,7 +740,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			//Construction the body of the new rule that encode the rest of the tree
 			Predicate pbody;
 			Function bodyAtom;
-			pbody = ofac.getPredicate("ans" + (i * 2), vars.size());
+			pbody = ofac.getPredicate(newHeadName + "0", vars.size());
 			bodyAtom = ofac.getFunction(pbody, termVars);
 
 			//Constructing the list
@@ -764,16 +764,16 @@ public class SparqlAlgebraToDatalogTranslator {
 			 */
 
 			//iterating
-			translate(vars, te, pr, i*2, varcount);
+			translate(vars, te, pr, newHeadName+"0", varcount);
 		}else{
-			translate(vars, te, pr, i, varcount);
+			translate(vars, te, pr, newHeadName, varcount);
 		}
 		
 		
 	}
 
 	public void translate(List<Variable> var, Filter filter, DatalogProgram pr,
-			long i, int varcount[]) {
+			String newHeadName, int varcount[]) {
 		ValueExpr condition = filter.getCondition();
 		List<Function> filterAtoms = new LinkedList<Function>();
 		Set<Variable> filteredVariables = new LinkedHashSet<Variable>();
@@ -791,7 +791,7 @@ public class SparqlAlgebraToDatalogTranslator {
 				filteredVariables.addAll(filterAtom.getReferencedVariables());
 			}
 
-		Predicate predicate = ofac.getPredicate("ans" + (i), var.size());
+		Predicate predicate = ofac.getPredicate(newHeadName, var.size());
 		List<Term> vars = new LinkedList<Term>();
 		vars.addAll(var);
 		Function head = ofac.getFunction(predicate, vars);
@@ -819,10 +819,10 @@ public class SparqlAlgebraToDatalogTranslator {
 		// on a variable that has not been projected out of the inner
 		// expressions
 		if (vars.size() == 0 && filteredVariables.size() > 0) {
-			pbody = ofac.getPredicate("ans" + (i * 2), innerProjection.size());
+			pbody = ofac.getPredicate(newHeadName + "0", innerProjection.size());
 			bodyAtom = ofac.getFunction(pbody, innerProjection);
 		} else {
-			pbody = ofac.getPredicate("ans" + (i * 2), vars.size());
+			pbody = ofac.getPredicate(newHeadName + "0", vars.size());
 			bodyAtom = ofac.getFunction(pbody, vars);
 		}
 		
@@ -849,9 +849,9 @@ public class SparqlAlgebraToDatalogTranslator {
 			List<Variable> newvars = new LinkedList<Variable>();
 			for (Term l : innerProjection)
 				newvars.add((Variable) l);
-			translate(newvars, sub, pr, (i * 2), varcount);
+			translate(newvars, sub, pr, newHeadName + "0", varcount);
 		} else
-			translate(var, sub, pr, (i * 2), varcount);
+			translate(var, sub, pr, newHeadName + "0", varcount);
 
 	}
 
