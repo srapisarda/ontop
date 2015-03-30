@@ -188,7 +188,7 @@ public class SparqlAlgebraToDatalogTranslator {
 //		return result;
 //	}
 
-	private void translate(List<Variable> vars, TupleExpr te,
+	private Function translate(List<Variable> vars, TupleExpr te,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 		if (te instanceof Slice) {
 
@@ -200,13 +200,13 @@ public class SparqlAlgebraToDatalogTranslator {
 
 			// Add DISTINCT modifier, if any
 			Distinct distinct = (Distinct) te;
-			translate(vars, distinct, pr, newHeadName, varcount);
+			return translate(vars, distinct, pr, newHeadName, varcount);
 
 		} else if (te instanceof Projection) {
 
 			// Add PROJECTION modifier, if any
 			Projection project = (Projection) te;
-			translate(vars, project, pr, newHeadName, varcount);
+			return translate(project, pr, newHeadName, varcount);
 
 		} else if (te instanceof Order) {
 
@@ -225,11 +225,11 @@ public class SparqlAlgebraToDatalogTranslator {
 		} else if (te instanceof StatementPattern) {
 
 			StatementPattern stmp = (StatementPattern) te;
-			translate(vars, stmp, pr, newHeadName, varcount);
+			return translate(stmp);
 
 		} else if (te instanceof Join) {
 			Join join = (Join) te;
-			translate(vars, join, pr, newHeadName, varcount);
+			return translate(vars, join, pr, newHeadName, varcount);
 
 		} else if (te instanceof Union) {
 			Union union = (Union) te;
@@ -255,6 +255,7 @@ public class SparqlAlgebraToDatalogTranslator {
 				e.printStackTrace();
 			}
 		}
+        return null;
 	}
 
 	private void translate(List<Variable> vars, Extension extend,
@@ -463,65 +464,75 @@ public class SparqlAlgebraToDatalogTranslator {
 
 	}
 
-	private void translate(List<Variable> vars, Join join, DatalogProgram pr,
-			String newHeadName, int[] varcount) {
-		TupleExpr left = join.getLeftArg();
+    private Function translate(List<Variable> vars, Join join, DatalogProgram pr, String newHeadName, int[] varcount) {
+        TupleExpr left = join.getLeftArg();
 		TupleExpr right = join.getRightArg();
+        Function leftAtom = translate(vars, left, pr, newHeadName + "0", varcount);
+        Function rightAtom = translate(vars, right, pr, newHeadName + "1", varcount);
+        List<Term> varList = getUnionOfVariables(leftAtom, rightAtom);
+        CQIE rule = createRule(pr, newHeadName, varList, leftAtom, rightAtom);
+        return rule.getHead();
+    }
 
-		/* Preparing the two atoms */
-
-		Set<Variable> atom1VarsSet = getVariables(left);
-		List<Term> atom1VarsList = new LinkedList<Term>();
-		atom1VarsList.addAll(atom1VarsSet);
-		Collections.sort(atom1VarsList, comparator);
-		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
-				atom1VarsList.size());
-		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
-
-		Set<Variable> atom2VarsSet = getVariables(right);
-		List<Term> atom2VarsList = new LinkedList<Term>();
-		atom2VarsList.addAll(atom2VarsSet);
-		Collections.sort(atom2VarsList, comparator);
-		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
-				atom2VarsList.size());
-		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
-		/* The join, this is no longer necessary, we will try to avoid explicit joins
-		as much as poosible, just use comma */
-//		Predicate joinp = OBDAVocabulary.SPARQL_JOIN;
-//		Function joinAtom = ofac.getFunction(joinp, leftAtom, rightAtom);
-
-		/* Preparing the head of the Join rule */
-		// Collections.sort(vars, comparator);
-		List<Term> headVars = new LinkedList<Term>();
-		for (Variable var : vars) {
-			headVars.add(var);
-		}
-		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
-		Function head = ofac.getFunction(answerPred, headVars);
-
-		/*
-		 * Adding the join to the program
-		 */
-
-		CQIE newrule = ofac.getCQIE(head, leftAtom, rightAtom);
-		pr.appendRule(newrule);
-
-		/*
-		 * Translating the rest
-		 */
-		{
-			List<Variable> vars1 = new LinkedList<Variable>();
-			for (Term var : atom1VarsList)
-				vars1.add((Variable) var);
-			translate(vars1, left, pr, newHeadName + "0", varcount);
-		}
-		{
-			List<Variable> vars2 = new LinkedList<Variable>();
-			for (Term var : atom2VarsList)
-				vars2.add((Variable) var);
-			translate(vars2, right, pr, newHeadName + "1", varcount);
-		}
-	}
+//	private void translate(List<Variable> vars, Join join, DatalogProgram pr,
+//			String newHeadName, int[] varcount) {
+//		TupleExpr left = join.getLeftArg();
+//		TupleExpr right = join.getRightArg();
+//
+//		/* Preparing the two atoms */
+//
+//		Set<Variable> atom1VarsSet = getVariables(left);
+//		List<Term> atom1VarsList = new LinkedList<Term>();
+//		atom1VarsList.addAll(atom1VarsSet);
+//		Collections.sort(atom1VarsList, comparator);
+//		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
+//				atom1VarsList.size());
+//		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
+//
+//		Set<Variable> atom2VarsSet = getVariables(right);
+//		List<Term> atom2VarsList = new LinkedList<Term>();
+//		atom2VarsList.addAll(atom2VarsSet);
+//		Collections.sort(atom2VarsList, comparator);
+//		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
+//				atom2VarsList.size());
+//		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
+//		/* The join, this is no longer necessary, we will try to avoid explicit joins
+//		as much as poosible, just use comma */
+////		Predicate joinp = OBDAVocabulary.SPARQL_JOIN;
+////		Function joinAtom = ofac.getFunction(joinp, leftAtom, rightAtom);
+//
+//		/* Preparing the head of the Join rule */
+//		// Collections.sort(vars, comparator);
+//		List<Term> headVars = new LinkedList<Term>();
+//		for (Variable var : vars) {
+//			headVars.add(var);
+//		}
+//		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
+//		Function head = ofac.getFunction(answerPred, headVars);
+//
+//		/*
+//		 * Adding the join to the program
+//		 */
+//
+//		CQIE newrule = ofac.getCQIE(head, leftAtom, rightAtom);
+//		pr.appendRule(newrule);
+//
+//		/*
+//		 * Translating the rest
+//		 */
+//		{
+//			List<Variable> vars1 = new LinkedList<Variable>();
+//			for (Term var : atom1VarsList)
+//				vars1.add((Variable) var);
+//			translate(vars1, left, pr, newHeadName + "0", varcount);
+//		}
+//		{
+//			List<Variable> vars2 = new LinkedList<Variable>();
+//			for (Term var : atom2VarsList)
+//				vars2.add((Variable) var);
+//			translate(vars2, right, pr, newHeadName + "1", varcount);
+//		}
+//	}
 
 	private void translate(List<Variable> vars, LeftJoin join,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
@@ -609,7 +620,7 @@ public class SparqlAlgebraToDatalogTranslator {
      *
      * Pursues by translating its child nodes (from the SPARQL tree).
      */
-	private void translate(List<Variable> vars, Projection project,
+	private Function translate(Projection project,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 
 		TupleExpr te = project.getArg();
@@ -658,8 +669,10 @@ public class SparqlAlgebraToDatalogTranslator {
          */
         List<Term> bodyAtomTerms = new ArrayList<Term>(allVariables);
 
-        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName+"0", allVariables.size()); //i + 1
+        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName+"0", allVariables.size());
         Function bodyAtom = ofac.getFunction(bodyAtomFunctionSymbol, bodyAtomTerms);
+
+        translate(allVariables, te, pr, newHeadName + "0", varcount);
 
         CQIE newRule = ofac.getCQIE(headAtom, bodyAtom);
 		pr.appendRule(newRule);
@@ -667,7 +680,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		/**
          * Continue the nested tree
          */
-		translate(allVariables, te, pr, newHeadName + "0", varcount); //i + 1
+		return newRule.getHead();
 	}
 
 	private void translate(List<Variable> vars, Slice slice,
@@ -679,12 +692,12 @@ public class SparqlAlgebraToDatalogTranslator {
 		translate(vars, te, pr, newHeadName, varcount);
 	}
 
-	private void translate(List<Variable> vars, Distinct distinct,
+	private Function translate(List<Variable> vars, Distinct distinct,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr te;
 		pr.getQueryModifiers().setDistinct();
 		te = distinct.getArg(); // narrow down the query
-		translate(vars, te, pr, newHeadName, varcount);
+		return translate(vars, te, pr, newHeadName, varcount);
 	}
 
 	private void translate(List<Variable> vars, Order order,
@@ -768,8 +781,8 @@ public class SparqlAlgebraToDatalogTranslator {
 		}else{
 			translate(vars, te, pr, newHeadName, varcount);
 		}
-		
-		
+
+
 	}
 
 	public void translate(List<Variable> var, Filter filter, DatalogProgram pr,
@@ -855,164 +868,279 @@ public class SparqlAlgebraToDatalogTranslator {
 
 	}
 
-	/***
-	 * This translates a single triple. In most cases it will generate one
-	 * single atom, however, if URI's are present, it will generate also
-	 * equality atoms.
-	 * 
-	 * @param triple
-	 * @return
-	 */
-	public void translate(List<Variable> vars, StatementPattern triple,
-			DatalogProgram pr, String newHeadName, int[] varcount) {
-		
-		Var obj = triple.getObjectVar();
-		Var pred = triple.getPredicateVar();
-		Var subj = triple.getSubjectVar();
-		
-		Value o = obj.getValue();
-		Value p = pred.getValue();
-		Value s = subj.getValue();
-		
-		if (!(p instanceof URIImpl || (p == null))) {
-			// if predicate is a variable or literal
-			throw new RuntimeException("Unsupported query syntax");
-		}
+    /***
+     * This translates a single triple.
+     *
+     * @param triple
+     * @return
+     */
+    private Function translate(StatementPattern triple) {
+        Var pred = triple.getPredicateVar();
+        Value p = pred.getValue();
+        if (!(p instanceof URI || (p == null))) {
+// if predicate is a variable or literal
+            throw new RuntimeException("Unsupported query syntax");
+        }
+        Var subj = triple.getSubjectVar();
+        Var obj = triple.getObjectVar();
+// Subject node
+        Term sTerm = getOntopTerm(subj);
+        if ((p != null) && p.toString().equals(RDF.TYPE.stringValue())) {
+            Value o = obj.getValue();
+// Object node
+            if (o == null) {
+                Function rdfTypeConstant = ofac.getUriTemplate(ofac.getConstantLiteral(OBDAVocabulary.RDF_TYPE));
+                return ofac.getTripleAtom(sTerm, rdfTypeConstant, ofac.getVariable(obj.getName()));
+            }
+            else if (o instanceof URI) {
+                URI objectUri = (URI)o;
+                Predicate.COL_TYPE type = dtfac.getDataType((URI)objectUri);
+                if (type != null) {
+                    Predicate predicate = dtfac.getTypePredicate(type);
+                    return ofac.getFunction(predicate, sTerm);
+                }
+                else {
+                    COL_TYPE subjectType = null; // are never changed
+                    Predicate predicate = ofac.getPredicate(objectUri.stringValue(), new COL_TYPE[] { subjectType });
+                    return ofac.getFunction(predicate, sTerm);
+                }
+            }
+            else
+                throw new RuntimeException("Unsupported query syntax");
+        }
+        else {
+// The predicate is NOT rdf:type
+            Term oTerm = getOntopTerm(obj);
+            if (p != null) {
+                COL_TYPE subjectType = null; // are never changed
+                COL_TYPE objectType = null;
+                Predicate predicate = ofac.getPredicate(p.stringValue(), new COL_TYPE[] { subjectType, objectType });
+                return ofac.getFunction(predicate, sTerm, oTerm);
+            }
+            else
+                return ofac.getTripleAtom(sTerm, ofac.getVariable(pred.getName()), oTerm);
+        }
+    }
 
-		LinkedList<Function> result = new LinkedList<Function>();
-
-		// Instantiate the subject and object URI
-		URI objectUri = null;
-
-		// Instantiate the subject and object data type
-		COL_TYPE subjectType = null;
-		COL_TYPE objectType = null;
-
-		// / Instantiate the atom components: predicate and terms.
-		Predicate predicate = null;
-		Vector<Term> terms = new Vector<Term>();
-
-		if (p instanceof URIImpl && p.toString().equals(RDF.TYPE.stringValue())) {
-			// Subject node
-			
-			terms.add(getOntopTerm(subj, s));
-
-			// Object node
-			if (o == null) {
-				predicate = OBDAVocabulary.QUEST_TRIPLE_PRED;
-
-				Function rdfTypeConstant = ofac.getUriTemplate(ofac.getConstantLiteral(OBDAVocabulary.RDF_TYPE));
-				terms.add(rdfTypeConstant);
-				terms.add(ofac.getVariable(obj.getName()));
-			} 
-			else if (o instanceof LiteralImpl) {
-				throw new RuntimeException("Unsupported query syntax");
-			} 
-			else if (o instanceof URIImpl) {
-				objectUri = (URI)o; 
-			}
-
-			// Construct the predicate
-			if (objectUri == null) {
-				// NO OP, already assigned
-			} 
-			else {
-				Predicate.COL_TYPE type = dtfac.getDataType(objectUri);
-				if (type != null) {
-					predicate = dtfac.getTypePredicate(type);
-				}
-	            else {
-					predicate = ofac.getPredicate(objectUri.stringValue(), new COL_TYPE[] { subjectType });
-				}
-			}
-		} 
-		else {
-			/*
-			 * The predicate is NOT rdf:type
-			 */
-
-			terms.add(getOntopTerm(subj, s));
-
-			terms.add(getOntopTerm(obj,o));
-			
-			// Construct the predicate
-
-			if (p instanceof URIImpl) {
-				String predicateUri = p.stringValue();
-				predicate = ofac.getPredicate(predicateUri, new COL_TYPE[] { subjectType, objectType });
-			} 
-			else if (p == null) {
-				predicate = OBDAVocabulary.QUEST_TRIPLE_PRED;
-				terms.add(1, ofac.getVariable(pred.getName()));
-			}
-		}
-		// Construct the atom
-		Function atom = ofac.getFunction(predicate, terms);
-		result.addFirst(atom);
-
-		// Collections.sort(vars, comparator);
-		List<Term> newvars = new LinkedList<Term>();
-		for (Variable var : vars) {
-			newvars.add(var);
-		}
-
-		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
-		Function head = ofac.getFunction(answerPred, newvars);
-
-		CQIE newrule = ofac.getCQIE(head, result);
-		pr.appendRule(newrule);
-	}
+//	/***
+//	 * This translates a single triple. In most cases it will generate one
+//	 * single atom, however, if URI's are present, it will generate also
+//	 * equality atoms.
+//	 *
+//	 * @param triple
+//	 * @return
+//	 */
+//	public void translate(List<Variable> vars, StatementPattern triple,
+//			DatalogProgram pr, String newHeadName, int[] varcount) {
+//
+//		Var obj = triple.getObjectVar();
+//		Var pred = triple.getPredicateVar();
+//		Var subj = triple.getSubjectVar();
+//
+//		Value o = obj.getValue();
+//		Value p = pred.getValue();
+//		Value s = subj.getValue();
+//
+//		if (!(p instanceof URIImpl || (p == null))) {
+//			// if predicate is a variable or literal
+//			throw new RuntimeException("Unsupported query syntax");
+//		}
+//
+//		LinkedList<Function> result = new LinkedList<Function>();
+//
+//		// Instantiate the subject and object URI
+//		URI objectUri = null;
+//
+//		// Instantiate the subject and object data type
+//		COL_TYPE subjectType = null;
+//		COL_TYPE objectType = null;
+//
+//		// / Instantiate the atom components: predicate and terms.
+//		Predicate predicate = null;
+//		Vector<Term> terms = new Vector<Term>();
+//
+//		if (p instanceof URIImpl && p.toString().equals(RDF.TYPE.stringValue())) {
+//			// Subject node
+//
+//			terms.add(getOntopTerm(subj, s));
+//
+//			// Object node
+//			if (o == null) {
+//				predicate = OBDAVocabulary.QUEST_TRIPLE_PRED;
+//
+//				Function rdfTypeConstant = ofac.getUriTemplate(ofac.getConstantLiteral(OBDAVocabulary.RDF_TYPE));
+//				terms.add(rdfTypeConstant);
+//				terms.add(ofac.getVariable(obj.getName()));
+//			}
+//			else if (o instanceof LiteralImpl) {
+//				throw new RuntimeException("Unsupported query syntax");
+//			}
+//			else if (o instanceof URIImpl) {
+//				objectUri = (URI)o;
+//			}
+//
+//			// Construct the predicate
+//			if (objectUri == null) {
+//				// NO OP, already assigned
+//			}
+//			else {
+//				Predicate.COL_TYPE type = dtfac.getDataType(objectUri);
+//				if (type != null) {
+//					predicate = dtfac.getTypePredicate(type);
+//				}
+//	            else {
+//					predicate = ofac.getPredicate(objectUri.stringValue(), new COL_TYPE[] { subjectType });
+//				}
+//			}
+//		}
+//		else {
+//			/*
+//			 * The predicate is NOT rdf:type
+//			 */
+//
+//			terms.add(getOntopTerm(subj, s));
+//
+//			terms.add(getOntopTerm(obj,o));
+//
+//			// Construct the predicate
+//
+//			if (p instanceof URIImpl) {
+//				String predicateUri = p.stringValue();
+//				predicate = ofac.getPredicate(predicateUri, new COL_TYPE[] { subjectType, objectType });
+//			}
+//			else if (p == null) {
+//				predicate = OBDAVocabulary.QUEST_TRIPLE_PRED;
+//				terms.add(1, ofac.getVariable(pred.getName()));
+//			}
+//		}
+//		// Construct the atom
+//		Function atom = ofac.getFunction(predicate, terms);
+//		result.addFirst(atom);
+//
+//		// Collections.sort(vars, comparator);
+//		List<Term> newvars = new LinkedList<Term>();
+//		for (Variable var : vars) {
+//			newvars.add(var);
+//		}
+//
+//		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
+//		Function head = ofac.getFunction(answerPred, newvars);
+//
+//		CQIE newrule = ofac.getCQIE(head, result);
+//		pr.appendRule(newrule);
+//	}
 	
-	private Term getOntopTerm(Var subj, Value s) {
-		Term result = null;
-		if (s == null) {
-			result = ofac.getVariable(subj.getName());
-		} else if (s instanceof LiteralImpl) {
-			LiteralImpl object = (LiteralImpl) s;
-			COL_TYPE objectType = getDataType(object);
-			ValueConstant constant = getConstant(object);
+//	private Term getOntopTerm(Var subj, Value s) {
+//		Term result = null;
+//		if (s == null) {
+//			result = ofac.getVariable(subj.getName());
+//		} else if (s instanceof LiteralImpl) {
+//			LiteralImpl object = (LiteralImpl) s;
+//			COL_TYPE objectType = getDataType(object);
+//			ValueConstant constant = getConstant(object);
+//
+//			// v1.7: We extend the syntax such that the data type of a
+//			// constant
+//			// is defined using a functional symbol.
+//			Function dataTypeFunction = null;
+//			if (objectType == COL_TYPE.LITERAL) {
+//				// If the object has type LITERAL, check any language
+//				// tag!
+//				String lang = object.getLanguage();
+//				if (lang != null && !lang.equals("")) {
+//					result = ofac.getTypedTerm(constant, lang.toLowerCase());
+//				}
+//				else {
+//					result =  ofac.getTypedTerm(constant, COL_TYPE.LITERAL);
+//				}
+//			}
+//			else {
+//				// For other supported data-types
+//				dataTypeFunction = ofac.getTypedTerm(constant, objectType);
+//				result= dataTypeFunction;
+//			}
+//		}
+//		else if (s instanceof URIImpl) {
+//			URIImpl subject = (URIImpl) s;
+//			COL_TYPE subjectType = COL_TYPE.OBJECT;
+//
+//			String subject_URI = subject.stringValue();
+//			subject_URI = decodeURIEscapeCodes(subject_URI);
+//
+//
+//			if (uriRef != null) {
+//				/* if in the Semantic Index mode */
+//				int id = uriRef.getId(s.stringValue());
+//
+//				result = ofac.getUriTemplate(ofac.getConstantLiteral(String.valueOf(id), COL_TYPE.INTEGER));
+//			} else {
+//				result = uriTemplateMatcher.generateURIFunction(subject_URI);
+//			}
+//		}
+//
+//		return result;
+//	}
 
-			// v1.7: We extend the syntax such that the data type of a
-			// constant
-			// is defined using a functional symbol.
-			Function dataTypeFunction = null;
-			if (objectType == COL_TYPE.LITERAL) {
-				// If the object has type LITERAL, check any language
-				// tag!
-				String lang = object.getLanguage();
-				if (lang != null && !lang.equals("")) {
-					result = ofac.getTypedTerm(constant, lang.toLowerCase());
-				} 
-				else {
-					result =  ofac.getTypedTerm(constant, COL_TYPE.LITERAL);
-				}
-			} 
-			else {
-				// For other supported data-types
-				dataTypeFunction = ofac.getTypedTerm(constant, objectType);
-				result= dataTypeFunction;
-			}
-		} 
-		else if (s instanceof URIImpl) {
-			URIImpl subject = (URIImpl) s;
-			COL_TYPE subjectType = COL_TYPE.OBJECT;
-			
-			String subject_URI = subject.stringValue();
-			subject_URI = decodeURIEscapeCodes(subject_URI);
-			
-
-			if (uriRef != null) {
-				/* if in the Semantic Index mode */
-				int id = uriRef.getId(s.stringValue());
-				
-				result = ofac.getUriTemplate(ofac.getConstantLiteral(String.valueOf(id), COL_TYPE.INTEGER));
-			} else {
-				result = uriTemplateMatcher.generateURIFunction(subject_URI);
-			}
-		}
-		
-		return result;
-	}
+    private Term getOntopTerm(Var subj) {
+        Value s = subj.getValue();
+        Term result = null;
+        if (s == null) {
+            result = ofac.getVariable(subj.getName());
+        }
+        else if (s instanceof LiteralImpl) {
+            LiteralImpl object = (LiteralImpl) s;
+            URI type = object.getDatatype();
+            String value = object.getLabel();
+// Validating that the value is correct (lexically) with respect to the
+// specified datatype
+            if (type != null) {
+                boolean valid = XMLDatatypeUtil.isValidValue(value, type);
+                if (!valid)
+                    throw new RuntimeException("Invalid lexical form for datatype. Found: " + value);
+            }
+            COL_TYPE objectType;
+            if (type == null)
+                objectType = COL_TYPE.LITERAL;
+            else {
+                objectType = dtfac.getDataType((URI)type);
+                if (objectType == null)
+                    throw new RuntimeException("Unsupported datatype: " + type.stringValue());
+            }
+// special case for decimal
+            if ((objectType == COL_TYPE.DECIMAL) && !value.contains(".")) {
+// put the type as integer (decimal without fractions)
+                objectType = COL_TYPE.INTEGER;
+            }
+            ValueConstant constant = ofac.getConstantLiteral(value, objectType);
+// v1.7: We extend the syntax such that the data type of a
+// constant is defined using a functional symbol.
+            if (objectType == COL_TYPE.LITERAL) {
+// if the object has type LITERAL, check any language tag!
+                String lang = object.getLanguage();
+                if (lang != null && !lang.equals("")) {
+                    result = ofac.getTypedTerm(constant, lang.toLowerCase());
+                }
+                else {
+                    result = ofac.getTypedTerm(constant, objectType);
+                }
+            }
+            else {
+                result = ofac.getTypedTerm(constant, objectType);
+            }
+        }
+        else if (s instanceof URI) {
+            if (uriRef != null) {
+// if in the Semantic Index mode
+                int id = uriRef.getId(s.stringValue());
+                result = ofac.getUriTemplate(ofac.getConstantLiteral(String.valueOf(id), COL_TYPE.INTEGER));
+            }
+            else {
+                String subject_URI = decodeURIEscapeCodes(s.stringValue());
+                result = uriTemplateMatcher.generateURIFunction(subject_URI);
+            }
+        }
+        return result;
+    }
 	
 	/***
 	 * Given a string representing a URI, this method will return a new String in which all percent encoded characters (e.g., %20) will
@@ -1158,7 +1286,31 @@ public class SparqlAlgebraToDatalogTranslator {
 		}
 		return result;
 	}
-	
+
+    private List<Term> getUnionOfVariables(Function a1, Function a2) {
+    // take the union of the *sets* of variables
+        Set<Term> vars = new HashSet<>();
+        for (Term t : a1.getTerms())
+            if (t instanceof Variable)
+                vars.add(t);
+        for (Term t : a2.getTerms())
+            if (t instanceof Variable)
+                vars.add(t);
+    // order is chosen arbitrarily but this is not a problem
+    // because it is chosen once and for all
+        List<Term> varList = new ArrayList<>(vars);
+        return varList;
+    }
+
+    private CQIE createRule(DatalogProgram pr, String headName, List<Term> headParameters, Function... body) {
+        Predicate pred = ofac.getPredicate(headName, headParameters.size());
+        Function head = ofac.getFunction(pred, headParameters);
+        CQIE rule = ofac.getCQIE(head, body);
+        pr.appendRule(rule);
+        return rule;
+    }
+
+
 	//private Variable getFreshVariable(int[] count) {
 	//	count[0] += 1;
 	//	return ofac.getVariable("VAR" + count[0]);
@@ -1246,7 +1398,7 @@ public class SparqlAlgebraToDatalogTranslator {
 	}
 	
 	private Term getVariableTerm(Var expr) {
-		return getOntopTerm(expr, expr.getValue());
+		return getOntopTerm(expr);
 		
 	}
 
