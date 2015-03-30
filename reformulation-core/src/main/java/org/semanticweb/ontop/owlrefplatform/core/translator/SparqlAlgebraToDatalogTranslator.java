@@ -156,7 +156,8 @@ public class SparqlAlgebraToDatalogTranslator {
 		}
 		int[] freshvarcount = { 1 };
 
-		translate(vars, te, result, OBDAVocabulary.QUEST_QUERY + "0", freshvarcount);
+		Function bodyAtom = translate(vars, te, result, OBDAVocabulary.QUEST_QUERY + "0", freshvarcount);
+        //createRule(result, OBDAVocabulary.QUEST_QUERY, (Variable)vars, bodyAtom);
 		return result;
 	}
 	
