@@ -107,6 +107,7 @@ import org.semanticweb.ontop.owlrefplatform.core.abox.SemanticIndexURIMap;
 import org.semanticweb.ontop.owlrefplatform.core.basicoperations.Substitution;
 import org.semanticweb.ontop.owlrefplatform.core.basicoperations.SubstitutionUtilities;
 import org.semanticweb.ontop.owlrefplatform.core.basicoperations.UriTemplateMatcher;
+import org.semanticweb.ontop.model.impl.TermUtils;
 import org.slf4j.LoggerFactory;
 
 /***
@@ -216,7 +217,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 			// Add ORDER BY modifier, if any
 			Order order = (Order) te;
-			translate(vars, order, pr, newHeadName, varcount);
+			return translate(vars, order, pr, newHeadName, varcount);
 		
 		} else if (te instanceof Group) { 
 			Group gr = (Group) te;
@@ -224,7 +225,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			
 		} else if (te instanceof Filter) {
 			Filter filter = (Filter) te;
-			translate(vars, filter, pr, newHeadName, varcount);
+			return translate(vars, filter, pr, newHeadName, varcount);
 
 		} else if (te instanceof StatementPattern) {
 
@@ -722,7 +723,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		return translate(vars, te, pr, newHeadName, varcount);
 	}
 
-	private void translate(List<Variable> vars, Order order,
+	private Function translate(List<Variable> vars, Order order,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr te;
 		for (OrderElem c : order.getElements()) {
@@ -739,7 +740,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			pr.getQueryModifiers().addOrderCondition(var, direction);
 		}
 		te = order.getArg(); // narrow down the query
-		translate(vars, te, pr, newHeadName, varcount);
+		return translate(vars, te, pr, newHeadName, varcount);
 	}
 	
 	private void translate(List<Variable> vars, Group group,
