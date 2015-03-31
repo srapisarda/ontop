@@ -241,7 +241,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 		} else if (te instanceof LeftJoin) {
 			LeftJoin join = (LeftJoin) te;
-			translate(vars, join, pr, newHeadName, varcount);
+			return translate(vars, join, pr, newHeadName, varcount);
 		
 		} else if (te instanceof Reduced) {
 			translate(vars, ((Reduced) te).getArg(), pr, newHeadName, varcount);

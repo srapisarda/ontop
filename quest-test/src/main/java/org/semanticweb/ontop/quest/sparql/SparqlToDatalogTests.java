@@ -77,7 +77,8 @@ public class SparqlToDatalogTests {
                         "SELECT DISTINCT ?x ?title ?author ?y ?genre ?edition \n" +
                         "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
                         "		 ?y a :作者; :name ?author. \n" +
-                        "OPTIONAL {?z a :Édition; :editionNumber ?edition }}";
+                        "?z a :Édition; :editionNumber ?edition. \n" +
+                        "FILTER (?edition > 1)}";
 
         try {
             long t1 = System.currentTimeMillis();
