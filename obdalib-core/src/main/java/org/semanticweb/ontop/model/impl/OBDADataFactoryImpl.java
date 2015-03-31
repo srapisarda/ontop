@@ -403,6 +403,11 @@ public class OBDADataFactoryImpl implements OBDADataFactory {
 	public Function getFunctionRegex(Term term1, Term term2, Term term3) {
 		return getFunction(OBDAVocabulary.SPARQL_REGEX, term1, term2, term3 );
 	}
+
+    @Override
+    public Function getFunctionReplace(Term term1, Term term2, Term term3) {
+        return getFunction(OBDAVocabulary.REPLACE, term1, term2, term3 );
+    }
 	
 	@Override
 	public Function getFunctionMinus(Term term1) {
@@ -423,6 +428,11 @@ public class OBDADataFactoryImpl implements OBDADataFactory {
 	public Function getFunctionMultiply(Term term1, Term term2) {
 		return getFunction(OBDAVocabulary.MULTIPLY, term1, term2);
 	}
+
+    @Override
+    public Function getFunctionConcat(Term term1, Term term2) {
+        return getFunction(OBDAVocabulary.CONCAT, term1, term2);
+    }
 
 	@Override
 	public Function getFunctionCast(Term term1, Term term2) {

@@ -29,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Iterator;
 import java.util.Vector;
 
 import org.openrdf.model.URI;
@@ -38,6 +39,7 @@ import org.openrdf.model.impl.LiteralImpl;
 import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.query.QueryEvaluationException;
+import org.openrdf.query.algebra.FunctionCall;
 import org.openrdf.query.algebra.AggregateOperator;
 import org.openrdf.query.algebra.And;
 import org.openrdf.query.algebra.Avg;
@@ -1269,6 +1271,46 @@ public class SparqlAlgebraToDatalogTranslator {
             return getFunctionCallTerm((FunctionCall)expr);
         }
         throw new RuntimeException("The expression " + expr + " is not supported yet!");
+    }
+
+
+    private Term getConcat(List<ValueExpr> values) {
+        Iterator<ValueExpr> iterator = values.iterator();
+        ValueExpr first = iterator.next();
+        Term topConcat = getExpression(first);
+        if (!iterator.hasNext())
+            throw new UnsupportedOperationException("Wrong number of arguments (found " + values.size() +
+                    ", at least 1) of SQL function CONCAT");
+        while (iterator.hasNext()) {
+            ValueExpr second = iterator.next();
+            Term second_string = getExpression(second);
+            topConcat = ofac.getFunctionConcat(topConcat, second_string);
+        }
+        return topConcat;
+    }
+    private Term getReplace(List<ValueExpr> expressions) {
+        if (expressions.size() == 2 || expressions.size() == 3) {
+// first parameter is a function expression
+            ValueExpr first = expressions.get(0);
+            Term t1 = getExpression(first);
+// second parameter is a string
+            ValueExpr second = expressions.get(1);
+            Term out_string = getExpression(second);
+/*
+* Term t3 is optional: no string means delete occurrences of second param
+*/
+            Term in_string;
+            if (expressions.size() == 3) {
+                ValueExpr third = expressions.get(2);
+                in_string = getExpression(third);
+            }
+            else {
+                in_string = ofac.getConstantLiteral("");
+            }
+            return ofac.getFunctionReplace(t1, out_string, in_string);
+        }
+        else
+            throw new UnsupportedOperationException("Wrong number of arguments (found " + expressions.size() + ", only 2 or 3 supported) to sql function REPLACE");
     }
 
     /** Return the Functions supported at the moment only
