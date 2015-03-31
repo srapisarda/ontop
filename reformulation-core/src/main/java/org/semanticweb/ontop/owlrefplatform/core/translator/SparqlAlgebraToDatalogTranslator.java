@@ -245,7 +245,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			return translate(vars, join, pr, newHeadName, varcount);
 		
 		} else if (te instanceof Reduced) {
-			translate(vars, ((Reduced) te).getArg(), pr, newHeadName, varcount);
+			return translate(vars, ((Reduced) te).getArg(), pr, newHeadName, varcount);
 		
 		} else if (te instanceof Extension) { 
 			Extension extend = (Extension) te;

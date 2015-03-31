@@ -78,7 +78,7 @@ public class SparqlToDatalogTests {
                         "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
                         "		 ?y a :作者; :name ?author. \n" +
                         "?z a :Édition; :editionNumber ?edition. \n" +
-                        "FILTER (?edition > 1)}" +
+                        "}" +
                         "ORDER BY (?edition)";
 
         try {
