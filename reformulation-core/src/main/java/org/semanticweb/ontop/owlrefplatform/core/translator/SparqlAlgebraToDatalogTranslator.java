@@ -807,88 +807,105 @@ public class SparqlAlgebraToDatalogTranslator {
 
 	}
 
-	public void translate(List<Variable> var, Filter filter, DatalogProgram pr,
+    private Function translate(List<Variable> var, Filter filter, DatalogProgram pr,
 			String newHeadName, int varcount[]) {
-		ValueExpr condition = filter.getCondition();
-		List<Function> filterAtoms = new LinkedList<Function>();
-		Set<Variable> filteredVariables = new LinkedHashSet<Variable>();
+        Function atom=translate(var, filter.getArg(), pr, newHeadName + "0", varcount);
+        Set<Variable> atomVars = getVariables(atom);
+        ValueExpr condition = filter.getCondition();
+        Function filterAtom;
+        if (condition instanceof Var)
+            filterAtom = ofac.getFunctionIsTrue(getOntopTerm((Var) condition));
+        else
+            filterAtom = (Function) getExpression(condition);
+        Set<Variable> filterVars = new HashSet<>();
+        TermUtils.addReferencedVariablesTo(filterVars, filterAtom);
+        List<Term> vars = getUnion(atomVars, filterVars);
+        CQIE rule = createRule(pr, newHeadName, vars, atom, filterAtom);
+        return rule.getHead();
+    }
 
-			Function a = null;
-			if (condition instanceof Var) {
-				a = ofac.getFunctionIsTrue(getVariableTerm((Var) condition));
-			} else {
-				a = (Function) getBooleanTerm(condition);
-			}
-			if (a != null) {
-				Function filterAtom = ofac.getFunction(a.getFunctionSymbol(),
-						a.getTerms());
-				filterAtoms.add(filterAtom);
-				filteredVariables.addAll(filterAtom.getReferencedVariables());
-			}
-
-		Predicate predicate = ofac.getPredicate(newHeadName, var.size());
-		List<Term> vars = new LinkedList<Term>();
-		vars.addAll(var);
-		Function head = ofac.getFunction(predicate, vars);
-
-		Predicate pbody;
-		Function bodyAtom;
-
-		List<Term> innerProjection = new LinkedList<Term>();
-		innerProjection.addAll(filteredVariables);
-		Collections.sort(innerProjection, comparator);
-
-		/***
-		 * This is necessary because some filters might apply to variables that
-		 * have not been projected yet, for example:
-		 * <p>
-		 * (filter (= ?x 99) <br>
-		 * <t> (bgp (triple <http://example/x> <http://example/p> ?x)))
-		 * <p>
-		 * in this cases we must project at least the filtered variables from
-		 * the nested expressions, otherwise we endup with free variables.
-		 * 
-		 */
-
-		// TODO here we might be missing the case where there is a filter
-		// on a variable that has not been projected out of the inner
-		// expressions
-		if (vars.size() == 0 && filteredVariables.size() > 0) {
-			pbody = ofac.getPredicate(newHeadName + "0", innerProjection.size());
-			bodyAtom = ofac.getFunction(pbody, innerProjection);
-		} else {
-			pbody = ofac.getPredicate(newHeadName + "0", vars.size());
-			bodyAtom = ofac.getFunction(pbody, vars);
-		}
-		
-		LinkedList<Function> body = new LinkedList<Function>();
-		
-		TupleExpr sub = filter.getArg();
-		if (sub instanceof Extension) { // The filter is HAVING condition
-			List <Term> havingTerms = new LinkedList<Term> ();
-			havingTerms.addAll(filterAtoms);
-			Function havingAtom = ofac.getFunction(OBDAVocabulary.SPARQL_HAVING,havingTerms );
-			body.add(bodyAtom);
-			body.add(havingAtom);
-		} else {
-			body.add(bodyAtom);
-			body.addAll(filterAtoms);
-		}
-
-		CQIE cq = ofac.getCQIE(head, body);
-		pr.appendRule(cq);
-
-		
-
-		if (vars.size() == 0 && filteredVariables.size() > 0) {
-			List<Variable> newvars = new LinkedList<Variable>();
-			for (Term l : innerProjection)
-				newvars.add((Variable) l);
-			translate(newvars, sub, pr, newHeadName + "0", varcount);
-		} else
-			translate(var, sub, pr, newHeadName + "0", varcount);
-
-	}
+//	public void translate(List<Variable> var, Filter filter, DatalogProgram pr,
+//			String newHeadName, int varcount[]) {
+//		ValueExpr condition = filter.getCondition();
+//		List<Function> filterAtoms = new LinkedList<Function>();
+//		Set<Variable> filteredVariables = new LinkedHashSet<Variable>();
+//
+//			Function a = null;
+//			if (condition instanceof Var) {
+//				a = ofac.getFunctionIsTrue(getVariableTerm((Var) condition));
+//			} else {
+//				a = (Function) getBooleanTerm(condition);
+//			}
+//			if (a != null) {
+//				Function filterAtom = ofac.getFunction(a.getFunctionSymbol(),
+//						a.getTerms());
+//				filterAtoms.add(filterAtom);
+//				filteredVariables.addAll(filterAtom.getReferencedVariables());
+//			}
+//
+//		Predicate predicate = ofac.getPredicate(newHeadName, var.size());
+//		List<Term> vars = new LinkedList<Term>();
+//		vars.addAll(var);
+//		Function head = ofac.getFunction(predicate, vars);
+//
+//		Predicate pbody;
+//		Function bodyAtom;
+//
+//		List<Term> innerProjection = new LinkedList<Term>();
+//		innerProjection.addAll(filteredVariables);
+//		Collections.sort(innerProjection, comparator);
+//
+//		/***
+//		 * This is necessary because some filters might apply to variables that
+//		 * have not been projected yet, for example:
+//		 * <p>
+//		 * (filter (= ?x 99) <br>
+//		 * <t> (bgp (triple <http://example/x> <http://example/p> ?x)))
+//		 * <p>
+//		 * in this cases we must project at least the filtered variables from
+//		 * the nested expressions, otherwise we endup with free variables.
+//		 *
+//		 */
+//
+//		// TODO here we might be missing the case where there is a filter
+//		// on a variable that has not been projected out of the inner
+//		// expressions
+//		if (vars.size() == 0 && filteredVariables.size() > 0) {
+//			pbody = ofac.getPredicate(newHeadName + "0", innerProjection.size());
+//			bodyAtom = ofac.getFunction(pbody, innerProjection);
+//		} else {
+//			pbody = ofac.getPredicate(newHeadName + "0", vars.size());
+//			bodyAtom = ofac.getFunction(pbody, vars);
+//		}
+//
+//		LinkedList<Function> body = new LinkedList<Function>();
+//
+//		TupleExpr sub = filter.getArg();
+//		if (sub instanceof Extension) { // The filter is HAVING condition
+//			List <Term> havingTerms = new LinkedList<Term> ();
+//			havingTerms.addAll(filterAtoms);
+//			Function havingAtom = ofac.getFunction(OBDAVocabulary.SPARQL_HAVING,havingTerms );
+//			body.add(bodyAtom);
+//			body.add(havingAtom);
+//		} else {
+//			body.add(bodyAtom);
+//			body.addAll(filterAtoms);
+//		}
+//
+//		CQIE cq = ofac.getCQIE(head, body);
+//		pr.appendRule(cq);
+//
+//
+//
+//		if (vars.size() == 0 && filteredVariables.size() > 0) {
+//			List<Variable> newvars = new LinkedList<Variable>();
+//			for (Term l : innerProjection)
+//				newvars.add((Variable) l);
+//			translate(newvars, sub, pr, newHeadName + "0", varcount);
+//		} else
+//			translate(var, sub, pr, newHeadName + "0", varcount);
+//
+//	}
 
     /***
      * This translates a single triple.
@@ -1113,8 +1130,8 @@ public class SparqlAlgebraToDatalogTranslator {
             LiteralImpl object = (LiteralImpl) s;
             URI type = object.getDatatype();
             String value = object.getLabel();
-// Validating that the value is correct (lexically) with respect to the
-// specified datatype
+            // Validating that the value is correct (lexically) with respect to the
+            // specified datatype
             if (type != null) {
                 boolean valid = XMLDatatypeUtil.isValidValue(value, type);
                 if (!valid)
@@ -1128,16 +1145,16 @@ public class SparqlAlgebraToDatalogTranslator {
                 if (objectType == null)
                     throw new RuntimeException("Unsupported datatype: " + type.stringValue());
             }
-// special case for decimal
+            // special case for decimal
             if ((objectType == COL_TYPE.DECIMAL) && !value.contains(".")) {
-// put the type as integer (decimal without fractions)
+            // put the type as integer (decimal without fractions)
                 objectType = COL_TYPE.INTEGER;
             }
             ValueConstant constant = ofac.getConstantLiteral(value, objectType);
-// v1.7: We extend the syntax such that the data type of a
-// constant is defined using a functional symbol.
+            // v1.7: We extend the syntax such that the data type of a
+            // constant is defined using a functional symbol.
             if (objectType == COL_TYPE.LITERAL) {
-// if the object has type LITERAL, check any language tag!
+            // if the object has type LITERAL, check any language tag!
                 String lang = object.getLanguage();
                 if (lang != null && !lang.equals("")) {
                     result = ofac.getTypedTerm(constant, lang.toLowerCase());
@@ -1152,7 +1169,7 @@ public class SparqlAlgebraToDatalogTranslator {
         }
         else if (s instanceof URI) {
             if (uriRef != null) {
-// if in the Semantic Index mode
+                // if in the Semantic Index mode
                 int id = uriRef.getId(s.stringValue());
                 result = ofac.getUriTemplate(ofac.getConstantLiteral(String.valueOf(id), COL_TYPE.INTEGER));
             }
@@ -1488,6 +1505,17 @@ public class SparqlAlgebraToDatalogTranslator {
 
 	}
 
+    private List<Term> getUnion(Set<Variable> s1, Set<Variable> s2) {
+        // take the union of the *sets* of variables
+        Set<Term> vars = new HashSet<>();
+        vars.addAll(s1);
+        vars.addAll(s2);
+        // order is chosen arbitrarily but this is not a problem
+        // because it is chosen once and for all
+        List<Term> varList = new ArrayList<>(vars);
+        return varList;
+    }
+
 	public Set<Variable> getVariables(List<org.openrdf.query.algebra.Var> list) {
 		Set<Variable> vars = new HashSet<Variable>();
 		for (org.openrdf.query.algebra.Var variable : list) {
@@ -1518,7 +1546,15 @@ public class SparqlAlgebraToDatalogTranslator {
 			}
 		return vars;
 	}
-	
+
+    private Set<Variable> getVariables(Function atom) {
+        Set<Variable> set = new HashSet<>();
+        for (Term t : atom.getTerms())
+            if (t instanceof Variable)
+                set.add((Variable)t);
+        return set;
+    }
+
 	public Set<Variable> getVariables(TupleExpr te) {
 		Set<Variable> result = new LinkedHashSet<Variable>();
 		if (te instanceof StatementPattern) {
