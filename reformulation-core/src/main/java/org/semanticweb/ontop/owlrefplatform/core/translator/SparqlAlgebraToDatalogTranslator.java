@@ -199,7 +199,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 			// Add LIMIT and OFFSET modifiers, if any
 			Slice slice = (Slice) te;
-			translate(vars, slice, pr, newHeadName, varcount);
+			return translate(vars, slice, pr, newHeadName, varcount);
 
 		} else if (te instanceof Distinct) {
 
@@ -238,7 +238,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 		} else if (te instanceof Union) {
 			Union union = (Union) te;
-			translate(vars, union, pr, newHeadName, varcount);
+			return translate(vars, union, pr, newHeadName, varcount);
 
 		} else if (te instanceof LeftJoin) {
 			LeftJoin join = (LeftJoin) te;
@@ -385,89 +385,140 @@ public class SparqlAlgebraToDatalogTranslator {
 		return programToUpdate;
 	}
 
-	private void translate(List<Variable> vars, Union union,
-			DatalogProgram pr, String newHeadName, int[] varcount) {
-		TupleExpr left = union.getLeftArg();
-		TupleExpr right = union.getRightArg();
+    /**
+     * EXPR_1 UNION EXPR_2
+     *
+     * adds the following rules
+     *
+     * ans_i(X * NULL_1) :- ans_{i.0}(X_1)
+     * ans_i(X * NULL_2) :- ans_{i.1}(X_2)
+     *
+     * Adding the UNION to the program, i.e., two rules Note, we need to
+     * make null any head variables that do not appear in the body of the
+     * components of the union, e.g,
+     *
+     * q(x,y,z) <- Union(R(x,y), R(x,z))
+     *
+     * results in
+     *
+     * q(x,y,null) :- ... R(x,y) ...
+     * q(x,null,z) :- ... R(x,z) ...
+     *
+     * @param union
+     * @param pr
+     * @param newHeadName
+     * @return
+     */
+    private Function translate(List<Variable> vars, Union union, DatalogProgram pr, String newHeadName, int[] varcount) {
+        TupleExpr left = union.getLeftArg();
+        TupleExpr right = union.getRightArg();
+        Function leftAtom = translate(vars, left, pr, newHeadName + "0", varcount);
+        Set<Variable> leftVars = getVariables(leftAtom);
+        Function rightAtom = translate(vars, right, pr, newHeadName + "1", varcount);
+        Set<Variable> rightVars = getVariables(rightAtom);
+        List<Term> varList = getUnion(leftVars, rightVars);
+        // left atom rule
+        List<Term> leftTermList = new ArrayList<>(varList.size());
+        for (Term t : varList) {
+            Term lt = (leftVars.contains(t)) ? t : OBDAVocabulary.NULL;
+            leftTermList.add(lt);
+        }
+        CQIE leftRule = createRule(pr, newHeadName, leftTermList, leftAtom);
+        // right atom rule
+        List<Term> rightTermList = new ArrayList<>(varList.size());
+        for (Term t : varList) {
+            Term lt = (rightVars.contains(t)) ? t : OBDAVocabulary.NULL;
+            rightTermList.add(lt);
+        }
+        CQIE rightRule = createRule(pr, newHeadName, rightTermList, rightAtom);
+        Function atom = ofac.getFunction(rightRule.getHead().getFunctionSymbol(), varList);
+        return atom;
+    }
 
-		/* Preparing the two atoms */
 
-		Set<Variable> atom1VarsSet = getVariables(left);
-		List<Term> atom1VarsList = new LinkedList<Term>();
-		atom1VarsList.addAll(atom1VarsSet);
-		Collections.sort(atom1VarsList, comparator);
-		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
-				atom1VarsList.size());
-		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
-
-		Set<Variable> atom2VarsSet = getVariables(right);
-		List<Term> atom2VarsList = new LinkedList<Term>();
-		atom2VarsList.addAll(atom2VarsSet);
-		Collections.sort(atom2VarsList, comparator);
-		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
-				atom2VarsList.size());
-		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
-
-		/* Preparing the head of the Union rules (2 rules) */
-		// Collections.sort(vars, comparator);
-		List<Term> headVars = new LinkedList<Term>();
-		for (Variable var : vars) {
-			headVars.add(var);
-		}
-		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
-		Function head = ofac.getFunction(answerPred, headVars);
-
-		/*
-		 * Adding the UNION to the program, i.e., two rules Note, we need to
-		 * make null any head variables that do not appear in the body of the
-		 * uniones, e.g,
-		 * 
-		 * q(x,y,z) <- Union(R(x,y), R(x,z))
-		 * 
-		 * results in
-		 * 
-		 * q(x,y,null) :- ... R(x,y) ... q(x,null,z) :- ... R(x,z) ...
-		 */
-
-		// finding out null
-		Set<Variable> nullVars = new HashSet<Variable>();
-		nullVars.addAll(vars);
-		nullVars.removeAll(atom1VarsSet); // the remaining variables do not
-											// appear in the body assigning
-											// null;
-		Substitution nullifier = SubstitutionUtilities.getNullifier(nullVars);
-		// making the rule
-		CQIE newrule1 = ofac.getCQIE(head, leftAtom);
-		pr.appendRule(SubstitutionUtilities.applySubstitution(newrule1, nullifier));
-
-		// finding out null
-		nullVars = new HashSet<Variable>();
-		nullVars.addAll(vars);
-		nullVars.removeAll(atom2VarsSet); // the remaining variables do not
-											// appear in the body assigning
-											// null;
-		nullifier = SubstitutionUtilities.getNullifier(nullVars);
-		// making the rule
-		CQIE newrule2 = ofac.getCQIE(head, rightAtom);
-		pr.appendRule(SubstitutionUtilities.applySubstitution(newrule2, nullifier));
-
-		/*
-		 * Translating the rest
-		 */
-		{
-			List<Variable> vars1 = new LinkedList<Variable>();
-			for (Term var : atom1VarsList)
-				vars1.add((Variable) var);
-			translate(vars1, left, pr, newHeadName + "0", varcount);
-		}
-		{
-			List<Variable> vars2 = new LinkedList<Variable>();
-			for (Term var : atom2VarsList)
-				vars2.add((Variable) var);
-			translate(vars2, right, pr, newHeadName + "1", varcount);
-		}
-
-	}
+//	private void translate(List<Variable> vars, Union union,
+//			DatalogProgram pr, String newHeadName, int[] varcount) {
+//		TupleExpr left = union.getLeftArg();
+//		TupleExpr right = union.getRightArg();
+//
+//		/* Preparing the two atoms */
+//
+//		Set<Variable> atom1VarsSet = getVariables(left);
+//		List<Term> atom1VarsList = new LinkedList<Term>();
+//		atom1VarsList.addAll(atom1VarsSet);
+//		Collections.sort(atom1VarsList, comparator);
+//		Predicate leftAtomPred = ofac.getPredicate(newHeadName + "0",
+//				atom1VarsList.size());
+//		Function leftAtom = ofac.getFunction(leftAtomPred, atom1VarsList);
+//
+//		Set<Variable> atom2VarsSet = getVariables(right);
+//		List<Term> atom2VarsList = new LinkedList<Term>();
+//		atom2VarsList.addAll(atom2VarsSet);
+//		Collections.sort(atom2VarsList, comparator);
+//		Predicate rightAtomPred = ofac.getPredicate(newHeadName + "1",
+//				atom2VarsList.size());
+//		Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
+//
+//		/* Preparing the head of the Union rules (2 rules) */
+//		// Collections.sort(vars, comparator);
+//		List<Term> headVars = new LinkedList<Term>();
+//		for (Variable var : vars) {
+//			headVars.add(var);
+//		}
+//		Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
+//		Function head = ofac.getFunction(answerPred, headVars);
+//
+//		/*
+//		 * Adding the UNION to the program, i.e., two rules Note, we need to
+//		 * make null any head variables that do not appear in the body of the
+//		 * uniones, e.g,
+//		 *
+//		 * q(x,y,z) <- Union(R(x,y), R(x,z))
+//		 *
+//		 * results in
+//		 *
+//		 * q(x,y,null) :- ... R(x,y) ... q(x,null,z) :- ... R(x,z) ...
+//		 */
+//
+//		// finding out null
+//		Set<Variable> nullVars = new HashSet<Variable>();
+//		nullVars.addAll(vars);
+//		nullVars.removeAll(atom1VarsSet); // the remaining variables do not
+//											// appear in the body assigning
+//											// null;
+//		Substitution nullifier = SubstitutionUtilities.getNullifier(nullVars);
+//		// making the rule
+//		CQIE newrule1 = ofac.getCQIE(head, leftAtom);
+//		pr.appendRule(SubstitutionUtilities.applySubstitution(newrule1, nullifier));
+//
+//		// finding out null
+//		nullVars = new HashSet<Variable>();
+//		nullVars.addAll(vars);
+//		nullVars.removeAll(atom2VarsSet); // the remaining variables do not
+//											// appear in the body assigning
+//											// null;
+//		nullifier = SubstitutionUtilities.getNullifier(nullVars);
+//		// making the rule
+//		CQIE newrule2 = ofac.getCQIE(head, rightAtom);
+//		pr.appendRule(SubstitutionUtilities.applySubstitution(newrule2, nullifier));
+//
+//		/*
+//		 * Translating the rest
+//		 */
+//		{
+//			List<Variable> vars1 = new LinkedList<Variable>();
+//			for (Term var : atom1VarsList)
+//				vars1.add((Variable) var);
+//			translate(vars1, left, pr, newHeadName + "0", varcount);
+//		}
+//		{
+//			List<Variable> vars2 = new LinkedList<Variable>();
+//			for (Term var : atom2VarsList)
+//				vars2.add((Variable) var);
+//			translate(vars2, right, pr, newHeadName + "1", varcount);
+//		}
+//
+//	}
 
     private Function translate(List<Variable> vars, Join join, DatalogProgram pr, String newHeadName, int[] varcount) {
         TupleExpr left = join.getLeftArg();
@@ -706,13 +757,13 @@ public class SparqlAlgebraToDatalogTranslator {
 		return newRule.getHead();
 	}
 
-	private void translate(List<Variable> vars, Slice slice,
+	private Function translate(List<Variable> vars, Slice slice,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr te;
 		pr.getQueryModifiers().setOffset(slice.getOffset());
 		pr.getQueryModifiers().setLimit(slice.getLimit());
 		te = slice.getArg(); // narrow down the query
-		translate(vars, te, pr, newHeadName, varcount);
+		return translate(vars, te, pr, newHeadName, varcount);
 	}
 
 	private Function translate(List<Variable> vars, Distinct distinct,
