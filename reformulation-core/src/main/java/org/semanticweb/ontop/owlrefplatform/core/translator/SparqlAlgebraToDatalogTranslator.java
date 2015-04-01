@@ -211,7 +211,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 			// Add PROJECTION modifier, if any
 			Projection project = (Projection) te;
-			return translate(project, pr, newHeadName, varcount);
+			return translate(vars, project, pr, newHeadName, varcount);
 
 		} else if (te instanceof Order) {
 
@@ -221,7 +221,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		
 		} else if (te instanceof Group) { 
 			Group gr = (Group) te;
-			translate(vars, gr, pr, newHeadName, varcount);
+			return translate(vars, gr, pr, newHeadName, varcount);
 			
 		} else if (te instanceof Filter) {
 			Filter filter = (Filter) te;
@@ -249,7 +249,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		
 		} else if (te instanceof Extension) { 
 			Extension extend = (Extension) te;
-			translate(vars, extend, pr, newHeadName, varcount);
+			return translate(vars, extend, pr, newHeadName, varcount);
 		
 		} else {
 			try {
@@ -263,7 +263,7 @@ public class SparqlAlgebraToDatalogTranslator {
         return null;
 	}
 
-	private void translate(List<Variable> vars, Extension extend,
+	private Function translate(List<Variable> vars, Extension extend,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 		TupleExpr subte = extend.getArg();
 		List<ExtensionElem> elements = extend.getElements();
@@ -332,9 +332,9 @@ public class SparqlAlgebraToDatalogTranslator {
         if (!atom2VarsList.isEmpty()){
             for (Term var1 : atom2VarsList)
                 vars1.add((Variable) var1);
-            translate(vars1, subte, pr, newHeadName + "0", varcount);
+            return translate(vars1, subte, pr, newHeadName + "0", varcount);
         } else{
-            translate(vars, subte, pr, newHeadName , varcount);
+            return translate(vars, subte, pr, newHeadName , varcount);
         }
 	}
 
@@ -694,23 +694,92 @@ public class SparqlAlgebraToDatalogTranslator {
      *
      * Pursues by translating its child nodes (from the SPARQL tree).
      */
-	private Function translate(Projection project,
-			DatalogProgram pr, String newHeadName, int[] varcount) {
+//	private Function translate(Projection project,
+//			DatalogProgram pr, String newHeadName, int[] varcount) {
+//
+//		TupleExpr te = project.getArg();
+//
+//        // All variables --> for the body atom
+//        List<Variable> allVariables = new ArrayList<>(getVariables(te));
+//
+//        // Projected variables --> for the head atom
+//		List<Variable> projectedVariables = new ArrayList<>();
+//		for (ProjectionElem var : project.getProjectionElemList().getElements()) {
+//            // we assume here that the target name is "introduced" as one of the arguments of atom
+//            // (this is normally done by an EXTEND inside the PROJECTION)
+//            // first, we check whether this assumption can be made
+//            if (!var.getSourceName().equals(var.getTargetName())) {
+//                boolean found = false;
+//                for (Term a : allVariables)
+//                    if ((a instanceof Variable) && ((Variable)a).getName().equals(var.getSourceName())) {
+//                        found = true;
+//                        break;
+//                    }
+//                if (!found)
+//                    throw new RuntimeException("Projection target of " + var + " not found in " + project.getArg());
+//            }
+//			projectedVariables.add(ofac.getVariable(var.getSourceName()));
+//		}
+//
+//
+//
+//        /**
+//         * Head: considers only the projected variables.
+//         */
+//		Predicate predicate = ofac.getPredicate(newHeadName,
+//				projectedVariables.size());
+//		Function headAtom = ofac.getFunction(predicate, new ArrayList<Term>(projectedVariables));
+//
+//        /**
+//         * Body atom (just one).
+//         * In many cases, the body atom takes more arguments than the head one.
+//         *
+//         * For this body atom, we don't know yet the right arity because
+//         * we don't know if some aggregates are used or not.
+//         *
+//         * For the moment, we do like if there were no aggregate so all the variables are arguments
+//         * of the atom.
+//         * If latter, we find some aggregates, the atom arity will be updated.
+//         */
+//        List<Term> bodyAtomTerms = new ArrayList<Term>(allVariables);
+//
+//        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName+"0", allVariables.size());
+//        Function bodyAtom = ofac.getFunction(bodyAtomFunctionSymbol, bodyAtomTerms);
+//
+//        translate(allVariables, te, pr, newHeadName + "0", varcount);
+//
+//        CQIE newRule = ofac.getCQIE(headAtom, bodyAtom);
+//		pr.appendRule(newRule);
+//
+//		/**
+//         * Continue the nested tree
+//         */
+//		return newRule.getHead();
+//	}
 
-		TupleExpr te = project.getArg();
-
-        // All variables --> for the body atom
-        List<Variable> allVariables = new ArrayList<>(getVariables(te));
-
-        // Projected variables --> for the head atom
-		List<Variable> projectedVariables = new ArrayList<>();
-		for (ProjectionElem var : project.getProjectionElemList().getElements()) {
-            // we assume here that the target name is "introduced" as one of the arguments of atom
-            // (this is normally done by an EXTEND inside the PROJECTION)
-            // first, we check whether this assumption can be made
+    /**
+     * PROJECT { V_j } EXPR
+     *
+     * adds the following rule
+     *
+     * ans_i(V) :- ans_{i.0}(X)
+     *
+     * @param project
+     * @param pr
+     * @param newHeadName
+     * @return
+     */
+    private Function translate(List<Variable> vars, Projection project, DatalogProgram pr, String newHeadName, int[] varcount) {
+        Function atom = translate(vars, project.getArg(), pr, newHeadName + "0", varcount);
+        List<ProjectionElem> projectionElements = project.getProjectionElemList().getElements();
+        List<Term> varList = new ArrayList<>(projectionElements.size());
+        for (ProjectionElem var : projectionElements) {
+        // we assume here that the target name is "introduced" as one of the arguments of atom
+        // (this is normally done by an EXTEND inside the PROJECTION)
+        // first, we check whether this assumption can be made
             if (!var.getSourceName().equals(var.getTargetName())) {
                 boolean found = false;
-                for (Term a : allVariables)
+                for (Term a : atom.getTerms())
                     if ((a instanceof Variable) && ((Variable)a).getName().equals(var.getSourceName())) {
                         found = true;
                         break;
@@ -718,44 +787,11 @@ public class SparqlAlgebraToDatalogTranslator {
                 if (!found)
                     throw new RuntimeException("Projection target of " + var + " not found in " + project.getArg());
             }
-			projectedVariables.add(ofac.getVariable(var.getSourceName()));
-		}
-
-
-
-        /**
-         * Head: considers only the projected variables.
-         */
-		Predicate predicate = ofac.getPredicate(newHeadName,
-				projectedVariables.size());
-		Function headAtom = ofac.getFunction(predicate, new ArrayList<Term>(projectedVariables));
-
-        /**
-         * Body atom (just one).
-         * In many cases, the body atom takes more arguments than the head one.
-         *
-         * For this body atom, we don't know yet the right arity because
-         * we don't know if some aggregates are used or not.
-         *
-         * For the moment, we do like if there were no aggregate so all the variables are arguments
-         * of the atom.
-         * If latter, we find some aggregates, the atom arity will be updated.
-         */
-        List<Term> bodyAtomTerms = new ArrayList<Term>(allVariables);
-
-        Predicate bodyAtomFunctionSymbol = ofac.getPredicate(newHeadName+"0", allVariables.size());
-        Function bodyAtom = ofac.getFunction(bodyAtomFunctionSymbol, bodyAtomTerms);
-
-        translate(allVariables, te, pr, newHeadName + "0", varcount);
-
-        CQIE newRule = ofac.getCQIE(headAtom, bodyAtom);
-		pr.appendRule(newRule);
-
-		/**
-         * Continue the nested tree
-         */
-		return newRule.getHead();
-	}
+            varList.add(ofac.getVariable(var.getTargetName()));
+        }
+        CQIE rule = createRule(pr, newHeadName, varList, atom);
+        return rule.getHead();
+    }
 
 	private Function translate(List<Variable> vars, Slice slice,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
@@ -794,7 +830,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		return translate(vars, te, pr, newHeadName, varcount);
 	}
 	
-	private void translate(List<Variable> vars, Group group,
+	private Function translate(List<Variable> vars, Group group,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
 
 		TupleExpr te;
@@ -851,9 +887,9 @@ public class SparqlAlgebraToDatalogTranslator {
 			 */
 
 			//iterating
-			translate(vars, te, pr, newHeadName+"0", varcount);
+			return translate(vars, te, pr, newHeadName+"0", varcount);
 		}else{
-			translate(vars, te, pr, newHeadName, varcount);
+			return translate(vars, te, pr, newHeadName, varcount);
 		}
 
 

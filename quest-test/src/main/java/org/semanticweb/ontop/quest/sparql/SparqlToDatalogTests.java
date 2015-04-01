@@ -80,10 +80,18 @@ public class SparqlToDatalogTests {
 //                        "?z a :Édition; :editionNumber ?edition. \n" +
 //                        "}" +
 //                        "ORDER BY (?edition)";
-                "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
-                        "SELECT DISTINCT ?title \n" +
-                        "WHERE { {?x a :E-Book; :title ?title.} \n" +
-                        "		 UNION {?y a :AudioBook; :title ?title.}}";
+//                "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
+//                        "SELECT DISTINCT ?title \n" +
+//                        "WHERE { {?x a :E-Book; :title ?title.} \n" +
+//                        "		 UNION {?y a :AudioBook; :title ?title.}}";
+                  "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
+                         "SELECT DISTINCT ?edition (AVG(?edition) AS ?avg_edition)\n" +
+                         "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
+                         "		 ?y a :作者; :name ?author. \n" +
+                         "?z a :Édition; :editionNumber ?edition. \n" +
+                         "} GROUP BY ?edition";
+
+
 
         try {
             long t1 = System.currentTimeMillis();
