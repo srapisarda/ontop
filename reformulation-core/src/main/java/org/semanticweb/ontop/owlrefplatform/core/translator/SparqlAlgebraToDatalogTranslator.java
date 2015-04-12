@@ -263,80 +263,139 @@ public class SparqlAlgebraToDatalogTranslator {
         return null;
 	}
 
-	private Function translate(List<Variable> vars, Extension extend,
-			DatalogProgram pr, String newHeadName, int[] varcount) {
-		TupleExpr subte = extend.getArg();
-		List<ExtensionElem> elements = extend.getElements();
-		Set<Variable> atom2VarsSet = null;
 
-        /**
-         * TODO: why are they outside the LOOP??
-         * Will we really want to accumulate variables???
-         */
-		List<Term> atom2VarsList = new LinkedList<Term>();
-		List<Term> atom1VarsList = new LinkedList<Term>();
+    /**
+     * EXTEND { (T_j AS V_j) } EXPR
+     *
+     * where the T_j are built from the variables X of EXPR,
+     *
+     * adds the following rule:
+     *
+     *   ans_i(X * T) :- ans_{i.0}(X)
+     *
+     * @param extend
+     * @param pr
+     * @param newHeadName
+     * @return
+     */
 
-		for (ExtensionElem el: elements) {
-			Variable var = null;
-			
-			String name = el.getName();
-			ValueExpr vexp = el.getExpr();
+    private Function translate(List<Variable> vars, Extension extend, DatalogProgram pr, String newHeadName, int[] varcount) {
 
-			var = ofac.getVariable(name);			
-			Term term = getBooleanTerm(vexp);
+        Function subAtom = translate(vars, extend.getArg(), pr, newHeadName + "0", varcount);
+        Set<Variable> subVarSet = getVariables(subAtom);
 
-			Set<Variable> atom1VarsSet = getBindVariables(subte);
-			atom1VarsList.addAll(atom1VarsSet);
-			
-			atom1VarsList.add(var);
-			Collections.sort(atom1VarsList, comparator);
+        int sz = subVarSet.size() + extend.getElements().size();
+        List<Term> varList = new ArrayList<>(sz);
+        varList.addAll(subVarSet);
+        List<Term> termList = new ArrayList<>(sz);
+        termList.addAll(varList);
+        TupleExpr subte = extend.getArg();
+        List<Term> atom1VarsList = new LinkedList<Term>();
 
+
+        for (ExtensionElem el: extend.getElements()) {
+            Variable var = ofac.getVariable(el.getName());
+            varList.add(var);
+
+            Term term = getExpression(el.getExpr());
+            termList.add(term);
             /**
-             * Only variable names, no aggregation formula.
-             */
+             //			 * When there is an aggregate in the head,
+             //			 * the arity of the atom is reduced.
+             //			 *
+             //			 * This atom usually appears in parent rules, so
+             //			 * its arity must be fixed in these rules.
+             //			 */
+            Set<Variable> atom1VarsSet = getBindVariables(subte);
+            atom1VarsList.addAll(atom1VarsSet);
+            atom1VarsList.add(var);
+            Collections.sort(atom1VarsList, comparator);
             List<Term> atom1Variables = new ArrayList<>(atom1VarsList);
-
-			int indexOfvar = atom1VarsList.indexOf(var);
-			atom1VarsList.set(indexOfvar,term);
-			Predicate leftAtomPred = ofac.getPredicate(newHeadName,
-					atom1VarsList.size());
-			Function head = ofac.getFunction(leftAtomPred, atom1VarsList);
-		
-			atom2VarsSet = getVariables(subte);
-			
-			atom2VarsList.addAll(atom2VarsSet);
-			Collections.sort(atom2VarsList, comparator);
-			Predicate rightAtomPred = ofac.getPredicate(newHeadName + "0",
-					atom2VarsList.size());
-			Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
-
-			CQIE newrule = ofac.getCQIE(head, rightAtom);
-			
-			/**
-			 * When there is an aggregate in the head,
-			 * the arity of the atom is reduced.
-			 * 
-			 * This atom usually appears in parent rules, so 
-			 * its arity must be fixed in these rules.
-			 */
-			if (vexp instanceof AggregateOperator) {
-				pr = updateArity(leftAtomPred, atom1Variables, pr);
+            if (el.getExpr() instanceof AggregateOperator) {
+			    pr = updateArity(subAtom.getFunctionSymbol(), atom1Variables, pr);
 			}
-			pr.appendRule(newrule);
-		}
 
-		/**
-		 * Translating the rest
-		 */
-        List<Variable> vars1 = new LinkedList<Variable>();
-        if (!atom2VarsList.isEmpty()){
-            for (Term var1 : atom2VarsList)
-                vars1.add((Variable) var1);
-            return translate(vars1, subte, pr, newHeadName + "0", varcount);
-        } else{
-            return translate(vars, subte, pr, newHeadName , varcount);
         }
-	}
+        CQIE rule = createRule(pr, newHeadName, termList, subAtom);
+
+        Function newHeadAtom = ofac.getFunction(rule.getHead().getFunctionSymbol(), varList);
+        return newHeadAtom;
+    }
+
+//	private Function translate(List<Variable> vars, Extension extend,
+//			DatalogProgram pr, String newHeadName, int[] varcount) {
+//		TupleExpr subte = extend.getArg();
+//		List<ExtensionElem> elements = extend.getElements();
+//		Set<Variable> atom2VarsSet = null;
+//
+//        /**
+//         * TODO: why are they outside the LOOP??
+//         * Will we really want to accumulate variables???
+//         */
+//		List<Term> atom2VarsList = new LinkedList<Term>();
+//		List<Term> atom1VarsList = new LinkedList<Term>();
+//
+//		for (ExtensionElem el: elements) {
+//			Variable var = null;
+//
+//			String name = el.getName();
+//			ValueExpr vexp = el.getExpr();
+//
+//			var = ofac.getVariable(name);
+//			Term term = getBooleanTerm(vexp);
+//
+//			Set<Variable> atom1VarsSet = getBindVariables(subte);
+//			atom1VarsList.addAll(atom1VarsSet);
+//
+//			atom1VarsList.add(var);
+//			Collections.sort(atom1VarsList, comparator);
+//
+//            /**
+//             * Only variable names, no aggregation formula.
+//             */
+//            List<Term> atom1Variables = new ArrayList<>(atom1VarsList);
+//
+//			int indexOfvar = atom1VarsList.indexOf(var);
+//			atom1VarsList.set(indexOfvar,term);
+//			Predicate leftAtomPred = ofac.getPredicate(newHeadName,
+//					atom1VarsList.size());
+//			Function head = ofac.getFunction(leftAtomPred, atom1VarsList);
+//
+//			atom2VarsSet = getVariables(subte);
+//
+//			atom2VarsList.addAll(atom2VarsSet);
+//			Collections.sort(atom2VarsList, comparator);
+//			Predicate rightAtomPred = ofac.getPredicate(newHeadName + "0",
+//					atom2VarsList.size());
+//			Function rightAtom = ofac.getFunction(rightAtomPred, atom2VarsList);
+//
+//			CQIE newrule = ofac.getCQIE(head, rightAtom);
+//
+//			/**
+//			 * When there is an aggregate in the head,
+//			 * the arity of the atom is reduced.
+//			 *
+//			 * This atom usually appears in parent rules, so
+//			 * its arity must be fixed in these rules.
+//			 */
+//			if (vexp instanceof AggregateOperator) {
+//				pr = updateArity(leftAtomPred, atom1Variables, pr);
+//			}
+//			pr.appendRule(newrule);
+//		}
+//
+//		/**
+//		 * Translating the rest
+//		 */
+//        List<Variable> vars1 = new LinkedList<Variable>();
+//        if (!atom2VarsList.isEmpty()){
+//            for (Term var1 : atom2VarsList)
+//                vars1.add((Variable) var1);
+//            return translate(vars1, subte, pr, newHeadName + "0", varcount);
+//        } else{
+//            return translate(vars, subte, pr, newHeadName , varcount);
+//        }
+//	}
 
     /**
      * In some cases (like when aggregates are used), we cannot know in advance the final arity
