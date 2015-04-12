@@ -955,9 +955,9 @@ public class SparqlAlgebraToDatalogTranslator {
 
 	}
 
-    private Function translate(List<Variable> var, Filter filter, DatalogProgram pr,
+    private Function translate(List<Variable> vars, Filter filter, DatalogProgram pr,
 			String newHeadName, int varcount[]) {
-        Function atom=translate(var, filter.getArg(), pr, newHeadName + "0", varcount);
+        Function atom=translate(vars, filter.getArg(), pr, newHeadName + "0", varcount);
         Set<Variable> atomVars = getVariables(atom);
         ValueExpr condition = filter.getCondition();
         Function filterAtom;
@@ -967,8 +967,8 @@ public class SparqlAlgebraToDatalogTranslator {
             filterAtom = (Function) getExpression(condition);
         Set<Variable> filterVars = new HashSet<>();
         TermUtils.addReferencedVariablesTo(filterVars, filterAtom);
-        List<Term> vars = getUnion(atomVars, filterVars);
-        CQIE rule = createRule(pr, newHeadName, vars, atom, filterAtom);
+        List<Term> var = getUnion(atomVars, filterVars);
+        CQIE rule = createRule(pr, newHeadName, var, atom, filterAtom);
         return rule.getHead();
     }
 
