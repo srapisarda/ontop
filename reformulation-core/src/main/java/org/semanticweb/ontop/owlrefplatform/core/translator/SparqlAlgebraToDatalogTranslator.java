@@ -1587,6 +1587,34 @@ public class SparqlAlgebraToDatalogTranslator {
             else
                 throw new RuntimeException("A variable or a value is expected in " + expr);
         }
+        else if (expr instanceof Count) {
+            if (expr.getArg() != null) {
+                Function function = ofac.getFunction(OBDAVocabulary.SPARQL_COUNT, getBooleanTerm( expr.getArg()));
+                //builtInFunction = ofac.getFunction(	ofac.getDataTypePredicateInteger(),function);
+                return ofac.getTypedTerm(function, COL_TYPE.INTEGER);
+            } else { // Its COUNT(*)
+
+                Function function = ofac.getFunction(OBDAVocabulary.SPARQL_COUNT, ofac.getVariable("*"));
+                return ofac.getTypedTerm(function, COL_TYPE.INTEGER);
+            }
+        } else if (expr instanceof Avg) {
+
+            return ofac.getFunction(OBDAVocabulary.SPARQL_AVG, getBooleanTerm( expr.getArg()));
+            //builtInFunction = ofac.getFunction(	ofac.getDataTypePredicateDecimal(),function);
+
+        } else if (expr instanceof Sum) {
+            return  ofac.getFunction(OBDAVocabulary.SPARQL_SUM, getBooleanTerm( expr.getArg()));
+            //builtInFunction = ofac.getFunction(	ofac.getDataTypePredicateDecimal(),function);
+
+        } else if (expr instanceof Min) {
+            return ofac.getFunction(OBDAVocabulary.SPARQL_MIN, getBooleanTerm( expr.getArg()));
+            //builtInFunction = ofac.getFunction(	ofac.getDataTypePredicateDecimal(),function);
+
+        } else if (expr instanceof Max) {
+            return ofac.getFunction(OBDAVocabulary.SPARQL_MAX, getBooleanTerm( expr.getArg()));
+            //builtInFunction = ofac.getFunction(	ofac.getDataTypePredicateDecimal(),function);
+
+        }
         throw new RuntimeException("The expression " + expr + " is not supported yet!");
     }
     private Term getBinaryExpression(BinaryValueOperator expr) {
