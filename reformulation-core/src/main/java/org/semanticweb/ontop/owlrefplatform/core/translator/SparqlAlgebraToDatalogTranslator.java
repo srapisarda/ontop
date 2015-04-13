@@ -388,7 +388,7 @@ public class SparqlAlgebraToDatalogTranslator {
 
 
 			newrule = ofac.getCQIE(head, rightAtom);
-            pr.appendRule(newrule);
+
 			/**
 			 * When there is an aggregate in the head,
 			 * the arity of the atom is reduced.
@@ -399,7 +399,7 @@ public class SparqlAlgebraToDatalogTranslator {
 			if (vexp instanceof AggregateOperator) {
 				pr = updateArity(leftAtomPred, atom1Variables, pr);
 			}
-
+            pr.appendRule(newrule);
 		}
 
         return newrule.getHead();
