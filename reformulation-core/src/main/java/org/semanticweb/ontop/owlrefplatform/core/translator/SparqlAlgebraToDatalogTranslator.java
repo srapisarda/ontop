@@ -907,7 +907,7 @@ public class SparqlAlgebraToDatalogTranslator {
 	
 	private Function translate(List<Variable> vars, Group group,
 			DatalogProgram pr, String newHeadName, int[] varcount) {
-        Function atom=translate(vars, group.getArg(), pr, newHeadName + "0", varcount);
+
 		TupleExpr te;
 		te = group.getArg(); // narrow down the query
 
@@ -925,6 +925,8 @@ public class SparqlAlgebraToDatalogTranslator {
 		
 		//Construction the aggregate Atom
 		if (!bindings.isEmpty()) {
+            Function atom=translate(vars, group.getArg(), pr, newHeadName + "0", varcount);
+
             String nextVar = bindings.iterator().next();
             Variable groupvar = (Variable) ofac.getVariable(nextVar);
             Function aggregateAtom = ofac.getFunction(OBDAVocabulary.SPARQL_GROUP, groupvar);
@@ -948,10 +950,12 @@ public class SparqlAlgebraToDatalogTranslator {
 
             //Constructing the rule itself
 //            CQIE rule = createRule(pr, newHeadName, termVars, atom);
-             cq = ofac.getCQIE(head, body);
+            cq = ofac.getCQIE(head, body);
             pr.appendRule(cq);
+            return cq.getHead();
 
-
+        }else{
+            return translate(vars, group.getArg(), pr, newHeadName, varcount);
         }
 
 			/*
@@ -970,7 +974,6 @@ public class SparqlAlgebraToDatalogTranslator {
 //			return translate(vars, te, pr, newHeadName, varcount);
 //		}
 
-        return cq.getHead();
 	}
 
     private Function translate(List<Variable> vars, Filter filter, DatalogProgram pr,
