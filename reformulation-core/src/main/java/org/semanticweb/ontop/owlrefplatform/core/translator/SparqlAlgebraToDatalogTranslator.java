@@ -1083,6 +1083,7 @@ public class SparqlAlgebraToDatalogTranslator {
      * @return
      */
     private Function translate(StatementPattern triple) {
+        Function f;
         Var pred = triple.getPredicateVar();
         Value p = pred.getValue();
         if (!(p instanceof URI || (p == null))) {
@@ -1098,19 +1099,19 @@ public class SparqlAlgebraToDatalogTranslator {
 // Object node
             if (o == null) {
                 Function rdfTypeConstant = ofac.getUriTemplate(ofac.getConstantLiteral(OBDAVocabulary.RDF_TYPE));
-                return ofac.getTripleAtom(sTerm, rdfTypeConstant, ofac.getVariable(obj.getName()));
+                f = ofac.getTripleAtom(sTerm, rdfTypeConstant, ofac.getVariable(obj.getName()));
             }
             else if (o instanceof URI) {
                 URI objectUri = (URI)o;
                 Predicate.COL_TYPE type = dtfac.getDataType((URI)objectUri);
                 if (type != null) {
                     Predicate predicate = dtfac.getTypePredicate(type);
-                    return ofac.getFunction(predicate, sTerm);
+                    f = ofac.getFunction(predicate, sTerm);
                 }
                 else {
                     COL_TYPE subjectType = null; // are never changed
                     Predicate predicate = ofac.getPredicate(objectUri.stringValue(), new COL_TYPE[] { subjectType });
-                    return ofac.getFunction(predicate, sTerm);
+                    f = ofac.getFunction(predicate, sTerm);
                 }
             }
             else
@@ -1123,11 +1124,15 @@ public class SparqlAlgebraToDatalogTranslator {
                 COL_TYPE subjectType = null; // are never changed
                 COL_TYPE objectType = null;
                 Predicate predicate = ofac.getPredicate(p.stringValue(), new COL_TYPE[] { subjectType, objectType });
-                return ofac.getFunction(predicate, sTerm, oTerm);
+                f = ofac.getFunction(predicate, sTerm, oTerm);
             }
             else
-                return ofac.getTripleAtom(sTerm, ofac.getVariable(pred.getName()), oTerm);
+                f = ofac.getTripleAtom(sTerm, ofac.getVariable(pred.getName()), oTerm);
         }
+        if (triple.getParentNode() instanceof Group){
+
+        }
+        return f;
     }
 
 //	/***
