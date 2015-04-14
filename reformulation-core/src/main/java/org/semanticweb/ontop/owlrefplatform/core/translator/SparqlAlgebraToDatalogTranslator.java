@@ -331,6 +331,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		List<ExtensionElem> elements = extend.getElements();
 		Set<Variable> atom2VarsSet = null;
         CQIE newrule = null;
+        Function newHead = null;
 
         /**
          * TODO: why are they outside the LOOP??
@@ -388,7 +389,10 @@ public class SparqlAlgebraToDatalogTranslator {
 
 
 			newrule = ofac.getCQIE(head, rightAtom);
+            pr.appendRule(newrule);
 
+            newHead = newrule.getHead();
+            List<Term> newAtom1VarsList = new LinkedList<Term>();
 			/**
 			 * When there is an aggregate in the head,
 			 * the arity of the atom is reduced.
@@ -397,12 +401,16 @@ public class SparqlAlgebraToDatalogTranslator {
 			 * its arity must be fixed in these rules.
 			 */
 			if (vexp instanceof AggregateOperator) {
-				pr = updateArity(leftAtomPred, atom1Variables, pr);
+				//pr = updateArity(leftAtomPred, atom1Variables, pr);
+                newAtom1VarsList = atom1VarsList;
+                int indx = newAtom1VarsList.indexOf(term);
+                newAtom1VarsList.set(indx,var);
+                newHead = ofac.getFunction(leftAtomPred, atom1VarsList);
 			}
-            pr.appendRule(newrule);
+
 		}
 
-        return newrule.getHead();
+        return newHead;
 	}
 
     /**
