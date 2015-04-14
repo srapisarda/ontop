@@ -1782,6 +1782,7 @@ public class SparqlAlgebraToDatalogTranslator {
     // order is chosen arbitrarily but this is not a problem
     // because it is chosen once and for all
         List<Term> varList = new ArrayList<>(vars);
+        Collections.sort(varList, comparator);
         return varList;
     }
 
