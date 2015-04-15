@@ -79,6 +79,12 @@ public class SparqlToDatalogTests {
 //                        "		 ?y a :作者; :name ?author. \n" +
 //                        "?z a :Édition; :editionNumber ?edition. \n" +
 //                        "}";
+                "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
+                        "SELECT DISTINCT ?x ?title ?author ?y ?genre ?edition \n" +
+                        "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
+                        "		 ?y a :作者; :name ?author. \n" +
+                        "?z a :Édition . \n" +
+                        "OPTIONAL {?z :editionNumber ?edition}}";
 //                "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
 //                        "SELECT DISTINCT ?x ?title ?author ?y ?genre ?edition \n" +
 //                        "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
@@ -90,12 +96,12 @@ public class SparqlToDatalogTests {
 //                        "SELECT DISTINCT ?title \n" +
 //                        "WHERE { {?x a :E-Book; :title ?title.} \n" +
 //                        "		 UNION {?y a :AudioBook; :title ?title.}}";
-                  "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
-                         "SELECT DISTINCT ?edition (COUNT(?edition) AS ?avg_edition)\n" +
-                         "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
-                         "		 ?y a :作者; :name ?author. \n" +
-                         "?z a :Édition; :editionNumber ?edition. \n" +
-                         "} GROUP BY ?edition";
+//                  "PREFIX : <http://meraka/moss/exampleBooks.owl#> \n" +
+//                         "SELECT DISTINCT ?title (COUNT(?edition) AS ?avg_edition)\n" +
+//                         "WHERE { ?x a :книга; :title ?title; :النوع ?genre; :writtenBy ?y; :hasÉdition ?z. \n" +
+//                         "		 ?y a :作者; :name ?author. \n" +
+//                         "?z a :Édition; :editionNumber ?edition. \n" +
+//                         "} GROUP BY ?title";
 
 
 
