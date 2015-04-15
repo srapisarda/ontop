@@ -539,7 +539,6 @@ public class SparqlAlgebraToDatalogTranslator {
             }
             varList.add(ofac.getVariable(var.getTargetName()));
         }
-        Collections.sort(varList, comparator);
         CQIE rule = createRule(pr, newHeadName, varList, atom);
         return rule.getHead();
     }
