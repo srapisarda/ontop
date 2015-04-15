@@ -230,7 +230,7 @@ public class SparqlAlgebraToDatalogTranslator {
 		} else if (te instanceof StatementPattern) {
 
 			StatementPattern stmp = (StatementPattern) te;
-			return translate(stmp);
+			return translate(vars, stmp, pr, newHeadName);
 
 		} else if (te instanceof Join) {
 			Join join = (Join) te;
@@ -1082,7 +1082,7 @@ public class SparqlAlgebraToDatalogTranslator {
      * @param triple
      * @return
      */
-    private Function translate(StatementPattern triple) {
+    private Function translate(List<Variable> vars, StatementPattern triple, DatalogProgram pr, String newHeadName ) {
         Function f;
         Var pred = triple.getPredicateVar();
         Value p = pred.getValue();
@@ -1130,7 +1130,17 @@ public class SparqlAlgebraToDatalogTranslator {
                 f = ofac.getTripleAtom(sTerm, ofac.getVariable(pred.getName()), oTerm);
         }
         if (triple.getParentNode() instanceof Group){
+            // Collections.sort(vars, comparator);
+            List<Term> newvars = new LinkedList<Term>();
+            for (Variable var : vars) {
+                newvars.add(var);
+            }
 
+            Predicate answerPred = ofac.getPredicate(newHeadName, vars.size());
+            Function head = ofac.getFunction(answerPred, newvars);
+
+            CQIE newrule = ofac.getCQIE(head, f);
+            pr.appendRule(newrule);
         }
         return f;
     }
