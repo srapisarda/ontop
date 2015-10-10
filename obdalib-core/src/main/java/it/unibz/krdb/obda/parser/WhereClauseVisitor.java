@@ -135,15 +135,24 @@ public class WhereClauseVisitor implements SelectVisitor, ExpressionVisitor, Fro
 
 	@Override
 	public void visit(Function function) {
-		if(function.getName().toLowerCase().equals("regexp_like") ) {
-			
-			for(Expression ex :function.getParameters().getExpressions()){
-				ex.accept(this);
-			}
-			
-		}
-		else{
-            unsupported = true;
+		switch(function.getName().toLowerCase()){
+
+			case "regexp_like" :
+			case "regexp_replace" :
+			case "replace" :
+			case "concat" :
+
+				for(Expression ex :function.getParameters().getExpressions()) {
+					ex.accept(this);
+
+				}
+
+				break;
+
+			default:
+				unsupported = true;
+
+				break;
 		}
 	}
 
