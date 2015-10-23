@@ -102,9 +102,15 @@ public class TableNameVisitor implements SelectVisitor, FromItemVisitor, Express
          *  Thus we presume that the unusual use of DISTINCT here on done ON PURPOSE
          * for obtaining this behavior. 
          */
+
+
         if (plainSelect.getDistinct() != null) {
             unsupported = true;
         }
+
+		if (plainSelect.getLimit() != null){
+			unsupported = true;
+		}
 
 		if (plainSelect.getJoins() != null) {
 			for (Join join : plainSelect.getJoins()) {
@@ -198,8 +204,9 @@ public class TableNameVisitor implements SelectVisitor, FromItemVisitor, Express
             case "regexp_replace" :
             case "replace" :
             case "concat" :
+			case "substr" :
 
-                for(Expression ex :function.getParameters().getExpressions()) {
+				for(Expression ex :function.getParameters().getExpressions()) {
                     ex.accept(this);
 
                 }

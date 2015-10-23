@@ -141,6 +141,7 @@ public class WhereClauseVisitor implements SelectVisitor, ExpressionVisitor, Fro
 			case "regexp_replace" :
 			case "replace" :
 			case "concat" :
+			case "substr" :
 
 				for(Expression ex :function.getParameters().getExpressions()) {
 					ex.accept(this);
