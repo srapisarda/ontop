@@ -117,8 +117,6 @@ public class MetaMappingExpander {
 				OBDASQLQuery sourceQuery = mapping.getSourceQuery();
 				ShallowlyParsedSQLQuery sourceQueryParsed = SQLQueryShallowParser.parse(idfac, sourceQuery.toString());
 				
-				List<SelectExpressionItem> columnList = null;
-				
 				// distinctParamsProjection.addAll(columnsForTemplate);
 				
 				/**
@@ -126,12 +124,7 @@ public class MetaMappingExpander {
 				 * we only need to distinct project the columns needed for the template expansion 
 				 */
 				
-				try {
-					columnList = sourceQueryParsed.getProjection().getColumnList();
-				} 
-				catch (JSQLParserException e2) {
-					continue;
-				}
+				List<SelectExpressionItem>	columnList = sourceQueryParsed.getProjection().getColumnList();
 				
 				List<SelectExpressionItem> columnsForTemplate = getColumnsForTemplate(varsInTemplate, columnList, idfac);
 				
@@ -244,13 +237,7 @@ public class MetaMappingExpander {
 		 */
 		Function newTargetBody = expandHigherOrderAtom(bodyAtom, params, arity);
 		
-		Expression selection = null;
-		try {
-			selection = sourceParsedQuery.getWhereClause();
-		} 
-		catch (JSQLParserException e1) {
-			e1.printStackTrace();
-		}
+		Expression selection = sourceParsedQuery.getWhereClause();
 		
 		int j = 0;
 		for (SelectExpressionItem column : columnsForTemplate) {

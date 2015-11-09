@@ -53,9 +53,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
     // maps aliases or relation names to relation names (identity on the relation names)
     private Map<RelationID, RelationID> tables;
 
-    //TODO: SALVO - this field is set but unused
-	//private List<RelationID> relations;
-
     private Map<QuotedID, Expression> aliasMap;
     private List<Expression> joins;
     private Expression whereClause;
@@ -107,10 +104,12 @@ public class DeeplyParsedSQLQuery implements Serializable {
     public Map<RelationID, RelationID> getTables() throws JSQLParserException {
 
         if (tables == null) {
-            TableNameVisitor visitor = new TableNameVisitor(selectQuery, false, idfac);
+            TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
+    		
+    		if (!visitor.isSupported())
+    			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+            
             tables = visitor.getTables();
-            // TODO: SALVO - this field is set but unused
-            // relations = visitor.getRelations();
         }
         return tables;
     }
@@ -132,7 +131,11 @@ public class DeeplyParsedSQLQuery implements Serializable {
         if (whereClause == null) {
             WhereClauseVisitor visitor = new WhereClauseVisitor(idfac);
             // CHANGES TABLE SCHEMA / NAME / ALIASES AND COLUMN NAMES
-            whereClause = visitor.getWhereClause(selectQuery, true);
+            
+    		if (!visitor.isSupported())
+				throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+		
+            whereClause = visitor.getWhereClause(selectQuery);
         }
         return whereClause;
     }
@@ -163,7 +166,11 @@ public class DeeplyParsedSQLQuery implements Serializable {
     public ProjectionJSQL getProjection() throws JSQLParserException {
         if (projection == null) {
             ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-            projection = visitor.getProjection(selectQuery, true);
+            
+    		if (!visitor.isSupported()) 
+				throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+	
+            projection = visitor.getProjection(selectQuery);
         }
         return projection;
 
@@ -209,7 +216,11 @@ public class DeeplyParsedSQLQuery implements Serializable {
      */
     public List<Expression> getJoinConditions() throws JSQLParserException {
         if (joins == null) {
-            JoinConditionVisitor visitor = new JoinConditionVisitor(selectQuery, true, idfac);
+            JoinConditionVisitor visitor = new JoinConditionVisitor(selectQuery, idfac);
+        	
+    		if (!visitor.isSupported())
+    			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+            
             joins = visitor.getJoinConditions();
         }
         return joins;

@@ -66,7 +66,7 @@ public class ProjectionVisitor implements SelectVisitor, SelectItemVisitor, Expr
 	 * @throws JSQLParserException 
 	 */
 	
-	public ProjectionJSQL getProjection(Select select, boolean deepParsing) throws JSQLParserException {
+	public ProjectionJSQL getProjection(Select select) {
 		
 		if (select.getWithItemsList() != null) {
 			for (WithItem withItem : select.getWithItemsList()) 
@@ -74,11 +74,13 @@ public class ProjectionVisitor implements SelectVisitor, SelectItemVisitor, Expr
 		}
 		select.getSelectBody().accept(this);
 		
-		if (unsupported && deepParsing) // used to throw exception for the currently unsupported methods
-				throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-		
 		return projection;	
 		
+	}
+
+	public boolean isSupported() {
+		// used to throw exception for the currently unsupported methods
+		return !unsupported;
 	}
 	
 	/**

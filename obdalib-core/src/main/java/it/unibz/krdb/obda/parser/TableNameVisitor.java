@@ -71,7 +71,7 @@ public class TableNameVisitor {
 	 * @param deepParsing
 	 * @return
 	 */
-	public TableNameVisitor(Select select, boolean deepParsing, QuotedIDFactory idfac) throws JSQLParserException {
+	public TableNameVisitor(Select select, QuotedIDFactory idfac) {
 		this.idfac = idfac;
 		
  		if (select.getWithItemsList() != null) {
@@ -79,9 +79,6 @@ public class TableNameVisitor {
 				withItem.accept(selectVisitor);
 		}
 		select.getSelectBody().accept(selectVisitor);
-		
-		if (unsupported && deepParsing) // used to throw exception for the currently unsupported methods
-			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 	}
 		
 	public Map<RelationID, RelationID> getTables() {	
@@ -92,6 +89,11 @@ public class TableNameVisitor {
 		return relations;
 	}
 
+	public boolean isSupported() {
+		// used to throw exception for the currently unsupported methods
+		return !unsupported;
+	}
+	
 	private void unsupported(Object o) {
 		System.out.println(this.getClass() + " DOES NOT SUPPORT " + o);
 		unsupported = true;

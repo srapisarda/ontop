@@ -58,7 +58,7 @@ public class WhereClauseVisitor {
 	 * @return an Expression
 	 * @throws JSQLParserException 
 	 */
-	public Expression getWhereClause(Select select, boolean deepParsing) throws JSQLParserException {
+	public Expression getWhereClause(Select select)  {
 		
 		if (select.getWithItemsList() != null) {
 			for (WithItem withItem : select.getWithItemsList()) 
@@ -67,13 +67,14 @@ public class WhereClauseVisitor {
 		
 		select.getSelectBody().accept(selectVisitor);
 		
-		if (unsupported && deepParsing)
-				throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-		
 		return whereClause;
 	}
 
-		
+	public boolean isSupported() {
+		return !unsupported;
+	}
+	
+	
     public void setWhereClause(Select selectQuery, final Expression whereClause) {
 
         selectQuery.getSelectBody().accept(new SelectVisitor() {

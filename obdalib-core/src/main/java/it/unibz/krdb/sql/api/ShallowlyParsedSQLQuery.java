@@ -108,12 +108,11 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      * CREATING DATALOG RULES
      * AND META-MAPPING EXPANDER
      *
-     * @throws JSQLParserException
      */
-    public ProjectionJSQL getProjection() throws JSQLParserException {
+    public ProjectionJSQL getProjection()  {
         if (projection == null) {
             ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-            projection = visitor.getProjection(selectQuery, false);
+            projection = visitor.getProjection(selectQuery);
         }
         return projection;
 
@@ -140,9 +139,9 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      * USED FOR CREATING DATALOG RULES AND PROVIDING METADATA WITH THE LIST OF TABLES
      *
      */
-    public Map<RelationID, RelationID> getTables() throws JSQLParserException {
+    public Map<RelationID, RelationID> getTables() {
         if (tables == null) {
-            TableNameVisitor visitor = new TableNameVisitor(selectQuery, false, idfac);
+            TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
             tables = visitor.getTables();
             relations = visitor.getRelations();
         }
@@ -153,9 +152,8 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      * Relations parsed query contains
      *
      * @return all the relations the parsed query contains
-     * @throws JSQLParserException
      */
-    public List<RelationID> getRelations() throws JSQLParserException {
+    public List<RelationID> getRelations()  {
         getTables();
         return relations;
     }
@@ -174,13 +172,12 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      * CREATING DATALOG RULES
      * AND META-MAPPING EXPANDER
      *
-     * @throws JSQLParserException
      */
-    public Expression getWhereClause() throws JSQLParserException {
+    public Expression getWhereClause() {
         if (whereClause == null) {
             WhereClauseVisitor visitor = new WhereClauseVisitor(idfac);
             // CHANGES TABLE SCHEMA / NAME / ALIASES AND COLUMN NAMES
-            whereClause = visitor.getWhereClause(selectQuery, false);
+            whereClause = visitor.getWhereClause(selectQuery);
         }
         return whereClause;
     }

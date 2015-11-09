@@ -61,13 +61,10 @@ public class JoinConditionVisitor {
 	 * @param select statement with the parsed query
 	 * @return a list of string containing the join conditions
 	 */
-	public JoinConditionVisitor(Select select, boolean deepParsing, QuotedIDFactory idfac)  throws JSQLParserException {
+	public JoinConditionVisitor(Select select, QuotedIDFactory idfac)  {
 		this.idfac = idfac;
 		
 		select.getSelectBody().accept(selectVisitor);
-	
-		if(notSupported && deepParsing) // used to throw exception for the currently unsupported methods
-			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 	}
 		
 		
@@ -75,6 +72,10 @@ public class JoinConditionVisitor {
 		return joinConditions;
 	}
 
+
+	public boolean isSupported() {
+		return !notSupported;
+	}
 	
 	private final SelectVisitor selectVisitor = new SelectVisitor() {
 		/*
