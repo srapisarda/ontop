@@ -2,8 +2,8 @@ package it.unibz.krdb.obda.parser;
 
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
 
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.ParseException;
 
@@ -23,11 +23,11 @@ public class SQLQueryShallowParser {
 	 * @param query The sql query to be parsed
 	 * @return A ParsedSQLQuery (possible with null values)
 	 */
-	public static ParsedSQLQuery parse(QuotedIDFactory idfac, String query) {
-    	
-		ParsedSQLQuery parsedQuery = null;
+	public static ShallowlyParsedSQLQuery parse(QuotedIDFactory idfac, String query) {
+
+		ShallowlyParsedSQLQuery parsedQuery = null;
 		try {
-			parsedQuery = new ParsedSQLQuery(query, false, idfac);
+			parsedQuery = new ShallowlyParsedSQLQuery(query, idfac);
 		} 
 		catch (JSQLParserException e) {
 			if (e.getCause() instanceof ParseException)
@@ -43,7 +43,8 @@ public class SQLQueryShallowParser {
 					"please contact the authors. \nQuery: '{}'", query);
 			
 			RelationID viewId = idfac.createRelationID(null, String.format("view_%s", id_counter++));
-			parsedQuery = SQLQueryDeepParser.createParsedSqlForGeneratedView(idfac, viewId);	
+			//TODO: Should be improved
+			parsedQuery = SQLQueryDeepParser.createShallowlyParsedSqlForGeneratedView(idfac, viewId);
 		}
 		return parsedQuery;
 	}

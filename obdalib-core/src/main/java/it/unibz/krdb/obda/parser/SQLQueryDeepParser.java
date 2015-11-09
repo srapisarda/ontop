@@ -26,11 +26,12 @@ import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
 import it.unibz.krdb.sql.ParserViewDefinition;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
+import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
@@ -56,13 +57,13 @@ public class SQLQueryDeepParser {
 	 * @param query The sql query to be parsed
 	 * @return A ParsedQuery (or a SELECT * FROM table with the generated view)
 	 */
-	public static ParsedSQLQuery parse(DBMetadata dbMetaData, String query) {
+	public static DeeplyParsedSQLQuery parse(DBMetadata dbMetaData, String query) {
     	
 		boolean errors = false;
-		ParsedSQLQuery queryParser = null;
+		DeeplyParsedSQLQuery queryParser = null;
 		
 		try {
-			queryParser = new ParsedSQLQuery(query, true, dbMetaData.getQuotedIDFactory());
+			queryParser = new DeeplyParsedSQLQuery(query, dbMetaData.getQuotedIDFactory());
 		} 
 		catch (JSQLParserException e) {
 			if (e.getCause() instanceof ParseException)
@@ -84,29 +85,51 @@ public class SQLQueryDeepParser {
 		return queryParser;
 	}
 
-	
-	
+
+	/**
+	 * creates a query of the form SELECT * FROM viewName
+	 */
+
+	static ShallowlyParsedSQLQuery createShallowlyParsedSqlForGeneratedView(QuotedIDFactory idfac, RelationID viewId) {
+		Select select = getSelectParsedQuery(viewId);
+
+		ShallowlyParsedSQLQuery queryParsed = null;
+		try {
+			queryParsed = new  ShallowlyParsedSQLQuery(select, idfac);
+		}
+		catch (JSQLParserException e) {
+			if (e.getCause() instanceof ParseException)
+				log.warn("Parse exception, check no SQL reserved keywords have been used "+ e.getCause().getMessage());
+		}
+
+		return queryParsed;
+	}
+
+	private static Select getSelectParsedQuery(RelationID viewId){
+		PlainSelect body = new PlainSelect();
+
+		List<SelectItem> list = new ArrayList<>(1);
+		list.add(new AllColumns());
+		body.setSelectItems(list); // create SELECT *
+
+		Table viewTable = new Table(viewId.getSchemaSQLRendering(), viewId.getTableNameSQLRendering());
+		body.setFromItem(viewTable); // create FROM viewTable
+
+		Select select = new Select();
+		select.setSelectBody(body);
+		return select;
+	}
+
 	/**
 	 * creates a query of the form SELECT * FROM viewName
 	 */
     
-	static ParsedSQLQuery createParsedSqlForGeneratedView(QuotedIDFactory idfac, RelationID viewId) {
-		
-		PlainSelect body = new PlainSelect();
-		
-		List<SelectItem> list = new ArrayList<>(1);
-		list.add(new AllColumns());
-		body.setSelectItems(list); // create SELECT *
-		
-		Table viewTable = new Table(viewId.getSchemaSQLRendering(), viewId.getTableNameSQLRendering());
-		body.setFromItem(viewTable); // create FROM viewTable
-		
-		Select select = new Select();
-		select.setSelectBody(body);
-		
-		ParsedSQLQuery queryParsed = null;
+	static DeeplyParsedSQLQuery createParsedSqlForGeneratedView(QuotedIDFactory idfac, RelationID viewId) {
+		Select select = getSelectParsedQuery(viewId);
+
+		DeeplyParsedSQLQuery queryParsed = null;
 		try {
-			queryParsed = new ParsedSQLQuery(select, false, idfac);
+			queryParsed = new  DeeplyParsedSQLQuery(select, idfac);
 		} 
 		catch (JSQLParserException e) {
 			if (e.getCause() instanceof ParseException)
@@ -121,10 +144,10 @@ public class SQLQueryDeepParser {
 
         QuotedIDFactory idfac = md.getQuotedIDFactory();
 		
-        ParsedSQLQuery queryParser = null;
+        ShallowlyParsedSQLQuery queryParser = null;
         boolean supported = true;
         try {
-            queryParser = new ParsedSQLQuery(query, false, idfac);
+            queryParser = new ShallowlyParsedSQLQuery(query, idfac);
         } 
         catch (JSQLParserException e) {
             supported = false;

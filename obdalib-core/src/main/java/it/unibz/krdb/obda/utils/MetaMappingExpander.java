@@ -19,16 +19,8 @@ package it.unibz.krdb.obda.utils;
  * limitations under the License.
  * #L%
  */
- 
-import it.unibz.krdb.obda.model.Function;
-import it.unibz.krdb.obda.model.OBDADataFactory;
-import it.unibz.krdb.obda.model.OBDAMappingAxiom;
-import it.unibz.krdb.obda.model.OBDASQLQuery;
-import it.unibz.krdb.obda.model.Predicate;
-import it.unibz.krdb.obda.model.Term;
-import it.unibz.krdb.obda.model.URITemplatePredicate;
-import it.unibz.krdb.obda.model.ValueConstant;
-import it.unibz.krdb.obda.model.Variable;
+
+import it.unibz.krdb.obda.model.*;
 import it.unibz.krdb.obda.model.impl.OBDADataFactoryImpl;
 import it.unibz.krdb.obda.model.impl.OBDAVocabulary;
 import it.unibz.krdb.obda.parser.SQLQueryShallowParser;
@@ -36,19 +28,9 @@ import it.unibz.krdb.sql.QualifiedAttributeID;
 import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
+import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
 import it.unibz.krdb.sql.api.ProjectionJSQL;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -57,9 +39,14 @@ import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
 
 
 /**
@@ -128,7 +115,7 @@ public class MetaMappingExpander {
 				
 				// Construct the SQL query tree from the source query we do not work with views 
 				OBDASQLQuery sourceQuery = mapping.getSourceQuery();
-				ParsedSQLQuery sourceQueryParsed = SQLQueryShallowParser.parse(idfac, sourceQuery.toString());
+				ShallowlyParsedSQLQuery sourceQueryParsed = SQLQueryShallowParser.parse(idfac, sourceQuery.toString());
 				
 				List<SelectExpressionItem> columnList = null;
 				
@@ -173,17 +160,17 @@ public class MetaMappingExpander {
 		return expandedMappings;
 	}
 
-	private List<List<String>> getParamsForClassTemplate(ParsedSQLQuery sourceQueryParsed, List<SelectExpressionItem> columnsForTemplate, List<Variable> varsInTemplate, QuotedIDFactory idfac) throws SQLException {
+	private List<List<String>> getParamsForClassTemplate(ShallowlyParsedSQLQuery  sourceQueryParsed, List<SelectExpressionItem> columnsForTemplate, List<Variable> varsInTemplate, QuotedIDFactory idfac) throws SQLException {
 		
 		/**
 		 * The query for params is almost the same with the original source query, except that
 		 * we only need to distinct project the columns needed for the template expansion 
 		 */
-		
-		ParsedSQLQuery distinctParsedQuery = null;
+
+		ShallowlyParsedSQLQuery distinctParsedQuery = null;
 		try {
-			distinctParsedQuery = new ParsedSQLQuery(sourceQueryParsed.getStatement(), false, idfac);
-		} 
+			distinctParsedQuery = new ShallowlyParsedSQLQuery(sourceQueryParsed.getStatement(), idfac);
+		}
 		catch (JSQLParserException e1) {
 			throw new IllegalArgumentException(e1);
 			//continue;
@@ -193,7 +180,7 @@ public class MetaMappingExpander {
 		ProjectionJSQL distinctParamsProjection = new ProjectionJSQL();
 		distinctParamsProjection.setType(ProjectionJSQL.SELECT_DISTINCT);
 		distinctParamsProjection.addAll(columnsForTemplate);
-		
+
 		distinctParsedQuery.setProjection(distinctParamsProjection);
 		
 		
@@ -247,7 +234,7 @@ public class MetaMappingExpander {
 	 * @throws JSQLParserException 
 	 */
 	private OBDAMappingAxiom instantiateMapping(String id, List<Function> targetQuery,
-			Function bodyAtom, ParsedSQLQuery sourceParsedQuery,
+			Function bodyAtom, ShallowlyParsedSQLQuery sourceParsedQuery,
 			List<SelectExpressionItem> columnsForTemplate,
 			List<SelectExpressionItem> columnsForValues,
 			List<String> params, int arity, QuotedIDFactory idfac) throws JSQLParserException {
@@ -291,8 +278,8 @@ public class MetaMappingExpander {
 		 * new statement for the source query
 		 * we create a new statement with the changed projection and selection
 		 */
-		
-		ParsedSQLQuery newSourceParsedQuery = new ParsedSQLQuery(sourceParsedQuery.getStatement(), false, idfac);
+
+		DeeplyParsedSQLQuery newSourceParsedQuery = new DeeplyParsedSQLQuery(sourceParsedQuery.getStatement(), idfac);
 		newSourceParsedQuery.setProjection(newProjection);
 		newSourceParsedQuery.setWhereClause(selection);
 		
@@ -310,7 +297,6 @@ public class MetaMappingExpander {
 	 * 
 	 * @param varsInTemplate
 	 * @param columnList
-	 * @param mapping
      * @return
 	 */
 	private static List<SelectExpressionItem> getColumnsForTemplate(List<Variable> varsInTemplate,

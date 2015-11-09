@@ -75,7 +75,7 @@ public class Mapping2DatalogConverter {
 				OBDASQLQuery sourceQuery = mappingAxiom.getSourceQuery();
 
 				// Parse the SQL query tree from the source query
-				ParsedSQLQuery parsedSQLQuery = SQLQueryDeepParser.parse(dbMetadata, sourceQuery.toString());
+                DeeplyParsedSQLQuery parsedSQLQuery = SQLQueryDeepParser.parse(dbMetadata, sourceQuery.toString());
 
 				// Create a lookup table for variable swapping
 				AttributeLookupTable lookupTable = createLookupTable(parsedSQLQuery, dbMetadata, idfac);
@@ -146,7 +146,7 @@ public class Mapping2DatalogConverter {
      * @param parsedSQLQuery
      * @param lookupTable
      */
-    private static void addTableAtoms(List<Function> bodyAtoms, ParsedSQLQuery parsedSQLQuery, AttributeLookupTable lookupTable, DBMetadata dbMetadata) throws JSQLParserException {
+    private static void addTableAtoms(List<Function> bodyAtoms, DeeplyParsedSQLQuery parsedSQLQuery, AttributeLookupTable lookupTable, DBMetadata dbMetadata) throws JSQLParserException {
         // Tables mentioned in the SQL query
         Map<RelationID, RelationID> tables = parsedSQLQuery.getTables();
 
@@ -292,7 +292,7 @@ public class Mapping2DatalogConverter {
      * Creates a lookupTable:
      * (1) Collects all the possible column names from the tables mentioned in the query, and aliases.
       */
-    private static AttributeLookupTable createLookupTable(ParsedSQLQuery queryParsed, DBMetadata dbMetadata, QuotedIDFactory idfac) throws JSQLParserException {
+    private static AttributeLookupTable createLookupTable(DeeplyParsedSQLQuery queryParsed, DBMetadata dbMetadata, QuotedIDFactory idfac) throws JSQLParserException {
     	AttributeLookupTable lookupTable = new AttributeLookupTable();
 
 		Map<RelationID, RelationID> tables = queryParsed.getTables();

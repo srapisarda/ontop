@@ -22,11 +22,11 @@ package it.unibz.krdb.obda.parser;
  */
 
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
 
 import java.util.LinkedList;
 import java.util.List;
 
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
@@ -100,11 +100,11 @@ public class JoinConditionVisitor {
 							Table table1 = (Table)fromItem;
 							BinaryExpression bexpr = new EqualsTo();
 							Column column1 = new Column(table1, column.getColumnName());
-							ParsedSQLQuery.normalizeColumnName(idfac, column1);
+							ShallowlyParsedSQLQuery.normalizeColumnName(idfac, column1);
 							bexpr.setLeftExpression(column1);
 							
 							Column column2 = new Column((Table)join.getRightItem(), column.getColumnName());
-							ParsedSQLQuery.normalizeColumnName(idfac, column2);
+							ShallowlyParsedSQLQuery.normalizeColumnName(idfac, column2);
 							bexpr.setRightExpression(column2);
 							joinConditions.add(bexpr);
 							//plainSelect.getFromItem()+"."+columnName+ bexpr.getStringExpression() +join.getRightItem()+"."+columnName);
@@ -489,7 +489,7 @@ public class JoinConditionVisitor {
 		public void visit(Column tableColumn) {
 			// CHANGE TABLE / COLUMN NAME IN THE JOIN CONDITION
 			// TableJSQL.unquoteColumnAndTableName(tableColumn);
-			ParsedSQLQuery.normalizeColumnName(idfac, tableColumn);
+			ShallowlyParsedSQLQuery.normalizeColumnName(idfac, tableColumn);
 		}
 		
 		/*

@@ -25,7 +25,6 @@ import it.unibz.krdb.obda.model.OBDASQLQuery;
 import it.unibz.krdb.obda.parser.SQLQueryShallowParser;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 
 
@@ -59,7 +59,7 @@ public class MappingParser {
 		for (OBDAMappingAxiom axiom : mappings) {
 			try {
 				OBDASQLQuery sourceQuery = axiom.getSourceQuery();
-				ParsedSQLQuery sourceQueryParsed = SQLQueryShallowParser.parse(idfac, sourceQuery.toString());
+				ShallowlyParsedSQLQuery sourceQueryParsed = SQLQueryShallowParser.parse(idfac, sourceQuery.toString());
 				List<RelationID> queryTables = sourceQueryParsed.getRelations();
 				for (RelationID table : queryTables) 
 					tables.add(table);

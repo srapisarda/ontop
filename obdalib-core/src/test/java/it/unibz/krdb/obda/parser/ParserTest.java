@@ -23,10 +23,8 @@ package it.unibz.krdb.obda.parser;
 import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DBMetadataExtractor;
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.QuotedIDFactoryStandardSQL;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
+import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
 import junit.framework.TestCase;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -675,7 +673,7 @@ public class ParserTest extends TestCase {
 
 	private String queryText;
 
-	ParsedSQLQuery queryP;
+	DeeplyParsedSQLQuery queryP;
 
 	private boolean parseJSQL(String input) {
 
@@ -684,7 +682,7 @@ public class ParserTest extends TestCase {
 		try {
 			DBMetadata dbMetadata = DBMetadataExtractor.createDummyMetadata();
 			QuotedIDFactory idfac = dbMetadata.getQuotedIDFactory();
-			queryP = new ParsedSQLQuery(input, true, idfac);
+			queryP = new DeeplyParsedSQLQuery(input, idfac);
 		} catch (Exception e) {
 
 			return false;

@@ -29,7 +29,8 @@ import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DBMetadataExtractor;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.QuotedIDFactoryStandardSQL;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
+import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
+//import it.unibz.krdb.sql.api.ParsedSQLQuery;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -122,7 +123,7 @@ public class ParserFileTest extends TestCase {
 		
 		DBMetadata dbMetadata = DBMetadataExtractor.createDummyMetadata();
 		QuotedIDFactory idfac = dbMetadata.getQuotedIDFactory();
-		
+
 		OBDAModel controller = model;
 		Hashtable<URI, ArrayList<OBDAMappingAxiom>> mappingList = controller.getMappings();
 		ArrayList<OBDAMappingAxiom> mappings = mappingList.get(identifier);
@@ -155,10 +156,10 @@ public class ParserFileTest extends TestCase {
 	}
 
 	private static boolean parse(String input, QuotedIDFactory idfac) {
-		ParsedSQLQuery queryP;
+		DeeplyParsedSQLQuery queryP;
 		
 		try {
-			queryP = new ParsedSQLQuery(input, true, idfac);
+			queryP = new DeeplyParsedSQLQuery(input, idfac);
 		} catch (JSQLParserException e) {
 			log.debug(e.getMessage());
 			return false;

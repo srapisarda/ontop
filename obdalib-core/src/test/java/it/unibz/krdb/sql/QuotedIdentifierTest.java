@@ -1,14 +1,13 @@
 package it.unibz.krdb.sql;
 
-import static org.junit.Assert.*;
+import it.unibz.krdb.obda.parser.SQLQueryDeepParser;
+import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import it.unibz.krdb.obda.parser.SQLQueryDeepParser;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
-
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class QuotedIdentifierTest {
 
@@ -67,8 +66,8 @@ public class QuotedIdentifierTest {
 					"WHERE \"AblE\".Col = Able.col2";
 		
 		System.out.println(s);
-		
-		ParsedSQLQuery q = SQLQueryDeepParser.parse(dbMetadata, s);
+
+		DeeplyParsedSQLQuery q = SQLQueryDeepParser.parse(dbMetadata, s);
 		
 		System.out.println(q.toString());
 	}
@@ -78,8 +77,8 @@ public class QuotedIdentifierTest {
 		String s = "SELECT a.id AS c FROM A";
 		
 		System.out.println(s);
-		
-		ParsedSQLQuery q = SQLQueryDeepParser.parse(dbMetadata, s);
+
+		DeeplyParsedSQLQuery q = SQLQueryDeepParser.parse(dbMetadata, s);
 		
 		System.out.println(q.toString());
 	}
@@ -89,8 +88,8 @@ public class QuotedIdentifierTest {
 		String s = "SELECT * FROM A JOIN B ON NOT (a.id <> b.id)";
 		
 		System.out.println(s);
-		
-		ParsedSQLQuery q = SQLQueryDeepParser.parse(dbMetadata, s);
+
+		DeeplyParsedSQLQuery q = SQLQueryDeepParser.parse(dbMetadata, s);
 		
 		System.out.println(q.toString());
 		System.out.println(q.getJoinConditions().toString());

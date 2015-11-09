@@ -56,7 +56,11 @@ public class ColumnsVisitor implements SelectVisitor, SelectItemVisitor, Express
 		}
 		select.getSelectBody().accept(this);
 	}
-		
+
+	/**
+	 *
+ 	 * @return List of parsed query columns
+	 */
 	public List<Column> getColumns() {
 		return columns;	
 	}

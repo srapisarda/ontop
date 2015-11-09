@@ -21,8 +21,8 @@ package it.unibz.krdb.obda.parser;
  */
 
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.api.ParsedSQLQuery;
 import it.unibz.krdb.sql.api.ProjectionJSQL;
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
@@ -361,7 +361,7 @@ public class ProjectionVisitor implements SelectVisitor, SelectItemVisitor, Expr
 	@Override
 	public void visit(Column tableColumn) {
 		// CHANGES TABLE AND COLUMN NAMES
-		ParsedSQLQuery.normalizeColumnName(idfac, tableColumn);
+		ShallowlyParsedSQLQuery.normalizeColumnName(idfac, tableColumn);
 	}
 
 	@Override
