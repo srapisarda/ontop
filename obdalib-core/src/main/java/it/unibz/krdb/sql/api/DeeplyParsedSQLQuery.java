@@ -36,17 +36,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
-* A structure to store the parsed SQL query string. It returns the information
-* about the query using the visitor classes
-*/
+ * A structure to store the parsed SQL query string. It returns the information
+ * about the query using the visitor classes
+ */
 public class DeeplyParsedSQLQuery implements Serializable {
 
     /**
-	 * 
-	 */
-	private static final long serialVersionUID = -2387850683528860103L;
+     *
+     */
+    private static final long serialVersionUID = -2387850683528860103L;
 
-	private Select selectQuery; // the parsed query
+    private Select selectQuery; // the parsed query
 
     private final QuotedIDFactory idfac;
 
@@ -57,6 +57,7 @@ public class DeeplyParsedSQLQuery implements Serializable {
     private List<Expression> joins;
     private Expression whereClause;
     private ProjectionJSQL projection;
+
 
     /**
      * Parse deeply a query given as a String
@@ -84,11 +85,30 @@ public class DeeplyParsedSQLQuery implements Serializable {
         this.idfac = idfac;
         if (statement instanceof Select) {
             selectQuery = (Select) statement;
-            tables = getTables();
-            whereClause = getWhereClause(); // bring the names in WHERE clause into NORMAL FORM
-            projection = getProjection(); // bring the names in FROM clause into NORMAL FORM
-            joins = getJoinConditions(); // bring the names in JOIN clauses into NORMAL FORM
-            aliasMap = getAliasMap();    // bring the alias names in Expr AS Alias into NORMAL FORM
+
+            TableNameVisitor tableNameVisitor = new TableNameVisitor(selectQuery, idfac);
+            tables =  tableNameVisitor.getTables();
+            if (!tableNameVisitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+
+            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(idfac);
+            whereClause = whereClauseVisitor.getWhereClause(selectQuery); // bring the names in WHERE clause into NORMAL FORM
+            if (!whereClauseVisitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+
+            ProjectionVisitor projectionVisitor = new ProjectionVisitor(idfac);
+            projection = projectionVisitor.getProjection(selectQuery); // bring the names in FROM clause into NORMAL FORM
+            if (!projectionVisitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+
+            JoinConditionVisitor joinConditionVisitor = new JoinConditionVisitor(selectQuery, idfac);
+            joins = joinConditionVisitor.getJoinConditions(); // bring the names in JOIN clauses into NORMAL FORM
+            if (!projectionVisitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+
+            AliasMapVisitor aliasMapVisitor = new AliasMapVisitor(selectQuery, idfac);
+            aliasMap = aliasMapVisitor.getAliasMap();    // bring the alias names in Expr AS Alias into NORMAL FORM
+
         }
         // catch exception about wrong inserted columns
         else
@@ -102,15 +122,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
      *
      */
     public Map<RelationID, RelationID> getTables() throws JSQLParserException {
-
-        if (tables == null) {
-            TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
-
-            tables = visitor.getTables();
-
-            if (!visitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-        }
         return tables;
     }
 
@@ -128,14 +139,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
      * @throws JSQLParserException
      */
     public Expression getWhereClause() throws JSQLParserException {
-        if (whereClause == null) {
-            WhereClauseVisitor visitor = new WhereClauseVisitor(idfac);
-            // CHANGES TABLE SCHEMA / NAME / ALIASES AND COLUMN NAMES
-            whereClause = visitor.getWhereClause(selectQuery);
-
-            if (!visitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-        }
         return whereClause;
     }
 
@@ -163,16 +166,7 @@ public class DeeplyParsedSQLQuery implements Serializable {
      * @throws JSQLParserException
      */
     public ProjectionJSQL getProjection() throws JSQLParserException {
-        if (projection == null) {
-            ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-
-            projection = visitor.getProjection(selectQuery);
-
-            if (!visitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-        }
         return projection;
-
     }
 
     /**
@@ -199,10 +193,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
      *
      */
     public Map<QuotedID, Expression> getAliasMap() {
-        if (aliasMap == null) {
-            AliasMapVisitor visitor = new AliasMapVisitor(selectQuery, idfac);
-            aliasMap = visitor.getAliasMap();
-        }
         return aliasMap;
     }
 
@@ -214,14 +204,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
      *
      */
     public List<Expression> getJoinConditions() throws JSQLParserException {
-        if (joins == null) {
-            JoinConditionVisitor visitor = new JoinConditionVisitor(selectQuery, idfac);
-
-            joins = visitor.getJoinConditions();
-
-            if (!visitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-        }
         return joins;
     }
 
