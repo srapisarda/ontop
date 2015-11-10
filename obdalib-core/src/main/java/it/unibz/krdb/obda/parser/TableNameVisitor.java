@@ -22,7 +22,6 @@ package it.unibz.krdb.obda.parser;
 
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -32,12 +31,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Collects all table names in a select statement 
@@ -68,7 +62,6 @@ public class TableNameVisitor {
 	 * Main entry for this Tool class. A list of found tables is returned.
 	 *
 	 * @param select
-	 * @param deepParsing
 	 * @return
 	 */
 	public TableNameVisitor(Select select, QuotedIDFactory idfac) {
