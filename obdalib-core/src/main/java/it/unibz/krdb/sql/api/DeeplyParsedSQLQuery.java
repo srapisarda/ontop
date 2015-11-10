@@ -131,11 +131,10 @@ public class DeeplyParsedSQLQuery implements Serializable {
         if (whereClause == null) {
             WhereClauseVisitor visitor = new WhereClauseVisitor(idfac);
             // CHANGES TABLE SCHEMA / NAME / ALIASES AND COLUMN NAMES
-            
-    		if (!visitor.isSupported())
-				throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-		
             whereClause = visitor.getWhereClause(selectQuery);
+
+            if (!visitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
         }
         return whereClause;
     }
@@ -166,11 +165,11 @@ public class DeeplyParsedSQLQuery implements Serializable {
     public ProjectionJSQL getProjection() throws JSQLParserException {
         if (projection == null) {
             ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-            
-    		if (!visitor.isSupported()) 
-				throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-	
+
             projection = visitor.getProjection(selectQuery);
+
+            if (!visitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
         }
         return projection;
 
@@ -217,11 +216,11 @@ public class DeeplyParsedSQLQuery implements Serializable {
     public List<Expression> getJoinConditions() throws JSQLParserException {
         if (joins == null) {
             JoinConditionVisitor visitor = new JoinConditionVisitor(selectQuery, idfac);
-        	
-    		if (!visitor.isSupported())
-    			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-            
+
             joins = visitor.getJoinConditions();
+
+            if (!visitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
         }
         return joins;
     }
