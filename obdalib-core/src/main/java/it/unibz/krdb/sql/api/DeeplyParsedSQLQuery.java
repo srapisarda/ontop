@@ -105,11 +105,11 @@ public class DeeplyParsedSQLQuery implements Serializable {
 
         if (tables == null) {
             TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
-    		
-    		if (!visitor.isSupported())
-    			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
-            
+
             tables = visitor.getTables();
+
+            if (!visitor.isSupported())
+                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
         }
         return tables;
     }
