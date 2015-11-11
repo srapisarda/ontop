@@ -119,6 +119,21 @@ public class ShallowlyParsedSQLQuery implements Serializable {
     }
 
     /**
+     * Set the object construction for the WHERE clause, modifying the current
+     * statement
+     *
+     * META-MAPPING EXPANDER
+     *
+     * @param whereClause Expression object
+     */
+
+    public void setWhereClause(Expression whereClause) {
+        WhereClauseVisitor sel = new WhereClauseVisitor(idfac);
+        sel.setWhereClause(selectQuery, whereClause);
+        this.whereClause = whereClause;
+    }
+
+    /**
      * Set the object construction for the SELECT clause, modifying the current
      * statement
      *

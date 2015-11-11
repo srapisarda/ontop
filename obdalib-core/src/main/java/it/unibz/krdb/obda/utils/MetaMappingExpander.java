@@ -266,7 +266,7 @@ public class MetaMappingExpander {
 		 * we create a new statement with the changed projection and selection
 		 */
 
-		DeeplyParsedSQLQuery newSourceParsedQuery = new DeeplyParsedSQLQuery(sourceParsedQuery.getStatement(), idfac);
+		ShallowlyParsedSQLQuery newSourceParsedQuery = new ShallowlyParsedSQLQuery(sourceParsedQuery.getStatement(), idfac);
 		newSourceParsedQuery.setProjection(newProjection);
 		newSourceParsedQuery.setWhereClause(selection);
 		

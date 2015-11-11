@@ -143,21 +143,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
     }
 
     /**
-     * Set the object construction for the WHERE clause, modifying the current
-     * statement
-     *
-     * META-MAPPING EXPANDER
-     *
-     * @param whereClause Expression object
-     */
-
-    public void setWhereClause(Expression whereClause) {
-        WhereClauseVisitor sel = new WhereClauseVisitor(idfac);
-        sel.setWhereClause(selectQuery, whereClause);
-        this.whereClause = whereClause;
-    }
-
-    /**
      * Get the object construction for the SELECT clause (CHANGES TABLE AND COLUMN NAMES).
      *
      * CREATING DATALOG RULES
@@ -167,21 +152,6 @@ public class DeeplyParsedSQLQuery implements Serializable {
      */
     public ProjectionJSQL getProjection() throws JSQLParserException {
         return projection;
-    }
-
-    /**
-     * Set the object construction for the SELECT clause, modifying the current
-     * statement
-     *
-     * META-MAPPING EXPANDER
-     *
-     * @param projection select list or select distinct list
-     */
-
-    public void setProjection(ProjectionJSQL projection) {
-        ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-        visitor.setProjection(selectQuery, projection);
-        this.projection = projection;
     }
 
     /**
