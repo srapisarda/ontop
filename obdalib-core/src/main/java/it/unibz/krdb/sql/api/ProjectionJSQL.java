@@ -20,45 +20,61 @@ package it.unibz.krdb.sql.api;
  * #L%
  */
 
-import java.io.Serializable;
 
-import net.sf.jsqlparser.statement.select.AllColumns;
-import net.sf.jsqlparser.statement.select.AllTableColumns;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
+
+
 /**
  * Store the information about the Projection of the parsed query. (between SELECT... FROM)
  */
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProjectionJSQL implements Serializable {
+import com.google.common.base.Joiner;
 
-	private static final long serialVersionUID = -1926279507915359040L;
+public class ProjectionJSQL  {
+	
+	/*
+	 * http://www.postgresql.org/docs/9.0/static/sql-select.html#SQL-DISTINCT
+	 * 
+	 * SELECT [ ALL | DISTINCT [ ON ( expression [, ...] ) ] ] * | expression [ [ AS ] output_name ] [, ...]
+     * 		
+	 * If DISTINCT is specified, all duplicate rows are removed from the result set (one row is kept from each group of duplicates). 
+	 * ALL specifies the opposite: all rows are kept; that is the default.
+	 *
+	 * DISTINCT ON ( expression [, ...] ) keeps only the first row of each set of rows where the given expressions evaluate to equal. 
+	 * The DISTINCT ON expressions are interpreted using the same rules as for ORDER BY (see above). Note that the "first row" of 
+	 * each set is unpredictable unless ORDER BY is used to ensure that the desired row appears first. For example:
+	 *
+	 * SELECT DISTINCT ON (location) location, time, report
+     * FROM weather_reports
+     * ORDER BY location, time DESC;
+     * 
+	 * retrieves the most recent weather report for each location. But if we had not used ORDER BY to force descending 
+	 * order of time values for each location, we'd have gotten a report from an unpredictable time for each location.
+	 * 
+     * The DISTINCT ON expression(s) must match the leftmost ORDER BY expression(s). The ORDER BY clause will normally 
+     * contain additional expression(s) that determine the desired precedence of rows within each DISTINCT ON group.
+	 * 
+	 */
 	
 	public static final int SELECT_DEFAULT = 0;
 	public static final int SELECT_DISTINCT_ON = 1;
 	public static final int SELECT_DISTINCT = 2;
 
-	private int type;
+	private final int type;
 
 	/**
 	 * Collection of columns for this projection.
 	 */
-	private final List<SelectExpressionItem> selectList = new ArrayList<>();
-	private final List<SelectExpressionItem> selectDistinctList = new ArrayList<>(); //for the cases with DISTINCT ON
-	private AllColumns allcolumns; //for the cases as SELECT *
-	private AllTableColumns tablecolumns; //for the cases as SELECT table.*
+	private final List<SelectItem> selectList = new ArrayList<>();
+	private final List<SelectItem> selectDistinctList = new ArrayList<>(); //for the cases with DISTINCT ON
 	
 	/** 
 	 * A new Projection JSQL. It returns the select list or select distinct list. Recognize * sign.
 	 */
 
-	public ProjectionJSQL() {
-		allcolumns = null;
-		tablecolumns = null;
-	}
-
-	public void setType(int value) {
+	public ProjectionJSQL(int value) {
 		type = value;
 	}
 
@@ -80,9 +96,8 @@ public class ProjectionJSQL implements Serializable {
 	 * @param column
 	 *            The input column object.
 	 */
-	public void add(SelectExpressionItem column, boolean distinctOn) {
+	public void add(SelectItem column, boolean distinctOn) {
 		if (distinctOn) {
-			this.setType(ProjectionJSQL.SELECT_DISTINCT_ON);
 			selectDistinctList.add(column);
 		}
 		else{
@@ -91,39 +106,19 @@ public class ProjectionJSQL implements Serializable {
 	}
 
 	/**
-	 * Inserts all columns in the case of SELECT * FROM.
-	 * 
-	 * @param column
-	 *            The allcolumns object.
-	 */
-	public void add(AllColumns column) {
-		allcolumns = column;
-	}
-	
-	/**
-	 * Inserts  columns for a specific table to the projection list.
-	 * 
-	 * @param column
-	 *            The AllTableColumns object.
-	 */
-	public void add(AllTableColumns column) {
-		tablecolumns = column;
-	}
-	
-	/**
 	 * Copies all the columns in the list and appends them to the existing list.
 	 * 
-	 * @param columns
+	 * @param columnsForValues
 	 *            The input column list.
 	 */
-	public void addAll(List<SelectExpressionItem> columns) {
-		selectList.addAll(columns);
+	public void addAll(List<SelectItem> columnsForValues) {
+		selectList.addAll(columnsForValues);
 	}
 
 	/**
 	 * Retrieves all columns that are mentioned in the SELECT clause.
 	 */
-	public List<SelectExpressionItem> getColumnList() {
+	public List<SelectItem> getColumnList() {
 		return selectList;
 	}
 	
@@ -133,44 +128,14 @@ public class ProjectionJSQL implements Serializable {
 	public String toString() {
 		StringBuilder str = new StringBuilder(getType());
 
-		boolean bNeedComma = false;
-		boolean bParenthesis = true;
-		
-		for (SelectExpressionItem column : selectDistinctList) {
-			if (bNeedComma) {
-				str.append(",");
-			}
-			str.append(" ");
-			
-			if (bParenthesis) {
-				str.append("(");
-				bParenthesis = false;
-			}
-			
-			str.append(column.toString());
-			bNeedComma = true;
-		}
-		
-		if(!selectDistinctList.isEmpty()) {
+		if (!selectDistinctList.isEmpty()) {
+			str.append("(");
+			Joiner.on(", ").appendTo(str, selectDistinctList);
 			str.append(")");
-			bNeedComma = false;
 		}
 			
+		Joiner.on(", ").appendTo(str, selectList);
 
-		for (SelectExpressionItem column : selectList) {
-			if (bNeedComma) {
-				str.append(",");
-			}
-			str.append(" ");
-			str.append(column.toString());
-			bNeedComma = true;
-		}
-		
-		if (allcolumns != null)
-			str.append(" *");
-		if (tablecolumns != null)
-			str.append(" "+ tablecolumns.getTable() + ".*");
-		
 		return str.append(" from").toString();
 	}	
 }

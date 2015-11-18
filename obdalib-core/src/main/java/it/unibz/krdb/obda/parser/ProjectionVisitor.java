@@ -42,7 +42,6 @@ import net.sf.jsqlparser.statement.select.*;
 public class ProjectionVisitor {
 	
 	private ProjectionJSQL projection;
-	private boolean bDistinctOn = false; // true when a SELECT distinct is present
 	private boolean unsupported = false;
 	
 	private final QuotedIDFactory idFac;
@@ -56,17 +55,9 @@ public class ProjectionVisitor {
 	 * @param idFac
 	 * 			QuotedIDFactory object
 	 */
-	public ProjectionVisitor( Select select, QuotedIDFactory idFac) {
+	public ProjectionVisitor(Select select, QuotedIDFactory idFac) {
 		this.idFac = idFac;
-		this.setSelect(select);
-	}
-
-	/**
-	 * This change
-	 * @param select
-	 * 		select query statement
-	 */
-	public void setSelect(Select select){
+		
 		if (select.getWithItemsList() != null) {
 			for (WithItem withItem : select.getWithItemsList())
 				withItem.accept(selectVisitor);
@@ -102,22 +93,21 @@ public class ProjectionVisitor {
 			// visit the SelectItems and distinguish between select distinct,
 			// select distinct on, select all
 
-			projection = new ProjectionJSQL();
 			Distinct distinct = plainSelect.getDistinct();
 
 			if (distinct != null) { // for SELECT DISTINCT [ON (...)]
 
 				if (distinct.getOnSelectItems() != null) {
-					bDistinctOn = true;
-
+					// this is supported only by PostgreSQL
+					projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT_ON);
 					for (SelectItem item : distinct.getOnSelectItems())
-						item.accept(selectItemVisitor);
-
-					bDistinctOn = false;
+						item.accept(selectItemVisitorDistinctOn);
 				}
 				else
-					projection.setType(ProjectionJSQL.SELECT_DISTINCT);
+					projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT);
 			}
+			else
+				projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DEFAULT);
 
 			for (SelectItem item : plainSelect.getSelectItems())
 				item.accept(selectItemVisitor);
@@ -144,7 +134,7 @@ public class ProjectionVisitor {
 	private SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
 		@Override
 		public void visit(AllColumns allColumns) {
-			projection.add(allColumns);
+			projection.add(allColumns, false);
 		}
 
 		/*
@@ -153,7 +143,7 @@ public class ProjectionVisitor {
          */
 		@Override
 		public void visit(AllTableColumns allTableColumns) {
-			projection.add(allTableColumns);
+			projection.add(allTableColumns, false);
 		}
 
 		/*
@@ -162,7 +152,7 @@ public class ProjectionVisitor {
          */
 		@Override
 		public void visit(SelectExpressionItem selectExpr) {
-			projection.add(selectExpr, bDistinctOn);
+			projection.add(selectExpr, false);
 			selectExpr.getExpression().accept(expressionVisitor);
 			// all complex expressions in SELECT must be named (by aliases)
 			if (!(selectExpr.getExpression() instanceof Column) && selectExpr.getAlias() == null)
@@ -170,6 +160,26 @@ public class ProjectionVisitor {
 		}
 	};
 
+	private SelectItemVisitor selectItemVisitorDistinctOn = new SelectItemVisitor() {
+		@Override
+		public void visit(AllColumns allColumns) {
+			// cannot be called
+		}
+
+		@Override
+		public void visit(AllTableColumns allTableColumns) {
+			// cannot be called
+		}
+
+		@Override
+		public void visit(SelectExpressionItem selectExpr) {
+			projection.add(selectExpr, true);
+			selectExpr.getExpression().accept(expressionVisitor);
+			// no alias, just a plain expression!
+		}
+	};
+	
+	
 	private ExpressionVisitor expressionVisitor = new ExpressionVisitor() {
 		@Override
 		public void visit(NullValue nullValue) {

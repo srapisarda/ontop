@@ -34,52 +34,38 @@ import java.util.List;
  * Since the current release does not support Function, we throw a ParserException, when a function is present
  *
  */
-public class SetProjectionVisitor{
-    private boolean unsupported = false;
-    final ProjectionJSQL projection;
+public class SetProjectionVisitor {
 
-    /**
+	/**
      *
      * @param select
      * @param projection
      */
     public SetProjectionVisitor(Select select, final ProjectionJSQL projection) {
-        this.projection = projection;
-        select.getSelectBody().accept(selectVisitor);
-    }
-
-
-    public boolean isSupported(){
-        return  !unsupported;
-    }
-
-    private void unsupported(Object o) {
-        System.out.println(this.getClass() + " DOES NOT SUPPORT " + o);
-        unsupported = true;
-    }
-
-    private SelectVisitor selectVisitor = new SelectVisitor() {
+        select.getSelectBody().accept(new SelectVisitor() {
 
         @Override
         public void visit(PlainSelect plainSelect) {
             if (projection.getType().equals("select distinct on")) {
                 List<SelectItem> distinctList = new ArrayList<>();
 
-                for (SelectExpressionItem seItem : projection.getColumnList())
+                for (SelectItem seItem : projection.getColumnList())
                     distinctList.add(seItem);
 
                 Distinct distinct = new Distinct();
                 distinct.setOnSelectItems(distinctList);
                 plainSelect.setDistinct(distinct);
-            } else if (projection.getType().equals("select distinct")) {
+            } 
+            else if (projection.getType().equals("select distinct")) {
                 Distinct distinct = new Distinct();
                 plainSelect.setDistinct(distinct);
 
                 plainSelect.getSelectItems().clear();
                 plainSelect.getSelectItems().addAll(projection.getColumnList());
-            } else {
+            } 
+            else {
                 plainSelect.getSelectItems().clear();
-                List<SelectExpressionItem> columnList = projection.getColumnList();
+                List<SelectItem> columnList = projection.getColumnList();
                 if (!columnList.isEmpty()) {
                     plainSelect.getSelectItems().addAll(columnList);
                 } else {
@@ -90,7 +76,6 @@ public class SetProjectionVisitor{
 
         @Override
         public void visit(SetOperationList setOpList) {
-            unsupported = true;
             setOpList.getPlainSelects().get(0).accept(this);
         }
 
@@ -98,5 +83,6 @@ public class SetProjectionVisitor{
         public void visit(WithItem withItem) {
             withItem.getSelectBody().accept(this);
         }
-    };
+    });
+    }
 }

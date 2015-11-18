@@ -38,6 +38,8 @@ import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,13 +125,13 @@ public class MetaMappingExpander {
 				 * we only need to distinct project the columns needed for the template expansion 
 				 */
 				
-				List<SelectExpressionItem>	columnList = sourceQueryParsed.getProjection().getColumnList();
+				List<SelectItem> columnList = sourceQueryParsed.getProjection().getColumnList();
 				
-				List<SelectExpressionItem> columnsForTemplate = getColumnsForTemplate(varsInTemplate, columnList, idfac);
+				List<SelectItem> columnsForTemplate = getColumnsForTemplate(varsInTemplate, columnList, idfac);
 				
 				List<List<String>> paramsForClassTemplate = getParamsForClassTemplate(sourceQueryParsed, columnsForTemplate, varsInTemplate, idfac);
 				
-				List<SelectExpressionItem>  columnsForValues = new ArrayList<>(columnList);
+				List<SelectItem>  columnsForValues = new ArrayList<>(columnList);
 				columnsForValues.removeAll(columnsForTemplate);
 				
 				String id = mapping.getId();
@@ -152,15 +154,14 @@ public class MetaMappingExpander {
 		return expandedMappings;
 	}
 
-	private List<List<String>> getParamsForClassTemplate(ShallowlyParsedSQLQuery  sourceQueryParsed, List<SelectExpressionItem> columnsForTemplate, List<Variable> varsInTemplate, QuotedIDFactory idfac) throws SQLException {
+	private List<List<String>> getParamsForClassTemplate(ShallowlyParsedSQLQuery  sourceQueryParsed, List<SelectItem> columnsForTemplate, List<Variable> varsInTemplate, QuotedIDFactory idfac) throws SQLException {
 		
 		/**
 		 * The query for params is almost the same with the original source query, except that
 		 * we only need to distinct project the columns needed for the template expansion 
 		 */
 
-		ProjectionJSQL distinctParamsProjection = new ProjectionJSQL();
-		distinctParamsProjection.setType(ProjectionJSQL.SELECT_DISTINCT);
+		ProjectionJSQL distinctParamsProjection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT);
 		distinctParamsProjection.addAll(columnsForTemplate);
 		
 		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(distinctParamsProjection, null);
@@ -215,8 +216,8 @@ public class MetaMappingExpander {
 	 */
 	private OBDAMappingAxiom instantiateMapping(String id, List<Function> targetQuery,
 			Function bodyAtom, ShallowlyParsedSQLQuery sourceParsedQuery,
-			List<SelectExpressionItem> columnsForTemplate,
-			List<SelectExpressionItem> columnsForValues,
+			List<SelectItem> columnsForTemplate,
+			List<SelectItem> columnsForValues,
 			List<String> params, int arity) throws JSQLParserException {
 		
 		/*
@@ -227,7 +228,8 @@ public class MetaMappingExpander {
 		Expression selection = sourceParsedQuery.getWhereClause();
 		
 		int j = 0;
-		for (SelectExpressionItem column : columnsForTemplate) {
+		for (SelectItem si : columnsForTemplate) {
+			SelectExpressionItem column = (SelectExpressionItem)si;
 			
 			Expression columnRefExpression = column.getExpression();
 			StringValue clsStringValue = new StringValue("'" + params.get(j) + "'");
@@ -245,7 +247,7 @@ public class MetaMappingExpander {
 		}
 			
 		
-		ProjectionJSQL newProjection = new ProjectionJSQL();
+		ProjectionJSQL newProjection = new ProjectionJSQL(ProjectionJSQL.SELECT_DEFAULT);
 		newProjection.addAll(columnsForValues);
 		
 		/*
@@ -270,14 +272,15 @@ public class MetaMappingExpander {
 	 * @param columnList
      * @return
 	 */
-	private static List<SelectExpressionItem> getColumnsForTemplate(List<Variable> varsInTemplate,
-			List<SelectExpressionItem> columnList, QuotedIDFactory idfac) {
+	private static List<SelectItem> getColumnsForTemplate(List<Variable> varsInTemplate,
+			List<SelectItem> columnList, QuotedIDFactory idfac) {
 		
-		List<SelectExpressionItem> columnsForTemplate = new ArrayList<>(varsInTemplate.size());
+		List<SelectItem> columnsForTemplate = new ArrayList<>(varsInTemplate.size());
 
 		for (Variable var : varsInTemplate) {
 			boolean found = false;
-			for (SelectExpressionItem selectExpression : columnList) {
+			for (SelectItem  si : columnList) {
+				SelectExpressionItem selectExpression = (SelectExpressionItem)si;
 				
 				// ROMAN (23 Sep 2015): SelectExpressionItem is of the form Expression AS Alias
 				// this code does not work for complex expressions (i.e., 3 * A)

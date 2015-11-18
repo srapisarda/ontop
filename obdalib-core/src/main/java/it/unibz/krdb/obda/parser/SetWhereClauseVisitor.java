@@ -24,9 +24,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.statement.select.*;
 
 /**
- * Visitor class to retrieve the WHERE clause of the SELECT statement
- *
- * BRINGS TABLE NAME / SCHEMA / ALIAS AND COLUMN NAMES in the WHERE clause into NORMAL FORM
+ * Visitor class to set the WHERE clause of the SELECT statement
  */
 public class SetWhereClauseVisitor {
 
