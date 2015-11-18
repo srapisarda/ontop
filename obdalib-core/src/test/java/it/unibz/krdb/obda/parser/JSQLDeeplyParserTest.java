@@ -20,6 +20,10 @@ package it.unibz.krdb.obda.parser;
  * #L%
  */
 
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.Select;
 import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DBMetadataExtractor;
 import it.unibz.krdb.sql.QuotedIDFactory;
@@ -116,8 +120,12 @@ public class JSQLDeeplyParserTest extends TestCase {
         try {
             DBMetadata dbMetadata = DBMetadataExtractor.createDummyMetadata();
             QuotedIDFactory idfac = dbMetadata.getQuotedIDFactory();
+            Statement st = CCJSqlParserUtil.parse(input);
+            if (!(st instanceof Select))
+            	throw new JSQLParserException("The inserted query is not a SELECT statement");
 
-            deeplyQueryP = new DeeplyParsedSQLQuery(input, idfac);
+            deeplyQueryP = new DeeplyParsedSQLQuery((Select)st, idfac);
+            
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -147,9 +155,6 @@ public class JSQLDeeplyParserTest extends TestCase {
                 System.out.println("  Join conditions: "
                         + (deeplyQueryP.getJoinConditions().isEmpty() ? "--" : deeplyQueryP
                         .getJoinConditions()));
-                System.out.println("  Columns: "
-                        + (deeplyQueryP.getColumns().isEmpty() ? "--" : deeplyQueryP
-                        .getColumns()));
             } catch (Exception e) {
 
                 e.printStackTrace();

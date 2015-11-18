@@ -20,7 +20,6 @@ package it.unibz.krdb.obda.parser;
  * #L%
  */
 
-import it.unibz.krdb.sql.api.AggregationJSQL;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -37,6 +36,11 @@ import net.sf.jsqlparser.statement.select.*;
 
 public class AggregationVisitor implements SelectVisitor, FromItemVisitor, ExpressionVisitor {
 
+	private static final class AggregationJSQL {
+		
+	};
+	
+	
 	AggregationJSQL aggregation= new AggregationJSQL();
 	
 	/**

@@ -28,7 +28,6 @@ import it.unibz.krdb.sql.QualifiedAttributeID;
 import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
 import it.unibz.krdb.sql.api.ProjectionJSQL;
 import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
@@ -139,7 +138,7 @@ public class MetaMappingExpander {
 					String newId = IDGenerator.getNextUniqueID(id + "#");
 					OBDAMappingAxiom newMapping = instantiateMapping(newId, targetQuery,
 							bodyAtom, sourceQueryParsed, columnsForTemplate,
-							columnsForValues, params, arity, idfac);
+							columnsForValues, params, arity);
 										
 					expandedMappings.add(newMapping);	
 					
@@ -160,23 +159,11 @@ public class MetaMappingExpander {
 		 * we only need to distinct project the columns needed for the template expansion 
 		 */
 
-		ShallowlyParsedSQLQuery distinctParsedQuery = null;
-		try {
-			distinctParsedQuery = new ShallowlyParsedSQLQuery(sourceQueryParsed.getStatement(), idfac);
-		}
-		catch (JSQLParserException e1) {
-			throw new IllegalArgumentException(e1);
-			//continue;
-		}
-
-		
 		ProjectionJSQL distinctParamsProjection = new ProjectionJSQL();
 		distinctParamsProjection.setType(ProjectionJSQL.SELECT_DISTINCT);
 		distinctParamsProjection.addAll(columnsForTemplate);
-
-		distinctParsedQuery.setProjection(distinctParamsProjection);
 		
-		
+		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(distinctParamsProjection, null);
 		String distinctParamsSQL = distinctParsedQuery.toString();
 
 	
@@ -230,7 +217,7 @@ public class MetaMappingExpander {
 			Function bodyAtom, ShallowlyParsedSQLQuery sourceParsedQuery,
 			List<SelectExpressionItem> columnsForTemplate,
 			List<SelectExpressionItem> columnsForValues,
-			List<String> params, int arity, QuotedIDFactory idfac) throws JSQLParserException {
+			List<String> params, int arity) throws JSQLParserException {
 		
 		/*
 		 * First construct new Target Query 
@@ -266,10 +253,7 @@ public class MetaMappingExpander {
 		 * we create a new statement with the changed projection and selection
 		 */
 
-		ShallowlyParsedSQLQuery newSourceParsedQuery = new ShallowlyParsedSQLQuery(sourceParsedQuery.getStatement(), idfac);
-		newSourceParsedQuery.setProjection(newProjection);
-		newSourceParsedQuery.setWhereClause(selection);
-		
+		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(newProjection, selection);
 		String newSourceQuerySQL = newSourceParsedQuery.toString();
 		OBDASQLQuery newSourceQuery =  dfac.getSQLQuery(newSourceQuerySQL);
 

@@ -1,51 +1,30 @@
 package it.unibz.krdb.obda.parser;
 
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.RelationID;
-
 import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.Select;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SQLQueryShallowParser {
 
-	private static Logger log = LoggerFactory.getLogger(SQLQueryShallowParser.class);	
-		
-	private static int id_counter;
-	
 	/**
-	 * Called from ParsedMapping. Returns the query, even if there were 
-	 * parsing errors.
+	 * Called from MappingParser and MetaMappingExpander. 
+	 * Returns the query, even if there were parsing errors.
 	 * 
-	 * @param query The sql query to be parsed
-	 * @return A ParsedSQLQuery (possible with null values)
+	 * @param query The sq query to be parsed
+	 * @return a ShallowlyParsedSQLQuery 
+	 * @throws JSQLParserException 
 	 */
-	public static ShallowlyParsedSQLQuery parse(QuotedIDFactory idfac, String query) {
+	
+	public static ShallowlyParsedSQLQuery parse(QuotedIDFactory idfac, String query) throws JSQLParserException {
+        Statement st = CCJSqlParserUtil.parse(query);
+        if (!(st instanceof Select))
+        	throw new JSQLParserException("The inserted query is not a SELECT statement");
 
-		ShallowlyParsedSQLQuery parsedQuery = null;
-		try {
-			parsedQuery = new ShallowlyParsedSQLQuery(query, idfac);
-		} 
-		catch (JSQLParserException e) {
-			if (e.getCause() instanceof ParseException)
-				log.warn("Parse exception, check no SQL reserved keywords have been used "+ e.getCause().getMessage());
-		}
-		
-		if (parsedQuery == null) {
-			log.warn("The following query couldn't be parsed. " +
-					"This means Quest will need to use nested subqueries (views) to use this mappings. " +
-					"This is not good for SQL performance, specially in MySQL. " + 
-					"Try to simplify your query to allow Quest to parse it. " + 
-					"If you think this query is already simple and should be parsed by Quest, " +
-					"please contact the authors. \nQuery: '{}'", query);
-			
-			RelationID viewId = idfac.createRelationID(null, String.format("view_%s", id_counter++));
-			//TODO: Should be improved
-			parsedQuery = SQLQueryDeepParser.createShallowlyParsedSqlForGeneratedView(idfac, viewId);
-		}
-		return parsedQuery;
-	}
+        ShallowlyParsedSQLQuery parsedQuery = new ShallowlyParsedSQLQuery((Select)st, idfac);
+        return parsedQuery;
+	}	
 }

@@ -33,9 +33,11 @@ import java.util.List;
 
 import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.*;
 
 import org.slf4j.Logger;
@@ -63,7 +65,11 @@ public class SQLQueryDeepParser {
 		DeeplyParsedSQLQuery queryParser = null;
 		
 		try {
-			queryParser = new DeeplyParsedSQLQuery(query, dbMetaData.getQuotedIDFactory());
+            Statement st = CCJSqlParserUtil.parse(query);
+            if (!(st instanceof Select))
+            	throw new JSQLParserException("The inserted query is not a SELECT statement");
+
+			queryParser = new DeeplyParsedSQLQuery((Select)st, dbMetaData.getQuotedIDFactory());
 		} 
 		catch (JSQLParserException e) {
 			if (e.getCause() instanceof ParseException)
@@ -90,22 +96,7 @@ public class SQLQueryDeepParser {
 	 * creates a query of the form SELECT * FROM viewName
 	 */
 
-	static ShallowlyParsedSQLQuery createShallowlyParsedSqlForGeneratedView(QuotedIDFactory idfac, RelationID viewId) {
-		Select select = getSelectParsedQuery(viewId);
-
-		ShallowlyParsedSQLQuery queryParsed = null;
-		try {
-			queryParsed = new  ShallowlyParsedSQLQuery(select, idfac);
-		}
-		catch (JSQLParserException e) {
-			if (e.getCause() instanceof ParseException)
-				log.warn("Parse exception, check no SQL reserved keywords have been used "+ e.getCause().getMessage());
-		}
-
-		return queryParsed;
-	}
-
-	private static Select getSelectParsedQuery(RelationID viewId){
+	private static Select createSelectAllFromQuery(RelationID viewId) {
 		PlainSelect body = new PlainSelect();
 
 		List<SelectItem> list = new ArrayList<>(1);
@@ -125,7 +116,7 @@ public class SQLQueryDeepParser {
 	 */
     
 	static DeeplyParsedSQLQuery createParsedSqlForGeneratedView(QuotedIDFactory idfac, RelationID viewId) {
-		Select select = getSelectParsedQuery(viewId);
+		Select select = createSelectAllFromQuery(viewId);
 
 		DeeplyParsedSQLQuery queryParsed = null;
 		try {
@@ -147,7 +138,11 @@ public class SQLQueryDeepParser {
         ShallowlyParsedSQLQuery queryParser = null;
         boolean supported = true;
         try {
-            queryParser = new ShallowlyParsedSQLQuery(query, idfac);
+            Statement st = CCJSqlParserUtil.parse(query);
+            if (!(st instanceof Select))
+            	throw new JSQLParserException("The inserted query is not a SELECT statement");
+
+            queryParser = new ShallowlyParsedSQLQuery((Select)st, idfac);
         } 
         catch (JSQLParserException e) {
             supported = false;

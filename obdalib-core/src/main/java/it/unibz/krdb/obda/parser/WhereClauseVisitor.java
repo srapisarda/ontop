@@ -22,8 +22,6 @@ package it.unibz.krdb.obda.parser;
  */
 
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.api.AllComparison;
-import it.unibz.krdb.sql.api.AnyComparison;
 import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
@@ -458,4 +456,36 @@ public class WhereClauseVisitor {
             unsupported(arg0);		
     	}
     };
+    
+    
+    /**
+     * Auxiliary Class used to visualize AnyComparison in string format.
+     * Any and Some are the same in SQL so we consider always the case of ANY
+     *
+     */
+
+    private final static class AllComparison extends AllComparisonExpression {
+
+    	public AllComparison(SubSelect subSelect) {
+    		super(subSelect);
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		return "ALL "+ getSubSelect();
+    	}
+    }
+
+    private final static class AnyComparison extends AnyComparisonExpression {
+
+    	public AnyComparison(SubSelect subSelect) {
+    		super(subSelect);
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		return "ANY "+ getSubSelect();
+    	}
+
+    }
 }

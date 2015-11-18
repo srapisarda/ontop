@@ -21,6 +21,10 @@ package it.unibz.krdb.obda.parser;
  */
 
 
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.Select;
 import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DBMetadataExtractor;
 import it.unibz.krdb.sql.QuotedIDFactory;
@@ -708,7 +712,11 @@ public class JSQLShallowlyParserTest extends TestCase {
         try {
             DBMetadata dbMetadata = DBMetadataExtractor.createDummyMetadata();
             QuotedIDFactory idfac = dbMetadata.getQuotedIDFactory();
-            shallowlyQueryP = new ShallowlyParsedSQLQuery(input, idfac);
+            Statement st = CCJSqlParserUtil.parse(input);
+            if (!(st instanceof Select))
+            	throw new JSQLParserException("The inserted query is not a SELECT statement");
+
+            shallowlyQueryP = new ShallowlyParsedSQLQuery((Select)st, idfac);
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -724,7 +732,6 @@ public class JSQLShallowlyParserTest extends TestCase {
             System.out.println(title + ": " + shallowlyQueryP.toString());
 
             try {
-                System.out.println("  Tables: " + shallowlyQueryP.getTables());
                 System.out.println("  Projection: " + shallowlyQueryP.getProjection());
 
                 System.out.println("  Selection: "

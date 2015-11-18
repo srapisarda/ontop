@@ -26,12 +26,8 @@ import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -39,38 +35,18 @@ import java.util.Map;
  * A structure to store the parsed SQL query string. It returns the information
  * about the query using the visitor classes
  */
-public class DeeplyParsedSQLQuery implements Serializable {
+public class DeeplyParsedSQLQuery  {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = -2387850683528860103L;
-
-    private Select selectQuery; // the parsed query
-
-    private final QuotedIDFactory idfac;
+    private final Select selectQuery; // the parsed query
 
     // maps aliases or relation names to relation names (identity on the relation names)
-    private Map<RelationID, RelationID> tables;
+    private final Map<RelationID, RelationID> tables;
 
-    private Map<QuotedID, Expression> aliasMap;
-    private List<Expression> joins;
-    private Expression whereClause;
-    private ProjectionJSQL projection;
+    private final Map<QuotedID, Expression> aliasMap;
+    private final List<Expression> joins;
+    private final Expression whereClause;
+    private final ProjectionJSQL projection;
 
-
-    /**
-     * Parse deeply a query given as a String
-     *
-     * @param queryString
-     *          the SQL query to parse
-     * @param idfac
-     *         QuotedIDFactory object
-     * @throws JSQLParserException
-     */
-    public DeeplyParsedSQLQuery(String queryString, QuotedIDFactory idfac) throws JSQLParserException {
-        this(CCJSqlParserUtil.parse(queryString), idfac );
-    }
 
     /**
      * Parse deeply a statement
@@ -81,38 +57,31 @@ public class DeeplyParsedSQLQuery implements Serializable {
      *         QuotedIDFactory object
      * @throws net.sf.jsqlparser.JSQLParserException
      */
-    public DeeplyParsedSQLQuery(Statement statement, QuotedIDFactory idfac) throws JSQLParserException {
-        this.idfac = idfac;
-        if (statement instanceof Select) {
-            selectQuery = (Select) statement;
+    public DeeplyParsedSQLQuery(Select statement, QuotedIDFactory idfac) throws JSQLParserException {
+        selectQuery = statement;
 
-            TableNameVisitor tableNameVisitor = new TableNameVisitor(selectQuery, idfac);
-            tables =  tableNameVisitor.getTables();
-            if (!tableNameVisitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+        TableNameVisitor tableNameVisitor = new TableNameVisitor(selectQuery, idfac);
+        tables =  tableNameVisitor.getTables();
+        if (!tableNameVisitor.isSupported())
+            throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 
-            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(selectQuery, idfac);
-            whereClause = whereClauseVisitor.getWhereClause(); // bring the names in WHERE clause into NORMAL FORM
-            if (!whereClauseVisitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(selectQuery, idfac);
+        whereClause = whereClauseVisitor.getWhereClause(); // bring the names in WHERE clause into NORMAL FORM
+        if (!whereClauseVisitor.isSupported())
+            throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 
-            ProjectionVisitor projectionVisitor = new ProjectionVisitor(selectQuery, idfac );
-            projection = projectionVisitor.getProjection(); // bring the names in FROM clause into NORMAL FORM
-            if (!projectionVisitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+        ProjectionVisitor projectionVisitor = new ProjectionVisitor(selectQuery, idfac );
+        projection = projectionVisitor.getProjection(); // bring the names in FROM clause into NORMAL FORM
+        if (!projectionVisitor.isSupported())
+            throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 
-            JoinConditionVisitor joinConditionVisitor = new JoinConditionVisitor(selectQuery, idfac);
-            joins = joinConditionVisitor.getJoinConditions(); // bring the names in JOIN clauses into NORMAL FORM
-            if (!projectionVisitor.isSupported())
-                throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+        JoinConditionVisitor joinConditionVisitor = new JoinConditionVisitor(selectQuery, idfac);
+        joins = joinConditionVisitor.getJoinConditions(); // bring the names in JOIN clauses into NORMAL FORM
+        if (!projectionVisitor.isSupported())
+            throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 
-            AliasMapVisitor aliasMapVisitor = new AliasMapVisitor(selectQuery, idfac);
-            aliasMap = aliasMapVisitor.getAliasMap();    // bring the alias names in Expr AS Alias into NORMAL FORM
-
-        }
-        // catch exception about wrong inserted columns
-        else
-            throw new JSQLParserException("The inserted query is not a SELECT statement");
+        AliasMapVisitor aliasMapVisitor = new AliasMapVisitor(selectQuery, idfac);
+        aliasMap = aliasMapVisitor.getAliasMap();    // bring the alias names in Expr AS Alias into NORMAL FORM
     }
 
     /**
@@ -121,7 +90,7 @@ public class DeeplyParsedSQLQuery implements Serializable {
      * USED FOR CREATING DATALOG RULES AND PROVIDING METADATA WITH THE LIST OF TABLES
      *
      */
-    public Map<RelationID, RelationID> getTables() throws JSQLParserException {
+    public Map<RelationID, RelationID> getTables() {
         return tables;
     }
 
@@ -138,7 +107,7 @@ public class DeeplyParsedSQLQuery implements Serializable {
      *
      * @throws JSQLParserException
      */
-    public Expression getWhereClause() throws JSQLParserException {
+    public Expression getWhereClause() {
         return whereClause;
     }
 
@@ -150,7 +119,7 @@ public class DeeplyParsedSQLQuery implements Serializable {
      *
      * @throws JSQLParserException
      */
-    public ProjectionJSQL getProjection() throws JSQLParserException {
+    public ProjectionJSQL getProjection()  {
         return projection;
     }
 
@@ -173,21 +142,7 @@ public class DeeplyParsedSQLQuery implements Serializable {
      * CREATING DATALOG RULES (JOIN CONDITIONS)
      *
      */
-    public List<Expression> getJoinConditions() throws JSQLParserException {
+    public List<Expression> getJoinConditions() {
         return joins;
     }
-
-    /**
-     * Get the list of columns (RO)
-     *
-     * ONLY FOR CREATING VIEWS!
-     *
-     * @return List of parsed columns
-     */
-    public List<Column> getColumns() {
-        ColumnsVisitor visitor = new ColumnsVisitor(selectQuery);
-        return visitor.getColumns();
-    }
-
-
 }

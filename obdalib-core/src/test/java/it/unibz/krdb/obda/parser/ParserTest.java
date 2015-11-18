@@ -25,6 +25,11 @@ import it.unibz.krdb.sql.DBMetadataExtractor;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.api.DeeplyParsedSQLQuery;
 import junit.framework.TestCase;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.Select;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -682,7 +687,12 @@ public class ParserTest extends TestCase {
 		try {
 			DBMetadata dbMetadata = DBMetadataExtractor.createDummyMetadata();
 			QuotedIDFactory idfac = dbMetadata.getQuotedIDFactory();
-			queryP = new DeeplyParsedSQLQuery(input, idfac);
+            Statement st = CCJSqlParserUtil.parse(input);
+            if (!(st instanceof Select))
+            	throw new JSQLParserException("The inserted query is not a SELECT statement");
+
+
+			queryP = new DeeplyParsedSQLQuery((Select)st, idfac);
 		} catch (Exception e) {
 
 			return false;

@@ -44,8 +44,8 @@ public class ProjectionJSQL implements Serializable {
 	/**
 	 * Collection of columns for this projection.
 	 */
-	private final List<SelectExpressionItem> selectList = new ArrayList<SelectExpressionItem>();
-	private final List<SelectExpressionItem> selectDistinctList = new ArrayList<SelectExpressionItem>(); //for the cases with DISTINCT ON
+	private final List<SelectExpressionItem> selectList = new ArrayList<>();
+	private final List<SelectExpressionItem> selectDistinctList = new ArrayList<>(); //for the cases with DISTINCT ON
 	private AllColumns allcolumns; //for the cases as SELECT *
 	private AllTableColumns tablecolumns; //for the cases as SELECT table.*
 	

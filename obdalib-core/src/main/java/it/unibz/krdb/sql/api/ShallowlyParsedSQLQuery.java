@@ -29,48 +29,23 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
 
-import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 
 /**
 * A structure to store the parsed SQL query string. It returns the information
 * about the query using the visitor classes
 */
-public class ShallowlyParsedSQLQuery implements Serializable {
+public class ShallowlyParsedSQLQuery {
 
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 4949346265386700162L;
 	private final QuotedIDFactory idfac;
-    //private String query;
     private Select selectQuery;
 
-    // maps aliases or relation names to relation names (identity on the relation names)
-    private Map<RelationID, RelationID> tables;
-    private List<RelationID> relations;
-    private ProjectionJSQL projection;
     private Expression whereClause;
 
 
-
-     /**
-     * Parse a query given as a String
-     *
-     * @param queryString
-     *          the SQL query to parse
-     * @param idfac
-     *         QuotedIDFactory object
-     * @throws JSQLParserException
-     */
-    public ShallowlyParsedSQLQuery(String queryString, QuotedIDFactory idfac) throws JSQLParserException {
-        this(CCJSqlParserUtil.parse(queryString), idfac );
-    }
 
     /**
      * Parse a statement
@@ -79,19 +54,31 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      *            we pass already a parsed statement
      * @param idfac
      *         QuotedIDFactory object
-     * @throws net.sf.jsqlparser.JSQLParserException
      */
-    public ShallowlyParsedSQLQuery(Statement statement, QuotedIDFactory idfac) throws JSQLParserException {
+    public ShallowlyParsedSQLQuery(Select statement, QuotedIDFactory idfac) {
         this.idfac = idfac;
-        //query = statement.toString();
-        //init(statement);
-        if (statement instanceof Select) {
-            selectQuery = (Select) statement;
-        } // catch exception about wrong inserted columns
-        else
-            throw new JSQLParserException("The inserted query is not a SELECT statement");
+        this.selectQuery = statement;
     }
 
+    public ShallowlyParsedSQLQuery copy(ProjectionJSQL projection, Expression whereClause) {
+    	try {
+        	String query = selectQuery.toString();
+        	
+			ShallowlyParsedSQLQuery copy = new ShallowlyParsedSQLQuery((Select)CCJSqlParserUtil.parse(query), idfac);
+			
+	        SetProjectionVisitor visitor = new SetProjectionVisitor(copy.selectQuery, projection);
+	       
+	        if (whereClause != null) {
+	        	SetWhereClauseVisitor sel = new SetWhereClauseVisitor(copy.selectQuery, whereClause);
+	        }
+	        return copy;
+		} 
+    	catch (JSQLParserException e) {
+		}
+    	// the exception should never happen
+    	throw new NullPointerException();
+    }
+    
     @Override
     public String toString() {
         return selectQuery.toString();
@@ -100,92 +87,39 @@ public class ShallowlyParsedSQLQuery implements Serializable {
     /**
      * Get the object construction for the SELECT clause (CHANGES TABLE AND COLUMN NAMES).
      *
-     * CREATING DATALOG RULES
      * AND META-MAPPING EXPANDER
      *
      */
     public ProjectionJSQL getProjection()  {
-        if (projection == null) {
-            ProjectionVisitor visitor = new ProjectionVisitor(selectQuery, idfac);
-            projection = visitor.getProjection();
-        }
+        ProjectionVisitor visitor = new ProjectionVisitor(selectQuery, idfac);
+        ProjectionJSQL projection = visitor.getProjection();
         return projection;
-
     }
 
-    /**
-     * Set the object construction for the WHERE clause, modifying the current
-     * statement
-     *
-     * META-MAPPING EXPANDER
-     *
-     * @param whereClause Expression object
-     */
 
-    public void setWhereClause(Expression whereClause) {
-        SetWhereClauseVisitor sel = new SetWhereClauseVisitor(selectQuery, whereClause);
-        this.whereClause = whereClause;
-    }
-
-    /**
-     * Set the object construction for the SELECT clause, modifying the current
-     * statement
-     *
-     * META-MAPPING EXPANDER
-     *
-     * @param projection select list or select distinct list
-     */
-
-    public void setProjection(ProjectionJSQL projection) {
-        // ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-        // visitor.setProjection(selectQuery, projection);
-        // this.projection = projection;
-
-        SetProjectionVisitor visitor = new SetProjectionVisitor(selectQuery, projection);
-        this.projection = projection;
-    }
-
-    /**
-     * Returns all the tables in this query (RO now).
-     *
-     * USED FOR CREATING DATALOG RULES AND PROVIDING METADATA WITH THE LIST OF TABLES
-     *
-     */
-    public Map<RelationID, RelationID> getTables() {
-        if (tables == null) {
-            TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
-            tables = visitor.getTables();
-            relations = visitor.getRelations();
-        }
-        return tables;
-    }
 
     /**
      * Relations parsed query contains
      *
+     * ONLY MAPPING PARSER (to obtain the list of tables)
+     *
      * @return all the relations the parsed query contains
      */
     public List<RelationID> getRelations()  {
-        getTables();
+        TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
+        List<RelationID> relations = visitor.getRelations();
         return relations;
     }
 
-    /**
-     *
-     * @return Select object contains the parsed query
-     */
-    public Select getStatement() {
-        return selectQuery;
-    }
 
     /**
      * Get the object construction for the WHERE clause.
      *
-     * CREATING DATALOG RULES
-     * AND META-MAPPING EXPANDER
+     * META-MAPPING EXPANDER
      *
      */
     public Expression getWhereClause() {
+    	// this needs to be cached -- called many times in MetaMappingExpander
         if (whereClause == null) {
             WhereClauseVisitor visitor = new WhereClauseVisitor(selectQuery, idfac);
             // CHANGES TABLE SCHEMA / NAME / ALIASES AND COLUMN NAMES
@@ -197,7 +131,7 @@ public class ShallowlyParsedSQLQuery implements Serializable {
     /**
      * Get the list of columns (RO)
      *
-     * ONLY FOR CREATING VIEWS!
+     * ONLY FOR CREATING VIEWS (in DeepSQLQueryParser)!
      *
      * @return  List of parsed query columns
      */

@@ -62,21 +62,15 @@ public class AliasMapVisitor {
 	
 	public AliasMapVisitor(Select select, QuotedIDFactory idfac) {
 		this.idfac = idfac;
-		setSelect(select);
-	}
-
-	/**
-	 * Set the select statement
-	 * @param select
-	 * 		Set query statement
-	 */
-	public void setSelect (Select select ){
+		
 		if (select.getWithItemsList() != null) {
 			for (WithItem withItem : select.getWithItemsList()) {
 				withItem.accept(selectVisitor);
 			}
 		}
+		select.getSelectBody().accept(selectVisitor);		
 	}
+
 	
 	/**
 	 * Return a map between the column in the select statement and its alias.
