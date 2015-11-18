@@ -22,8 +22,9 @@ package it.unibz.krdb.obda.parser;
  */
 
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.api.*;
-import net.sf.jsqlparser.JSQLParserException;
+import it.unibz.krdb.sql.api.AllComparison;
+import it.unibz.krdb.sql.api.AnyComparison;
+import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -44,9 +45,32 @@ public class WhereClauseVisitor {
 	private boolean unsupported = false;
 
 	private final QuotedIDFactory idfac;
-	
-	public WhereClauseVisitor(QuotedIDFactory idfac) {
-		this.idfac = idfac;
+
+
+	/**
+	 *
+	 * @param select
+	 * 			The parsed select statement
+	 * @param idFac
+	 *			QuotedIDFactory object
+	 */
+	public WhereClauseVisitor(Select select, QuotedIDFactory idFac) {
+		this.idfac = idFac;
+		setSelect(select);
+	}
+
+	/**
+	 * Set the select statement
+	 * @param select
+	 * 		Set query statement
+	 */
+	public void setSelect(Select select){
+		if (select.getWithItemsList() != null) {
+			for (WithItem withItem : select.getWithItemsList())
+				withItem.accept(selectVisitor);
+		}
+
+		select.getSelectBody().accept(selectVisitor);
 	}
 	
 	/**
@@ -54,46 +78,15 @@ public class WhereClauseVisitor {
 	 * 
 	 * NOTE: is also BRINGS ALL SCHEMA / TABLE / ALIAS / COLUMN NAMES in the WHERE clause into NORMAL FORM
 	 * 
-	 * @param select the parsed select statement
 	 * @return an Expression
-	 * @throws JSQLParserException 
 	 */
-	public Expression getWhereClause(Select select)  {
-		
-		if (select.getWithItemsList() != null) {
-			for (WithItem withItem : select.getWithItemsList()) 
-				withItem.accept(selectVisitor);
-		}
-		
-		select.getSelectBody().accept(selectVisitor);
-		
+	public Expression getWhereClause()  {
 		return whereClause;
 	}
 
 	public boolean isSupported() {
 		return !unsupported;
 	}
-	
-	
-    public void setWhereClause(Select selectQuery, final Expression whereClause) {
-
-        selectQuery.getSelectBody().accept(new SelectVisitor() {
-    		@Override
-    		public void visit(PlainSelect plainSelect) {
-                plainSelect.setWhere(whereClause);
-    		}
-    		@Override
-    		public void visit(SetOperationList setOpList) {
-    			// we do not consider the case of UNION
-    			// ROMAN (22 Sep 2015): not sure why it is applied to the first one only 
-        		setOpList.getPlainSelects().get(0).accept(this);
-    		}
-    		@Override
-    		public void visit(WithItem withItem) {
-    	  		// we do not consider the case for WITH
-    		}    	
-        });
-    }
 
 	private void unsupported(Object o) {
 		System.out.println(this.getClass() + " DOES NOT SUPPORT " + o);
@@ -129,7 +122,6 @@ public class WhereClauseVisitor {
     	}
     };
 
-    	
     private ExpressionVisitor expressionVisitor = new ExpressionVisitor() {
 
     	@Override

@@ -91,13 +91,13 @@ public class DeeplyParsedSQLQuery implements Serializable {
             if (!tableNameVisitor.isSupported())
                 throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 
-            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(idfac);
-            whereClause = whereClauseVisitor.getWhereClause(selectQuery); // bring the names in WHERE clause into NORMAL FORM
+            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(selectQuery, idfac);
+            whereClause = whereClauseVisitor.getWhereClause(); // bring the names in WHERE clause into NORMAL FORM
             if (!whereClauseVisitor.isSupported())
                 throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 
-            ProjectionVisitor projectionVisitor = new ProjectionVisitor(idfac);
-            projection = projectionVisitor.getProjection(selectQuery); // bring the names in FROM clause into NORMAL FORM
+            ProjectionVisitor projectionVisitor = new ProjectionVisitor(selectQuery, idfac );
+            projection = projectionVisitor.getProjection(); // bring the names in FROM clause into NORMAL FORM
             if (!projectionVisitor.isSupported())
                 throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
 

@@ -1,7 +1,5 @@
 package it.unibz.krdb.sql.api;
 
-
-
 /*
  * #%L
  * ontop-obdalib-core
@@ -22,10 +20,7 @@ package it.unibz.krdb.sql.api;
  * #L%
  */
 
-import it.unibz.krdb.obda.parser.ColumnsVisitor;
-import it.unibz.krdb.obda.parser.ProjectionVisitor;
-import it.unibz.krdb.obda.parser.TableNameVisitor;
-import it.unibz.krdb.obda.parser.WhereClauseVisitor;
+import it.unibz.krdb.obda.parser.*;
 import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
@@ -111,8 +106,8 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      */
     public ProjectionJSQL getProjection()  {
         if (projection == null) {
-            ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-            projection = visitor.getProjection(selectQuery);
+            ProjectionVisitor visitor = new ProjectionVisitor(selectQuery, idfac);
+            projection = visitor.getProjection();
         }
         return projection;
 
@@ -128,8 +123,7 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      */
 
     public void setWhereClause(Expression whereClause) {
-        WhereClauseVisitor sel = new WhereClauseVisitor(idfac);
-        sel.setWhereClause(selectQuery, whereClause);
+        SetWhereClauseVisitor sel = new SetWhereClauseVisitor(selectQuery, whereClause);
         this.whereClause = whereClause;
     }
 
@@ -143,8 +137,11 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      */
 
     public void setProjection(ProjectionJSQL projection) {
-        ProjectionVisitor visitor = new ProjectionVisitor(idfac);
-        visitor.setProjection(selectQuery, projection);
+        // ProjectionVisitor visitor = new ProjectionVisitor(idfac);
+        // visitor.setProjection(selectQuery, projection);
+        // this.projection = projection;
+
+        SetProjectionVisitor visitor = new SetProjectionVisitor(selectQuery, projection);
         this.projection = projection;
     }
 
@@ -190,9 +187,9 @@ public class ShallowlyParsedSQLQuery implements Serializable {
      */
     public Expression getWhereClause() {
         if (whereClause == null) {
-            WhereClauseVisitor visitor = new WhereClauseVisitor(idfac);
+            WhereClauseVisitor visitor = new WhereClauseVisitor(selectQuery, idfac);
             // CHANGES TABLE SCHEMA / NAME / ALIASES AND COLUMN NAMES
-            whereClause = visitor.getWhereClause(selectQuery);
+            whereClause = visitor.getWhereClause();
         }
         return whereClause;
     }
