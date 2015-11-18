@@ -36,7 +36,7 @@ import net.sf.jsqlparser.statement.select.*;
  *
  */
 
-public class ColumnsVisitor implements SelectVisitor, SelectItemVisitor, ExpressionVisitor {
+public class ColumnsVisitor {
 	
 	private final List<Column> columns = new ArrayList<>(); //create a list of projections if we want to consider union 
 
@@ -45,17 +45,17 @@ public class ColumnsVisitor implements SelectVisitor, SelectItemVisitor, Express
 	 * considering also the case of UNION
 	 * 
 	 * @param select parsed statement
-	 * @return
 	 */
 	
 	public ColumnsVisitor(Select select) {	
 		if (select.getWithItemsList() != null) {
 			for (WithItem withItem : select.getWithItemsList()) {
-				withItem.accept(this);
+				withItem.accept(selectVisitor);
 			}
 		}
-		select.getSelectBody().accept(this);
+		select.getSelectBody().accept(selectVisitor);
 	}
+
 
 	/**
 	 *
@@ -64,395 +64,394 @@ public class ColumnsVisitor implements SelectVisitor, SelectItemVisitor, Express
 	public List<Column> getColumns() {
 		return columns;	
 	}
-	
 
-	/*
+
+	SelectVisitor selectVisitor = new SelectVisitor() {
+		/*
 	 * visit PlainSelect, search for the SelectExpressionItems
 	 * @see net.sf.jsqlparser.statement.select.SelectVisitor#visit(net.sf.jsqlparser.statement.select.PlainSelect)
 	 */
-	
-	@Override
-	public void visit(PlainSelect plainSelect) {
+
+		@Override
+		public void visit(PlainSelect plainSelect) {
 	    /*
 		working with getProjection we visit the SelectItems and distinguish between select distinct,
-		select distinct on, select all 
+		select distinct on, select all
 		*/
-		
-		Distinct distinct = plainSelect.getDistinct();
-		
-		if (distinct != null) { // for SELECT DISTINCT [ON (...)]
-			if (distinct.getOnSelectItems() != null) {
-				for(SelectItem item : distinct.getOnSelectItems())
-					item.accept(this);
+
+			Distinct distinct = plainSelect.getDistinct();
+
+			if (distinct != null) { // for SELECT DISTINCT [ON (...)]
+				if (distinct.getOnSelectItems() != null) {
+					for(SelectItem item : distinct.getOnSelectItems())
+						item.accept(selectItemVisitor);
+				}
 			}
+
+			for (SelectItem item : plainSelect.getSelectItems())
+				item.accept(selectItemVisitor);
 		}
-		
-		for (SelectItem item : plainSelect.getSelectItems())
-			item.accept(this);
-	}
 
-	/* visit also the Operation as UNION*/
-	@Override
-	public void visit(SetOperationList setOpList) {
-		// NOTE: don't use for loop, as loop will result duplicated columns
-		//for (PlainSelect ps: setOpList.getPlainSelects())
-		setOpList.getPlainSelects().get(0).accept(this);
-		
-	}
+		/* visit also the Operation as UNION*/
+		@Override
+		public void visit(SetOperationList setOpList) {
+			// NOTE: don't use for loop, as loop will result duplicated columns
+			//for (PlainSelect ps: setOpList.getPlainSelects())
+			setOpList.getPlainSelects().get(0).accept(this);
 
-	/* 
-	 * Search for select in WITH statement
-	 * @see net.sf.jsqlparser.statement.select.SelectVisitor#visit(net.sf.jsqlparser.statement.select.WithItem)
-	 */
-	@Override
-	public void visit(WithItem withItem) {
-		withItem.getSelectBody().accept(this);
-	}
-	
-	/*
-	 * We do not add columns in the case of SELECT *
-	 * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.AllColumns)
-	 */
-	@Override
-	public void visit(AllColumns allColumns) {
-		//do not store anything
-		
-	}
+		}
 
-	/*
-	 * We do not add columns in the case of SELECT table.*
-	 * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.AllTableColumns)
-	 */
-	@Override
-	public void visit(AllTableColumns allTableColumns) {	
-		//do not store anything
-		
-		
-	}
+		/*
+         * Search for select in WITH statement
+         * @see net.sf.jsqlparser.statement.select.SelectVisitor#visit(net.sf.jsqlparser.statement.select.WithItem)
+         */
+		@Override
+		public void visit(WithItem withItem) {
+			withItem.getSelectBody().accept(this);
+		}
+
+	};
+
+	SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
+		/*
+		 * We do not add columns in the case of SELECT *
+		 * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.AllColumns)
+		 */
+		@Override
+		public void visit(AllColumns allColumns) {
+			//do not store anything
+		}
+
+		/*
+         * We do not add columns in the case of SELECT table.*
+         * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.AllTableColumns)
+         */
+		@Override
+		public void visit(AllTableColumns allTableColumns) {
+			//do not store anything
+		}
 
 
-	@Override
-	public void visit(SelectExpressionItem selectExpr) {
+		@Override
+		public void visit(SelectExpressionItem selectExpr) {
 
 		/*
 		 * Here we found a column
 		 */
-		if (selectExpr.getAlias() != null) {
-			columns.add(new Column(selectExpr.getAlias().getName()));
+			if (selectExpr.getAlias() != null) {
+				columns.add(new Column(selectExpr.getAlias().getName()));
+			}
+			else {
+				selectExpr.getExpression().accept(expressionVisitor);
+			}
 		}
-		else {
-			selectExpr.getExpression().accept(this);
-		}
-	}
-	
-	/*
-	 * Visit the column 
+
+	};
+
+	ExpressionVisitor expressionVisitor = new ExpressionVisitor() {
+		/*
+	 * Visit the column
 	 * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.schema.Column)
 	 */
-	@Override
-	public void visit(Column tableColumn) {
-		columns.add(tableColumn);
-	}
-	
+		@Override
+		public void visit(Column tableColumn) {
+			columns.add(tableColumn);
+		}
 
-	
-	
-	@Override
-	public void visit(NullValue nullValue) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void visit(NullValue nullValue) {
+			// TODO Auto-generated method stub
 
-	
-	@Override
-	public void visit(Function function) {
-		
-		
-	}
-
-	@Override
-	public void visit(JdbcParameter jdbcParameter) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(JdbcNamedParameter jdbcNamedParameter) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(DoubleValue doubleValue) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(LongValue longValue) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(DateValue dateValue) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(TimeValue timeValue) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(TimestampValue timestampValue) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Parenthesis parenthesis) {
-		parenthesis.getExpression().accept(this);
-		
-	}
-
-	@Override
-	public void visit(StringValue stringValue) {
-		
-		
-	}
-
-	@Override
-	public void visit(Addition addition) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Division division) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Multiplication multiplication) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Subtraction subtraction) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(AndExpression andExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(OrExpression orExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Between between) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(EqualsTo equalsTo) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(GreaterThan greaterThan) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(GreaterThanEquals greaterThanEquals) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(InExpression inExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(IsNullExpression isNullExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(LikeExpression likeExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(MinorThan minorThan) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(MinorThanEquals minorThanEquals) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(NotEqualsTo notEqualsTo) {
-		// TODO Auto-generated method stub
-		
-	}
+		}
 
 
-	@Override
-	public void visit(SubSelect subSelect) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(CaseExpression caseExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(WhenClause whenClause) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(ExistsExpression existsExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(AllComparisonExpression allComparisonExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(AnyComparisonExpression anyComparisonExpression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Concat concat) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Matches matches) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(BitwiseAnd bitwiseAnd) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(BitwiseOr bitwiseOr) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(BitwiseXor bitwiseXor) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(CastExpression cast) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(Modulo modulo) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(AnalyticExpression aexpr) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(ExtractExpression eexpr) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(IntervalExpression iexpr) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void visit(OracleHierarchicalExpression oexpr) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void visit(Function function) {
 
 
-	@Override
-	public void visit(RegExpMatchOperator arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		}
+
+		@Override
+		public void visit(JdbcParameter jdbcParameter) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(JdbcNamedParameter jdbcNamedParameter) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(DoubleValue doubleValue) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(LongValue longValue) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(DateValue dateValue) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(TimeValue timeValue) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(TimestampValue timestampValue) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Parenthesis parenthesis) {
+			parenthesis.getExpression().accept(this);
+
+		}
+
+		@Override
+		public void visit(StringValue stringValue) {
 
 
-	@Override
-	public void visit(SignedExpression arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		}
+
+		@Override
+		public void visit(Addition addition) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Division division) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Multiplication multiplication) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Subtraction subtraction) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(AndExpression andExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(OrExpression orExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Between between) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(EqualsTo equalsTo) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(GreaterThan greaterThan) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(GreaterThanEquals greaterThanEquals) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(InExpression inExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(IsNullExpression isNullExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(LikeExpression likeExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(MinorThan minorThan) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(MinorThanEquals minorThanEquals) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(NotEqualsTo notEqualsTo) {
+			// TODO Auto-generated method stub
+
+		}
 
 
-	@Override
-	public void visit(JsonExpression arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void visit(SubSelect subSelect) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(CaseExpression caseExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(WhenClause whenClause) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(ExistsExpression existsExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(AllComparisonExpression allComparisonExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(AnyComparisonExpression anyComparisonExpression) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Concat concat) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Matches matches) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(BitwiseAnd bitwiseAnd) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(BitwiseOr bitwiseOr) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(BitwiseXor bitwiseXor) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(CastExpression cast) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(Modulo modulo) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(AnalyticExpression aexpr) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(ExtractExpression eexpr) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(IntervalExpression iexpr) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void visit(OracleHierarchicalExpression oexpr) {
+			// TODO Auto-generated method stub
+
+		}
 
 
-	@Override
-	public void visit(RegExpMySQLOperator arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void visit(RegExpMatchOperator arg0) {
+			// TODO Auto-generated method stub
 
-	
+		}
 
-	
+
+		@Override
+		public void visit(SignedExpression arg0) {
+			// TODO Auto-generated method stub
+
+		}
+
+
+		@Override
+		public void visit(JsonExpression arg0) {
+			// TODO Auto-generated method stub
+
+		}
+
+
+		@Override
+		public void visit(RegExpMySQLOperator arg0) {
+			// TODO Auto-generated method stub
+
+		}
+
+	};
 
 }
