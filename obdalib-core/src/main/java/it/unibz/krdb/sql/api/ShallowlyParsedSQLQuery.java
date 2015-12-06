@@ -60,20 +60,29 @@ public class ShallowlyParsedSQLQuery {
         this.selectQuery = statement;
     }
 
-    public ShallowlyParsedSQLQuery copy(ProjectionJSQL projection, Expression whereClause) {
+    // public ShallowlyParsedSQLQuery copy(ProjectionJSQL projection, Expression whereClause)
+    /**
+     *
+     * @return
+     *  Object ShallowlyParsedSQLQuery copy of the current class instance
+     */
+    public ShallowlyParsedSQLQuery copy() {
     	try {
         	String query = selectQuery.toString();
         	
+			/*
 			ShallowlyParsedSQLQuery copy = new ShallowlyParsedSQLQuery((Select)CCJSqlParserUtil.parse(query), idfac);
-			
-	        SetProjectionVisitor visitor = new SetProjectionVisitor(copy.selectQuery, projection);
-	       
+
+	        SetProjectionVisitor visitor = new SetProjectionVisitor(copy.selectQuery, projection); // not in use
+
 	        if (whereClause != null) {
-	        	SetWhereClauseVisitor sel = new SetWhereClauseVisitor(copy.selectQuery, whereClause);
+	        	SetWhereClauseVisitor sel = new SetWhereClauseVisitor(copy.selectQuery, whereClause); //  not in use
 	        }
 	        return copy;
+	        */
+            return new ShallowlyParsedSQLQuery((Select)CCJSqlParserUtil.parse(query), idfac);
 		} 
-    	catch (JSQLParserException e) {
+    	catch (JSQLParserException ignored) {
 		}
     	// the exception should never happen
     	throw new NullPointerException();
@@ -92,8 +101,7 @@ public class ShallowlyParsedSQLQuery {
      */
     public ProjectionJSQL getProjection()  {
         ProjectionVisitor visitor = new ProjectionVisitor(selectQuery, idfac);
-        ProjectionJSQL projection = visitor.getProjection();
-        return projection;
+        return visitor.getProjection();
     }
 
 
@@ -107,8 +115,7 @@ public class ShallowlyParsedSQLQuery {
      */
     public List<RelationID> getRelations()  {
         TableNameVisitor visitor = new TableNameVisitor(selectQuery, idfac);
-        List<RelationID> relations = visitor.getRelations();
-        return relations;
+        return visitor.getRelations();
     }
 
 

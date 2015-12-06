@@ -105,7 +105,6 @@ public class DeeplyParsedSQLQuery  {
      * CREATING DATALOG RULES
      * AND META-MAPPING EXPANDER
      *
-     * @throws JSQLParserException
      */
     public Expression getWhereClause() {
         return whereClause;
@@ -117,7 +116,6 @@ public class DeeplyParsedSQLQuery  {
      * CREATING DATALOG RULES
      * AND META-MAPPING EXPANDER
      *
-     * @throws JSQLParserException
      */
     public ProjectionJSQL getProjection()  {
         return projection;

@@ -164,7 +164,8 @@ public class MetaMappingExpander {
 		ProjectionJSQL distinctParamsProjection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT);
 		distinctParamsProjection.addAll(columnsForTemplate);
 		
-		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(distinctParamsProjection, null);
+		// ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(distinctParamsProjection, null);
+		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy();
 		String distinctParamsSQL = distinctParsedQuery.toString();
 
 	
@@ -255,7 +256,8 @@ public class MetaMappingExpander {
 		 * we create a new statement with the changed projection and selection
 		 */
 
-		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(newProjection, selection);
+		//ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(newProjection, selection);
+		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy();
 		String newSourceQuerySQL = newSourceParsedQuery.toString();
 		OBDASQLQuery newSourceQuery =  dfac.getSQLQuery(newSourceQuerySQL);
 
