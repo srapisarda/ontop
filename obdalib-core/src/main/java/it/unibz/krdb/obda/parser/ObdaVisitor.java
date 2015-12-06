@@ -31,6 +31,7 @@ import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +40,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*
     This visitor is used to parse SQL amd check the OBDA query compatibility
@@ -62,6 +60,16 @@ public class ObdaVisitor {
     private  final List<Expression> joinConditions = new LinkedList<>();
     private  Expression whereClause ;
     private  ProjectionJSQL projection;
+
+
+
+    // from visitor
+    private Alias subSelectAlias = null;
+    // There are special names that are not table names but are parsed as tables.
+    // These names are collected here and are not included in the table names
+    private final Set<String> withTCEs = new HashSet<>();
+    private final List<RelationID> relations = new LinkedList<>();
+    private boolean inSubSelect = false;
 
     private boolean unsupported = false;
     //endregion
@@ -147,7 +155,40 @@ public class ObdaVisitor {
         public void visit(PlainSelect plainSelect) {
             // The filed should be suitable for datalog expression
             validatePlainSelect(plainSelect);
-            //
+
+            // todo: do I need to parse the unsupported query??
+
+            // projection
+            // in the projection it is supported a default select that does not include the keyword "DISTINCT"
+            projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DEFAULT);
+
+            for (SelectItem item : plainSelect.getSelectItems())
+                item.accept(selectItemVisitor);
+
+            // alias
+            // this is checking for subSelect in the alias
+           // plainSelect.getFromItem().accept(aliasMapFromItemVisitor); // todo: commented this line because is already done after
+
+            // from items
+            plainSelect.getFromItem().accept(fromItemVisitor);
+
+
+            if (plainSelect.getJoins() != null) {
+                for (Join join : plainSelect.getJoins()) {
+                    // this is checking for subSelect on all the outer items
+                    // join.getRightItem().accept(aliasMapFromItemVisitor); // todo: commented this line because is already done after
+                    join.getRightItem().accept(fromItemVisitor);
+                }
+            }
+            if (plainSelect.getWhere() != null) {
+                plainSelect.getWhere().accept(expressionVisitor);
+            }
+
+            /// this operation has been already done
+//            for (SelectItem item : plainSelect.getSelectItems()) {
+//                item.accept(aliasMapSelectItemVisitor);
+//            }
+
         }
         @Override
         public void visit(SetOperationList setOpList) {
@@ -170,24 +211,178 @@ public class ObdaVisitor {
                     Method method =  plainSelect.getClass().getDeclaredMethod(sField, null );
                     Object val = method.invoke( plainSelect, null );
                     if ( method.getReturnType().equals(boolean.class) ){
-                        if (Boolean.parseBoolean( val.toString()) ){
+                        if ( Boolean.parseBoolean( val.toString() ) ){
                             unsupported(method);
                             break;
                         }
-                    }else if ( val != null ){
+                    }else if ( null != val ){
                         unsupported(method);
                         break;
                     }
                 } catch (NoSuchMethodException e) {
-                   log.error("NoSuchMethodException on validatePlainSelect", e);
+                    log.error("NoSuchMethodException on validatePlainSelect", e);
                 } catch (InvocationTargetException e) {
                     log.error("InvocationTargetException on validatePlainSelect", e);
                 } catch (IllegalAccessException e) {
-                    log.error("IllegalAccessException on validatePlainSelect", e);
+                    log.error("IllegalAccessException on IllegalAccessException", e);
+                }
+            }
+
+        }
+    };
+
+
+    private SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
+        @Override
+        public void visit(AllColumns allColumns) {
+            projection.add(allColumns, false);
+        }
+
+        /*
+         * Add the projection in the case of SELECT table.*
+         * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.AllTableColumns)
+         */
+        @Override
+        public void visit(AllTableColumns allTableColumns) {
+            projection.add(allTableColumns, false);
+        }
+
+        /*
+         * Add the projection for the selectExpressionItem, distinguishing between select all and select distinct
+         * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.SelectExpressionItem)
+         */
+        @Override
+        public void visit(SelectExpressionItem selectExpr) {
+            // projection
+            projection.add(selectExpr, false);
+            selectExpr.getExpression().accept(expressionVisitor);
+            // all complex expressions in SELECT must be named (by aliases)
+            if (!(selectExpr.getExpression() instanceof Column) && selectExpr.getAlias() == null)
+                unsupported(selectExpr);
+
+
+            // alias
+            Alias alias = selectExpr.getAlias();
+            if (alias  != null) {
+                Expression e = selectExpr.getExpression();
+                e.accept(expressionVisitor);
+
+                // NORMALIZE EXPRESSION ALIAS NAME
+                QuotedID aliasName = idFac.createAttributeID(alias.getName());
+                alias.setName(aliasName.getSQLRendering());
+                aliasMap.put(aliasName, e);
+            }
+            // ELSE
+            // ROMAN (27 Sep 2015): set an error flag -- each complex expression must have a name (alias)
+        }
+    };
+
+
+   /* private FromItemVisitor aliasMapFromItemVisitor = new FromItemVisitor() {
+        @Override
+        public void visit(Table tableName) {
+
+        }
+
+        @Override
+        public void visit(SubJoin subjoin) {
+
+        }
+
+        @Override
+        public void visit(LateralSubSelect lateralSubSelect) {
+
+        }
+
+        @Override
+        public void visit(ValuesList valuesList) {
+
+        }
+        @Override
+        public void visit(SubSelect subSelect) {
+            subSelect.getSelectBody().accept(selectVisitor);
+        }
+    };*/
+
+
+    private final FromItemVisitor fromItemVisitor = new FromItemVisitor() {
+
+		/*
+		 * Visit Table and store its value in the list of TableJSQL (non-Javadoc)
+		 * We maintain duplicate tables to retrieve the different aliases assigned
+		 * we use the class TableJSQL to handle quotes and user case choice if present
+		 *
+		 * @see net.sf.jsqlparser.statement.select.FromItemVisitor#visit(net.sf.jsqlparser.schema.Table)
+		 */
+
+        @Override
+        public void visit(Table table) {
+            if (!withTCEs.contains(table.getFullyQualifiedName().toLowerCase())) {
+
+                RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
+                relations.add(relationId);
+
+                if (inSubSelect && subSelectAlias != null) {
+                    // ONLY SIMPLE SUBSELECTS, WITH ONE TABLE: see WhereClauseVisitor and ProjectionVisitor
+                    RelationID subSelectAliasId = idFac.createRelationID(null, subSelectAlias.getName());
+                    tables.put(subSelectAliasId, relationId);
+                }
+                else {
+                    Alias as = table.getAlias();
+                    RelationID aliasId = (as != null) ? idFac.createRelationID(null, as.getName()) : relationId;
+                    tables.put(aliasId, relationId);
                 }
             }
         }
+
+        @Override
+        public void visit(SubSelect subSelect) {
+            visitSubSelect(subSelect);
+        }
+
+
+
+        @Override
+        public void visit(SubJoin subjoin) {
+            unsupported(subjoin);
+            subjoin.getLeft().accept(this);
+            subjoin.getJoin().getRightItem().accept(this);
+        }
+
+        @Override
+        public void visit(LateralSubSelect lateralSubSelect) {
+            unsupported(lateralSubSelect);
+            lateralSubSelect.getSubSelect().getSelectBody().accept(selectVisitor);
+        }
+
+        @Override
+        public void visit(ValuesList valuesList) {
+            unsupported(valuesList);
+        }
+
+
+        private void visitSubSelect(SubSelect subSelect) {
+
+            if (subSelect.getSelectBody() instanceof PlainSelect) {
+                PlainSelect subSelBody = (PlainSelect) (subSelect.getSelectBody());
+                if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
+                    unsupported(subSelect);
+            }
+            else {
+                unsupported(subSelect);
+            }
+
+            inSubSelect = true;
+            subSelectAlias = subSelect.getAlias();
+
+            subSelect.getSelectBody().accept(selectVisitor);
+
+            subSelectAlias = null;
+            inSubSelect = false;
+        }
+
     };
+
 
     private ExpressionVisitor expressionVisitor = new ExpressionVisitor() {
         @Override
