@@ -36,22 +36,16 @@ import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.*;
 
 /*
     This visitor is used to parse SQL amd check the OBDA query compatibility
  */
-public class ObdaVisitor {
+public class SQLQueryParser {
 
     //region Private Variables
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-    private final String[] invalidObdaFields =
-            { "getDistinct", "getIntoTables", "getHaving", "getGroupByColumnReferences",
-                    "getOrderByElements", "getLimit", "getTop", "getOracleHierarchical", "isOracleSiblings" };
+
     private final Select selectQuery; // the parsed query
     private final QuotedIDFactory idFac;
 
@@ -61,8 +55,6 @@ public class ObdaVisitor {
     private  Expression whereClause ;
     private  ProjectionJSQL projection;
 
-
-
     // from visitor
     private Alias subSelectAlias = null;
     // There are special names that are not table names but are parsed as tables.
@@ -71,10 +63,10 @@ public class ObdaVisitor {
     private final List<RelationID> relations = new LinkedList<>();
     private boolean inSubSelect = false;
 
-    private boolean unsupported = false;
+
     //endregion
 
-    public  ObdaVisitor(Select selectQuery, QuotedIDFactory idFac ){
+    public SQLQueryParser(Select selectQuery, QuotedIDFactory idFac ){
         this.selectQuery = selectQuery;
         this.idFac = idFac;
 
@@ -131,19 +123,28 @@ public class ObdaVisitor {
         return projection;
     }
 
-    /**
-     *
-     * @return true if the expression is supported
-     */
-    public boolean isSupported() {
-        // used to throw exception for the currently unsupported methods
-        return !unsupported;
-    }
+
     //endregion
 
-    private void unsupported(Object o) {
-        System.out.println(this.getClass() + " DOES NOT SUPPORT " + o);
-        unsupported = true;
+    private void unsupported(Object unsupportedObject)  {
+        log.warn(this.getClass() + " DOES NOT SUPPORT " + unsupportedObject);
+        throw new ParseException(unsupportedObject) ;
+    }
+
+    /**
+     * This exceptions is throwing when the parser cannot support an operation
+     */
+    public static class ParseException extends EmptyStackException{
+
+        public  ParseException (Object unsupportedObject) {
+            this.unsupportedObject = unsupportedObject;
+        }
+
+        public Object getUnsupportedObject() {
+            return unsupportedObject;
+        }
+
+        Object unsupportedObject;
     }
 
     private SelectVisitor selectVisitor = new SelectVisitor() {
@@ -196,7 +197,7 @@ public class ObdaVisitor {
         }
 
         @Override
-        public void visit(WithItem withItem) {
+        public void visit(WithItem withItem){
             unsupported(withItem);
         }
 
@@ -206,28 +207,42 @@ public class ObdaVisitor {
          * @param plainSelect
          */
         private  void  validatePlainSelect(PlainSelect plainSelect){
-            for (String sField : invalidObdaFields){
-                try {
-                    Method method =  plainSelect.getClass().getDeclaredMethod(sField, null );
-                    Object val = method.invoke( plainSelect, null );
-                    if ( method.getReturnType().equals(boolean.class) ){
-                        if ( Boolean.parseBoolean( val.toString() ) ){
-                            unsupported(method);
-                            break;
-                        }
-                    }else if ( null != val ){
-                        unsupported(method);
-                        break;
-                    }
-                } catch (NoSuchMethodException e) {
-                    log.error("NoSuchMethodException on validatePlainSelect", e);
-                } catch (InvocationTargetException e) {
-                    log.error("InvocationTargetException on validatePlainSelect", e);
-                } catch (IllegalAccessException e) {
-                    log.error("IllegalAccessException on IllegalAccessException", e);
-                }
+            if (plainSelect.getDistinct() != null){
+                unsupported(plainSelect.getDistinct());
+                return;
             }
-
+            if (plainSelect.getIntoTables() != null  ){
+                unsupported(plainSelect.getIntoTables());
+                return;
+            }
+            if (plainSelect.getHaving() != null  ){
+                unsupported(plainSelect.getHaving());
+                return;
+            }
+            if (plainSelect.getGroupByColumnReferences() != null  ){
+                unsupported(plainSelect.getGroupByColumnReferences() );
+                return;
+            }
+            if (plainSelect.getOrderByElements() != null  ){
+                unsupported(plainSelect.getOrderByElements() );
+                return;
+            }
+            if (plainSelect.getLimit() != null  ){
+                unsupported(plainSelect.getLimit() );
+                return;
+            }
+            if (plainSelect.getTop() != null  ){
+                unsupported(plainSelect.getTop() );
+                return;
+            }
+            if (plainSelect.getOracleHierarchical() != null  ){
+                unsupported(plainSelect.getOracleHierarchical() );
+                return;
+            }
+            if (plainSelect.isOracleSiblings() ){
+                unsupported(plainSelect.isOracleSiblings() );
+                return;
+            }
         }
     };
 
