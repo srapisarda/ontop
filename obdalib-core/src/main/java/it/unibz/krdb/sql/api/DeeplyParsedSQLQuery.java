@@ -27,6 +27,7 @@ import it.unibz.krdb.sql.RelationID;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectItem;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class DeeplyParsedSQLQuery  {
     private final Map<QuotedID, Expression> aliasMap;
     private final List<Expression> joins;
     private final Expression whereClause;
-    private final ProjectionJSQL projection;
+    private final List<SelectItem> projection;
 
 
     /**
@@ -117,7 +118,7 @@ public class DeeplyParsedSQLQuery  {
      * AND META-MAPPING EXPANDER
      *
      */
-    public ProjectionJSQL getProjection()  {
+    public List<SelectItem> getProjection()  {
         return projection;
     }
 

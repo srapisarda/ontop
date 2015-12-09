@@ -28,7 +28,6 @@ import it.unibz.krdb.sql.QualifiedAttributeID;
 import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.ProjectionJSQL;
 import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -125,7 +124,7 @@ public class MetaMappingExpander {
 				 * we only need to distinct project the columns needed for the template expansion 
 				 */
 				
-				List<SelectItem> columnList = sourceQueryParsed.getProjection().getColumnList();
+				List<SelectItem> columnList = sourceQueryParsed.getProjection();
 				
 				List<SelectItem> columnsForTemplate = getColumnsForTemplate(varsInTemplate, columnList, idfac);
 				
@@ -161,11 +160,7 @@ public class MetaMappingExpander {
 		 * we only need to distinct project the columns needed for the template expansion 
 		 */
 
-		ProjectionJSQL distinctParamsProjection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT);
-		distinctParamsProjection.addAll(columnsForTemplate);
-		
-		// ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(distinctParamsProjection, null);
-		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy();
+		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(columnsForTemplate, null);
 		String distinctParamsSQL = distinctParsedQuery.toString();
 
 	
@@ -248,16 +243,12 @@ public class MetaMappingExpander {
 		}
 			
 		
-		ProjectionJSQL newProjection = new ProjectionJSQL(ProjectionJSQL.SELECT_DEFAULT);
-		newProjection.addAll(columnsForValues);
-		
 		/*
 		 * new statement for the source query
 		 * we create a new statement with the changed projection and selection
 		 */
 
-		//ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(newProjection, selection);
-		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy();
+		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(columnsForValues, selection);
 		String newSourceQuerySQL = newSourceParsedQuery.toString();
 		OBDASQLQuery newSourceQuery =  dfac.getSQLQuery(newSourceQuerySQL);
 

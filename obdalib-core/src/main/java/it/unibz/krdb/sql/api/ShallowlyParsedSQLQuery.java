@@ -30,6 +30,7 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectItem;
 
 import java.util.List;
 
@@ -60,27 +61,25 @@ public class ShallowlyParsedSQLQuery {
         this.selectQuery = statement;
     }
 
-    // public ShallowlyParsedSQLQuery copy(ProjectionJSQL projection, Expression whereClause)
     /**
      *
      * @return
      *  Object ShallowlyParsedSQLQuery copy of the current class instance
      */
-    public ShallowlyParsedSQLQuery copy() {
+    public ShallowlyParsedSQLQuery copy(List<SelectItem> projection, Expression whereClause) {
     	try {
         	String query = selectQuery.toString();
         	
-			/*
 			ShallowlyParsedSQLQuery copy = new ShallowlyParsedSQLQuery((Select)CCJSqlParserUtil.parse(query), idfac);
 
-	        SetProjectionVisitor visitor = new SetProjectionVisitor(copy.selectQuery, projection); // not in use
+			// ROMAN: it is in use -- the visitor changes the query
+	        SetProjectionVisitor visitor = new SetProjectionVisitor(copy.selectQuery, projection); 
 
+			// ROMAN: it is in use -- the visitor changes the query
 	        if (whereClause != null) {
-	        	SetWhereClauseVisitor sel = new SetWhereClauseVisitor(copy.selectQuery, whereClause); //  not in use
+	        	SetWhereClauseVisitor sel = new SetWhereClauseVisitor(copy.selectQuery, whereClause); 
 	        }
 	        return copy;
-	        */
-            return new ShallowlyParsedSQLQuery((Select)CCJSqlParserUtil.parse(query), idfac);
 		} 
     	catch (JSQLParserException ignored) {
 		}
@@ -99,7 +98,7 @@ public class ShallowlyParsedSQLQuery {
      * AND META-MAPPING EXPANDER
      *
      */
-    public ProjectionJSQL getProjection()  {
+    public List<SelectItem> getProjection()  {
         ProjectionVisitor visitor = new ProjectionVisitor(selectQuery, idfac);
         return visitor.getProjection();
     }

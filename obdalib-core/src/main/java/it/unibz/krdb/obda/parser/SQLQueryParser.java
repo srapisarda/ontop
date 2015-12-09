@@ -24,7 +24,6 @@ package it.unibz.krdb.obda.parser;
 import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.ProjectionJSQL;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -49,11 +48,11 @@ public class SQLQueryParser {
     private final Select selectQuery; // the parsed query
     private final QuotedIDFactory idFac;
 
-    private  final Map<RelationID, RelationID> tables = new HashMap<>();
-    private  final Map<QuotedID, Expression> aliasMap = new HashMap<>();
-    private  final List<Expression> joinConditions = new LinkedList<>();
+    private final Map<RelationID, RelationID> tables = new HashMap<>();
+    private final Map<QuotedID, Expression> aliasMap = new HashMap<>();
+    private final List<Expression> joinConditions = new LinkedList<>();
     private  Expression whereClause ;
-    private  ProjectionJSQL projection;
+    private List<SelectItem> projection = new LinkedList<>();
 
     // from visitor
     private Alias subSelectAlias = null;
@@ -119,7 +118,7 @@ public class SQLQueryParser {
      *
      * @return projection object
      */
-    public ProjectionJSQL getProjection() {
+    public List<SelectItem> getProjection() {
         return projection;
     }
 
@@ -161,7 +160,7 @@ public class SQLQueryParser {
 
             // projection
             // in the projection it is supported a default select that does not include the keyword "DISTINCT"
-            projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DEFAULT);
+            projection = new LinkedList<>();
 
             for (SelectItem item : plainSelect.getSelectItems())
                 item.accept(selectItemVisitor);
@@ -250,7 +249,7 @@ public class SQLQueryParser {
     private SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
         @Override
         public void visit(AllColumns allColumns) {
-            projection.add(allColumns, false);
+            projection.add(allColumns);
         }
 
         /*
@@ -259,7 +258,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(AllTableColumns allTableColumns) {
-            projection.add(allTableColumns, false);
+            projection.add(allTableColumns);
         }
 
         /*
@@ -269,7 +268,7 @@ public class SQLQueryParser {
         @Override
         public void visit(SelectExpressionItem selectExpr) {
             // projection
-            projection.add(selectExpr, false);
+            projection.add(selectExpr);
             selectExpr.getExpression().accept(expressionVisitor);
             // all complex expressions in SELECT must be named (by aliases)
             if (!(selectExpr.getExpression() instanceof Column) && selectExpr.getAlias() == null)

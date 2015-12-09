@@ -20,8 +20,10 @@ package it.unibz.krdb.obda.parser;
  * #L%
  */
 
+import java.util.LinkedList;
+import java.util.List;
+
 import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.api.ProjectionJSQL;
 import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
@@ -41,7 +43,7 @@ import net.sf.jsqlparser.statement.select.*;
  */
 public class ProjectionVisitor {
 	
-	private ProjectionJSQL projection;
+	private List<SelectItem> projection;
 	private boolean unsupported = false;
 	
 	private final QuotedIDFactory idFac;
@@ -70,7 +72,7 @@ public class ProjectionVisitor {
 	 *
 	 * @return projection object
 	 */
-	public ProjectionJSQL getProjection() {
+	public List<SelectItem> getProjection() {
 		return projection;
 		
 	}
@@ -99,15 +101,15 @@ public class ProjectionVisitor {
 
 				if (distinct.getOnSelectItems() != null) {
 					// this is supported only by PostgreSQL
-					projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT_ON);
+					projection = new LinkedList<>();
 					for (SelectItem item : distinct.getOnSelectItems())
 						item.accept(selectItemVisitorDistinctOn);
 				}
 				else
-					projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DISTINCT);
+					projection = new LinkedList<>();
 			}
 			else
-				projection = new ProjectionJSQL(ProjectionJSQL.SELECT_DEFAULT);
+				projection = new LinkedList<>();
 
 			for (SelectItem item : plainSelect.getSelectItems())
 				item.accept(selectItemVisitor);
@@ -134,7 +136,7 @@ public class ProjectionVisitor {
 	private SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
 		@Override
 		public void visit(AllColumns allColumns) {
-			projection.add(allColumns, false);
+			projection.add(allColumns);
 		}
 
 		/*
@@ -143,7 +145,7 @@ public class ProjectionVisitor {
          */
 		@Override
 		public void visit(AllTableColumns allTableColumns) {
-			projection.add(allTableColumns, false);
+			projection.add(allTableColumns);
 		}
 
 		/*
@@ -152,7 +154,7 @@ public class ProjectionVisitor {
          */
 		@Override
 		public void visit(SelectExpressionItem selectExpr) {
-			projection.add(selectExpr, false);
+			projection.add(selectExpr);
 			selectExpr.getExpression().accept(expressionVisitor);
 			// all complex expressions in SELECT must be named (by aliases)
 			if (!(selectExpr.getExpression() instanceof Column) && selectExpr.getAlias() == null)
@@ -173,7 +175,7 @@ public class ProjectionVisitor {
 
 		@Override
 		public void visit(SelectExpressionItem selectExpr) {
-			projection.add(selectExpr, true);
+			projection.add(selectExpr); // was a special flag for DISTINCT ON
 			selectExpr.getExpression().accept(expressionVisitor);
 			// no alias, just a plain expression!
 		}

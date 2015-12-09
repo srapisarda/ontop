@@ -20,7 +20,6 @@ package it.unibz.krdb.obda.parser;
  */
 
 
-import it.unibz.krdb.sql.api.ProjectionJSQL;
 import net.sf.jsqlparser.statement.select.*;
 
 import java.util.ArrayList;
@@ -41,36 +40,16 @@ public class SetProjectionVisitor {
      * @param select
      * @param projection
      */
-    public SetProjectionVisitor(Select select, final ProjectionJSQL projection) {
+    public SetProjectionVisitor(Select select, final List<SelectItem> columnList) {
         select.getSelectBody().accept(new SelectVisitor() {
 
         @Override
         public void visit(PlainSelect plainSelect) {
-            if (projection.getType().equals("select distinct on")) {
-                List<SelectItem> distinctList = new ArrayList<>();
-
-                for (SelectItem seItem : projection.getColumnList())
-                    distinctList.add(seItem);
-
-                Distinct distinct = new Distinct();
-                distinct.setOnSelectItems(distinctList);
-                plainSelect.setDistinct(distinct);
-            } 
-            else if (projection.getType().equals("select distinct")) {
-                Distinct distinct = new Distinct();
-                plainSelect.setDistinct(distinct);
-
-                plainSelect.getSelectItems().clear();
-                plainSelect.getSelectItems().addAll(projection.getColumnList());
-            } 
-            else {
-                plainSelect.getSelectItems().clear();
-                List<SelectItem> columnList = projection.getColumnList();
-                if (!columnList.isEmpty()) {
-                    plainSelect.getSelectItems().addAll(columnList);
-                } else {
-                    plainSelect.getSelectItems().add(new AllColumns());
-                }
+            plainSelect.getSelectItems().clear();
+            if (!columnList.isEmpty()) {
+                plainSelect.getSelectItems().addAll(columnList);
+            } else {
+                plainSelect.getSelectItems().add(new AllColumns());
             }
         }
 
