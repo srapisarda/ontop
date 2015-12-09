@@ -45,30 +45,23 @@ public class SQLQueryParser {
     //region Private Variables
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private final Select selectQuery; // the parsed query
     private final QuotedIDFactory idFac;
 
     private final Map<RelationID, RelationID> tables = new HashMap<>();
     private final Map<QuotedID, Expression> aliasMap = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
-    private  Expression whereClause ;
-    private List<SelectItem> projection = new LinkedList<>();
+    private Expression whereClause;
+    private final List<SelectItem> projection = new LinkedList<>();
 
-    // from visitor
-    private Alias subSelectAlias = null;
-    // There are special names that are not table names but are parsed as tables.
-    // These names are collected here and are not included in the table names
-    private final Set<String> withTCEs = new HashSet<>();
     private final List<RelationID> relations = new LinkedList<>();
-    private boolean inSubSelect = false;
 
 
     //endregion
 
-    public SQLQueryParser(Select selectQuery, QuotedIDFactory idFac ){
-        this.selectQuery = selectQuery;
+    public SQLQueryParser(Select selectQuery, QuotedIDFactory idFac) {
         this.idFac = idFac;
 
+        // CATCH ParseException
         selectQuery.getSelectBody().accept(selectVisitor);
     }
 
@@ -133,35 +126,27 @@ public class SQLQueryParser {
     /**
      * This exceptions is throwing when the parser cannot support an operation
      */
-    public static class ParseException extends EmptyStackException{
+    private static class ParseException extends RuntimeException {
 
-        public  ParseException (Object unsupportedObject) {
+		private static final long serialVersionUID = 1L;
+		
+        private final Object unsupportedObject;
+        
+		public ParseException (Object unsupportedObject) {
             this.unsupportedObject = unsupportedObject;
         }
-
-        public Object getUnsupportedObject() {
-            return unsupportedObject;
-        }
-
-        Object unsupportedObject;
     }
 
     private SelectVisitor selectVisitor = new SelectVisitor() {
-        /*
-         * visit PlainSelect, search for the where structure that returns an Expression
-         * @see net.sf.jsqlparser.statement.select.SelectVisitor#visit(net.sf.jsqlparser.statement.select.PlainSelect)
-         */
+    	
         @Override
         public void visit(PlainSelect plainSelect) {
-            // The filed should be suitable for datalog expression
+            // the SELECT should correspond to a CQ
             validatePlainSelect(plainSelect);
 
             // todo: do I need to parse the unsupported query??
 
             // projection
-            // in the projection it is supported a default select that does not include the keyword "DISTINCT"
-            projection = new LinkedList<>();
-
             for (SelectItem item : plainSelect.getSelectItems())
                 item.accept(selectItemVisitor);
 
@@ -196,7 +181,7 @@ public class SQLQueryParser {
         }
 
         @Override
-        public void visit(WithItem withItem){
+        public void visit(WithItem withItem) {
             unsupported(withItem);
         }
 
@@ -205,122 +190,91 @@ public class SQLQueryParser {
          *
          * @param plainSelect
          */
-        private  void  validatePlainSelect(PlainSelect plainSelect){
-            if (plainSelect.getDistinct() != null){
+        private void validatePlainSelect(PlainSelect plainSelect) {
+            if (plainSelect.getDistinct() != null) 
                 unsupported(plainSelect.getDistinct());
-                return;
-            }
-            if (plainSelect.getIntoTables() != null  ){
+            
+            // TODO: different kind of exception -- SELECT INTO is not a valid mapping query
+            if (plainSelect.getIntoTables() != null) 
                 unsupported(plainSelect.getIntoTables());
-                return;
-            }
-            if (plainSelect.getHaving() != null  ){
+            
+            if (plainSelect.getHaving() != null) 
                 unsupported(plainSelect.getHaving());
-                return;
-            }
-            if (plainSelect.getGroupByColumnReferences() != null  ){
-                unsupported(plainSelect.getGroupByColumnReferences() );
-                return;
-            }
-            if (plainSelect.getOrderByElements() != null  ){
-                unsupported(plainSelect.getOrderByElements() );
-                return;
-            }
-            if (plainSelect.getLimit() != null  ){
-                unsupported(plainSelect.getLimit() );
-                return;
-            }
-            if (plainSelect.getTop() != null  ){
-                unsupported(plainSelect.getTop() );
-                return;
-            }
-            if (plainSelect.getOracleHierarchical() != null  ){
-                unsupported(plainSelect.getOracleHierarchical() );
-                return;
-            }
-            if (plainSelect.isOracleSiblings() ){
-                unsupported(plainSelect.isOracleSiblings() );
-                return;
-            }
+            
+            if (plainSelect.getGroupByColumnReferences() != null) 
+                unsupported(plainSelect.getGroupByColumnReferences());
+            
+            if (plainSelect.getOrderByElements() != null)
+                unsupported(plainSelect.getOrderByElements());
+            
+            if (plainSelect.getLimit() != null) 
+                unsupported(plainSelect.getLimit());
+
+            if (plainSelect.getTop() != null) 
+                unsupported(plainSelect.getTop());
+                
+            if (plainSelect.getOracleHierarchical() != null)
+                unsupported(plainSelect.getOracleHierarchical());
+            
+            if (plainSelect.isOracleSiblings())
+                unsupported(plainSelect.isOracleSiblings());
         }
     };
 
 
     private SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
-        @Override
+
+        /**
+         * SELECT *
+         */
+    	@Override
         public void visit(AllColumns allColumns) {
             projection.add(allColumns);
         }
 
-        /*
-         * Add the projection in the case of SELECT table.*
-         * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.AllTableColumns)
+        /**
+         * SELECT table.*
          */
         @Override
         public void visit(AllTableColumns allTableColumns) {
             projection.add(allTableColumns);
         }
 
-        /*
-         * Add the projection for the selectExpressionItem, distinguishing between select all and select distinct
-         * @see net.sf.jsqlparser.statement.select.SelectItemVisitor#visit(net.sf.jsqlparser.statement.select.SelectExpressionItem)
+        /**
+         * Add the projection for the selectExpressionItem
          */
         @Override
         public void visit(SelectExpressionItem selectExpr) {
             // projection
+        	Expression expr = selectExpr.getExpression();
             projection.add(selectExpr);
-            selectExpr.getExpression().accept(expressionVisitor);
+            expr.accept(expressionVisitor);
+            Alias alias = selectExpr.getAlias();
             // all complex expressions in SELECT must be named (by aliases)
-            if (!(selectExpr.getExpression() instanceof Column) && selectExpr.getAlias() == null)
+            if (!(expr instanceof Column) && alias == null)
                 unsupported(selectExpr);
 
-
             // alias
-            Alias alias = selectExpr.getAlias();
             if (alias  != null) {
-                Expression e = selectExpr.getExpression();
-                e.accept(expressionVisitor);
-
-                // NORMALIZE EXPRESSION ALIAS NAME
+                // NORMALIZE EXPRESSION ALIAS NAME (ROMAN 9 Dec 2015: this should be done later; the visitor should not modify the query)
                 QuotedID aliasName = idFac.createAttributeID(alias.getName());
                 alias.setName(aliasName.getSQLRendering());
-                aliasMap.put(aliasName, e);
+                aliasMap.put(aliasName, expr);
             }
-            // ELSE
-            // ROMAN (27 Sep 2015): set an error flag -- each complex expression must have a name (alias)
         }
     };
 
 
-   /* private FromItemVisitor aliasMapFromItemVisitor = new FromItemVisitor() {
-        @Override
-        public void visit(Table tableName) {
-
-        }
-
-        @Override
-        public void visit(SubJoin subjoin) {
-
-        }
-
-        @Override
-        public void visit(LateralSubSelect lateralSubSelect) {
-
-        }
-
-        @Override
-        public void visit(ValuesList valuesList) {
-
-        }
-        @Override
-        public void visit(SubSelect subSelect) {
-            subSelect.getSelectBody().accept(selectVisitor);
-        }
-    };*/
-
 
     private final FromItemVisitor fromItemVisitor = new FromItemVisitor() {
 
+        // from visitor
+        private Alias subSelectAlias = null;
+        // There are special names that are not table names but are parsed as tables.
+        // These names are collected here and are not included in the table names
+        private final Set<String> withTCEs = new HashSet<>();
+        private boolean inSubSelect = false;
+  	
 		/*
 		 * Visit Table and store its value in the list of TableJSQL (non-Javadoc)
 		 * We maintain duplicate tables to retrieve the different aliases assigned
@@ -331,11 +285,13 @@ public class SQLQueryParser {
 
         @Override
         public void visit(Table table) {
+        	// ROMAN (9 Dec 2015): TCEs are not supported 
             if (!withTCEs.contains(table.getFullyQualifiedName().toLowerCase())) {
 
                 RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
                 relations.add(relationId);
 
+                // ROMAN (9 Dec 2015): make a separate visitor for sub-selects
                 if (inSubSelect && subSelectAlias != null) {
                     // ONLY SIMPLE SUBSELECTS, WITH ONE TABLE: see WhereClauseVisitor and ProjectionVisitor
                     RelationID subSelectAliasId = idFac.createRelationID(null, subSelectAlias.getName());
