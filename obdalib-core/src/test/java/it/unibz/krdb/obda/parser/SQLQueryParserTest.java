@@ -161,14 +161,11 @@ public class SQLQueryParserTest extends TestCase {
             if (!(st instanceof Select))
                 throw new JSQLParserException("The inserted query is not a SELECT statement");
 
-            obdaVisitor = new SQLQueryParser((Select)st, idfac);
+            obdaVisitor = new SQLQueryParser((Select) st, idfac);
             return true;
 
-        } catch (SQLQueryParser.ParseException e) {
-            System.out.println( e.getUnsupportedObject() ) ;
-            return false;
-        }catch (JSQLParserException e){
-            System.out.println( e.getStackTrace() ) ;
+        }catch (Exception e) {
+            System.out.println( e ) ;
             return false;
         }
     }
