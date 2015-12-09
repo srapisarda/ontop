@@ -160,7 +160,7 @@ public class MetaMappingExpander {
 		 * we only need to distinct project the columns needed for the template expansion 
 		 */
 
-		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(columnsForTemplate, null);
+		ShallowlyParsedSQLQuery distinctParsedQuery = sourceQueryParsed.copy(columnsForTemplate, true, null);
 		String distinctParamsSQL = distinctParsedQuery.toString();
 
 	
@@ -248,7 +248,7 @@ public class MetaMappingExpander {
 		 * we create a new statement with the changed projection and selection
 		 */
 
-		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(columnsForValues, selection);
+		ShallowlyParsedSQLQuery newSourceParsedQuery = sourceParsedQuery.copy(columnsForValues, false, selection);
 		String newSourceQuerySQL = newSourceParsedQuery.toString();
 		OBDASQLQuery newSourceQuery =  dfac.getSQLQuery(newSourceQuerySQL);
 

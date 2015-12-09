@@ -29,6 +29,9 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.Distinct;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
@@ -66,18 +69,24 @@ public class ShallowlyParsedSQLQuery {
      * @return
      *  Object ShallowlyParsedSQLQuery copy of the current class instance
      */
-    public ShallowlyParsedSQLQuery copy(List<SelectItem> projection, Expression whereClause) {
+    public ShallowlyParsedSQLQuery copy(List<SelectItem> projection, boolean distinct, Expression whereClause) {
     	try {
         	String query = selectQuery.toString();
         	
 			ShallowlyParsedSQLQuery copy = new ShallowlyParsedSQLQuery((Select)CCJSqlParserUtil.parse(query), idfac);
 
-			// ROMAN: it is in use -- the visitor changes the query
-	        SetProjectionVisitor visitor = new SetProjectionVisitor(copy.selectQuery, projection); 
+			PlainSelect plainSelect = (PlainSelect)(copy.selectQuery.getSelectBody());
+            plainSelect.getSelectItems().clear();
+            if (!projection.isEmpty()) {
+                plainSelect.getSelectItems().addAll(projection);
+            } else {
+                plainSelect.getSelectItems().add(new AllColumns());
+            }
+			if (distinct)
+				plainSelect.setDistinct(new Distinct());
 
-			// ROMAN: it is in use -- the visitor changes the query
 	        if (whereClause != null) {
-	        	SetWhereClauseVisitor sel = new SetWhereClauseVisitor(copy.selectQuery, whereClause); 
+                plainSelect.setWhere(whereClause);
 	        }
 	        return copy;
 		} 
