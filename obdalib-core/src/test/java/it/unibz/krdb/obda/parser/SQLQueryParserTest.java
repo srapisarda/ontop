@@ -53,6 +53,19 @@ public class SQLQueryParserTest extends TestCase {
         assertTrue(result);
     }
 
+    public void testCast1(){
+        final boolean result = parseUnquotedJSQL("SELECT CAST(`view0`.`nick2` AS CHAR (8000) CHARACTER SET utf8) AS `v0` FROM people `view0` WHERE `view0`.`nick2` IS NOT NULL");
+        printJSQL("testCast1", result);
+        assertTrue(result);
+    }
+
+    // Does not parse SELECT DISTINCT (on purpose)
+    public void testCast2(){
+        final boolean result = parseUnquotedJSQL("SELECT DISTINCT CAST(`view0`.`nick2` AS CHAR (8000) CHARACTER SET utf8) AS `v0` FROM people `view0` WHERE `view0`.`nick2` IS NOT NULL");
+        printJSQL("testCast", result);
+        assertFalse(result);
+    }
+
 
     //distinct is not supported
     public void testDistrincNS(){
@@ -184,12 +197,53 @@ public class SQLQueryParserTest extends TestCase {
 
     }
 
-    public void test_5_1_1() {
-        final boolean result = parseUnquotedJSQL("SELECT t1.id as sid, t1.name as fullname FROM student t1 JOIN grade t2 ON t1.id=t2.st_id AND t2.mark='A'");
-        printJSQL("test_5_1_1", result);
+    public void testJoinAndAlias() {
+        final boolean result = parseUnquotedJSQL("SELECT t1.id as sid, t1.name as fullName FROM student t1 JOIN grade t2 ON t1.id=t2.st_id AND t2.mark='A'");
+        printJSQL("testJoinAndAlias", result);
         assertTrue(result);
 
     }
+
+    /* Regex in MySQL, Oracle and Postgres*/
+    public void testRegexMySQL(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE name REGEXP '^b'");
+        printJSQL("testRegexMySQL", result);
+        assertTrue(result);
+    }
+
+    public void testRegexBinaryMySQL(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE name REGEXP BINARY '^b'");
+        printJSQL("testRegexBinaryMySQL", result);
+        assertTrue(result);
+    }
+
+    public void testRegexPostgres(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE name ~ 'foo'");
+        printJSQL("testRegexPostgres", result);
+        assertTrue(result);
+    }
+
+    //no support for similar to in postgres
+    public void testRegexPostgresSimilarTo(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE 'abc' SIMILAR TO 'abc'");
+        printJSQL("testRegexPostgresSimilarTo", result);
+        assertFalse(result);
+    }
+
+    public void testRegexOracle(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE REGEXP_LIKE(testcol, '[[:alpha:]]')");
+        printJSQL("testRegexMySQL", result);
+        assertTrue(result);
+    }
+
+    //no support for not without parenthesis
+    public void testRegexNotOracle(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE NOT REGEXP_LIKE(testcol, '[[:alpha:]]')");
+        printJSQL("testRegexNotMySQL", result);
+        assertFalse(result);
+    }
+
+
 
     SQLQueryParser obdaVisitor;
     private String queryText;

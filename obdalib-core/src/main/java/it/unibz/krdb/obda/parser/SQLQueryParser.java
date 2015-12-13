@@ -176,8 +176,7 @@ public class SQLQueryParser {
             unsupported(subSelect);
     }
 
-
-    private SelectVisitor selectVisitor = new SelectVisitor() {
+    private final SelectVisitor selectVisitor = new SelectVisitor() {
     	
         @Override
         public void visit(PlainSelect plainSelect) {
@@ -219,6 +218,12 @@ public class SQLQueryParser {
 
             joinVisit(plainSelect);
 
+            Expression where = plainSelect.getWhere();
+            if (where != null) {
+                whereClause = where;
+                //we visit the where clause to fix any and all comparison
+                where.accept(whereExpressionVisitor);
+            }
 
         }
         @Override
@@ -320,8 +325,7 @@ public class SQLQueryParser {
         }
     };
 
-
-    private SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
+    private final SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
 
         /**
          * SELECT *
@@ -348,7 +352,8 @@ public class SQLQueryParser {
         	Expression expr = selectExpr.getExpression();
             projection.add(selectExpr);
 
-            expr.accept(expressionVisitor);
+            expr.accept(aliasMapExpressionVisitor); //todo:  this visitor is used just for the subSelect
+
             expr.accept(projectorExpressionVisitor);
 
 
@@ -368,7 +373,6 @@ public class SQLQueryParser {
 
         }
     };
-
 
     private final FromItemVisitor subSelectFromItemVisitor = new FromItemVisitor() {
         private boolean inSubSelect = false;
@@ -518,259 +522,12 @@ public class SQLQueryParser {
 
     };
 
-
-    private ExpressionVisitor expressionVisitor = new ExpressionVisitor() {
-        @Override
-        public void visit(NullValue nullValue) {
-
-        }
-
-        @Override
-        public void visit(Function function) {
-
-        }
-
-        @Override
-        public void visit(SignedExpression signedExpression) {
-
-        }
-
-        @Override
-        public void visit(JdbcParameter jdbcParameter) {
-
-        }
-
-        @Override
-        public void visit(JdbcNamedParameter jdbcNamedParameter) {
-
-        }
-
-        @Override
-        public void visit(DoubleValue doubleValue) {
-
-        }
-
-        @Override
-        public void visit(LongValue longValue) {
-
-        }
-
-        @Override
-        public void visit(DateValue dateValue) {
-
-        }
-
-        @Override
-        public void visit(TimeValue timeValue) {
-
-        }
-
-        @Override
-        public void visit(TimestampValue timestampValue) {
-
-        }
-
-        @Override
-        public void visit(Parenthesis parenthesis) {
-
-        }
-
-        @Override
-        public void visit(StringValue stringValue) {
-
-        }
-
-        @Override
-        public void visit(Addition addition) {
-
-        }
-
-        @Override
-        public void visit(Division division) {
-
-        }
-
-        @Override
-        public void visit(Multiplication multiplication) {
-
-        }
-
-        @Override
-        public void visit(Subtraction subtraction) {
-
-        }
-
-        @Override
-        public void visit(AndExpression andExpression) {
-
-        }
-
-        @Override
-        public void visit(OrExpression orExpression) {
-
-        }
-
-        @Override
-        public void visit(Between between) {
-
-        }
-
-        @Override
-        public void visit(EqualsTo equalsTo) {
-
-        }
-
-        @Override
-        public void visit(GreaterThan greaterThan) {
-
-        }
-
-        @Override
-        public void visit(GreaterThanEquals greaterThanEquals) {
-
-        }
-
-        @Override
-        public void visit(InExpression inExpression) {
-
-        }
-
-        @Override
-        public void visit(IsNullExpression isNullExpression) {
-
-        }
-
-        @Override
-        public void visit(LikeExpression likeExpression) {
-
-        }
-
-        @Override
-        public void visit(MinorThan minorThan) {
-
-        }
-
-        @Override
-        public void visit(MinorThanEquals minorThanEquals) {
-
-        }
-
-        @Override
-        public void visit(NotEqualsTo notEqualsTo) {
-
-        }
-
-        @Override
-        public void visit(Column tableColumn) {
-
-        }
-
-        @Override
-        public void visit(SubSelect subSelect) {
-
-        }
-
-        @Override
-        public void visit(CaseExpression caseExpression) {
-
-        }
-
-        @Override
-        public void visit(WhenClause whenClause) {
-
-        }
-
-        @Override
-        public void visit(ExistsExpression existsExpression) {
-
-        }
-
-        @Override
-        public void visit(AllComparisonExpression allComparisonExpression) {
-
-        }
-
-        @Override
-        public void visit(AnyComparisonExpression anyComparisonExpression) {
-
-        }
-
-        @Override
-        public void visit(Concat concat) {
-
-        }
-
-        @Override
-        public void visit(Matches matches) {
-
-        }
-
-        @Override
-        public void visit(BitwiseAnd bitwiseAnd) {
-
-        }
-
-        @Override
-        public void visit(BitwiseOr bitwiseOr) {
-
-        }
-
-        @Override
-        public void visit(BitwiseXor bitwiseXor) {
-
-        }
-
-        @Override
-        public void visit(CastExpression cast) {
-
-        }
-
-        @Override
-        public void visit(Modulo modulo) {
-
-        }
-
-        @Override
-        public void visit(AnalyticExpression aexpr) {
-
-        }
-
-        @Override
-        public void visit(ExtractExpression eexpr) {
-
-        }
-
-        @Override
-        public void visit(IntervalExpression iexpr) {
-
-        }
-
-        @Override
-        public void visit(OracleHierarchicalExpression oexpr) {
-
-        }
-
-        @Override
-        public void visit(RegExpMatchOperator rexpr) {
-
-        }
-
-        @Override
-        public void visit(JsonExpression jsonExpr) {
-
-        }
-
-        @Override
-        public void visit(RegExpMySQLOperator regExpMySQLOperator) {
-
-        }
-    };
-
+    //
     private final ItemsListVisitor itemsListVisitor = new ItemsListVisitor() {
         @Override
         public void visit(ExpressionList expressionList) {
             for (Expression expression : expressionList.getExpressions())
-                expression.accept(expressionVisitor);
+                expression.accept(tableExpressionVisitor);
         }
 
         @Override
@@ -786,6 +543,292 @@ public class SQLQueryParser {
             visitSubSelect(subSelect);
         }
     };
+
+
+    //region ExpressionVisitors: aliasMapExpressionVisitor, tableExpressionVisitor, projectorExpressionVisitor, joinExpressionVisitor, whereExpressionVisitor
+
+    private ExpressionVisitor aliasMapExpressionVisitor = new ExpressionVisitor() {
+
+        @Override
+        public void visit(SubSelect subSelect) {
+            // subSelect.getSelectBody().accept(selectVisitor);
+            visitSubSelect(subSelect);
+        }
+
+        /*
+         * We do not modify the column we are only interested if the alias is present.
+         * Each alias has a distinct column (non-Javadoc)
+         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.schema.Column)
+         */
+        @Override
+        public void visit(Column tableColumn) {
+        }
+
+
+        @Override
+        public void visit(NullValue nullValue) {
+        }
+
+        @Override
+        public void visit(Function function) {
+        }
+
+        @Override
+        public void visit(JdbcParameter jdbcParameter) {
+        }
+
+        @Override
+        public void visit(JdbcNamedParameter jdbcNamedParameter) {
+        }
+
+        @Override
+        public void visit(DoubleValue doubleValue) {
+        }
+
+        @Override
+        public void visit(LongValue longValue) {
+        }
+
+        @Override
+        public void visit(DateValue dateValue) {
+        }
+
+        @Override
+        public void visit(TimeValue timeValue) {
+        }
+
+        @Override
+        public void visit(TimestampValue timestampValue) {
+        }
+
+        @Override
+        public void visit(Parenthesis parenthesis) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(StringValue stringValue) {
+        }
+
+        @Override
+        public void visit(Addition addition) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Division division) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Multiplication multiplication) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Subtraction subtraction) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(AndExpression andExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(OrExpression orExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Between between) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(EqualsTo equalsTo) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(GreaterThan greaterThan) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(GreaterThanEquals greaterThanEquals) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(InExpression inExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(IsNullExpression isNullExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(LikeExpression likeExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(MinorThan minorThan) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(MinorThanEquals minorThanEquals) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(NotEqualsTo notEqualsTo) {
+            // TODO Auto-generated method stub
+
+        }
+
+
+        @Override
+        public void visit(CaseExpression caseExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(WhenClause whenClause) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(ExistsExpression existsExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(AllComparisonExpression allComparisonExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(AnyComparisonExpression anyComparisonExpression) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Concat concat) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Matches matches) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(BitwiseAnd bitwiseAnd) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(BitwiseOr bitwiseOr) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(BitwiseXor bitwiseXor) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(CastExpression cast) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(Modulo modulo) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(AnalyticExpression aexpr) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(ExtractExpression eexpr) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(IntervalExpression iexpr) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(OracleHierarchicalExpression oexpr) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(RegExpMatchOperator arg0) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(SignedExpression arg0) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(JsonExpression arg0) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void visit(RegExpMySQLOperator arg0) {
+            // TODO Auto-generated method stub
+
+        }
+    };
+
 
     private final ExpressionVisitor tableExpressionVisitor = new ExpressionVisitor() {
 
@@ -1065,8 +1108,7 @@ public class SQLQueryParser {
         }
     };
 
-
-    private ExpressionVisitor projectorExpressionVisitor = new ExpressionVisitor() {
+    private final ExpressionVisitor projectorExpressionVisitor = new ExpressionVisitor() {
         @Override
         public void visit(NullValue nullValue) {
             // TODO Auto-generated method stub
@@ -1363,7 +1405,6 @@ public class SQLQueryParser {
             // NO-OP
         }
     };
-
 
     /**
      * Visitor for expression in the JOIN ON conditions
@@ -1760,6 +1801,370 @@ public class SQLQueryParser {
 
         }
     };
+
+    private final ExpressionVisitor whereExpressionVisitor = new ExpressionVisitor() {
+
+        @Override
+        public void visit(NullValue nullValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(Function function) {
+            // ROMAN (22 Sep 2015): longer list of supported functions?
+            if (function.getName().toLowerCase().equals("regexp_like")) {
+                for (Expression ex :function.getParameters().getExpressions())
+                    ex.accept(this);
+            }
+            else
+                unsupported(function);
+        }
+
+        @Override
+        public void visit(JdbcParameter jdbcParameter) {
+            //we do not execute anything
+        }
+
+        @Override
+        public void visit(JdbcNamedParameter jdbcNamedParameter) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(DoubleValue doubleValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(LongValue longValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(DateValue dateValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(TimeValue timeValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(TimestampValue timestampValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(Parenthesis parenthesis) {
+            parenthesis.getExpression().accept(this);
+        }
+
+        @Override
+        public void visit(StringValue stringValue) {
+            // we do not execute anything
+        }
+
+        @Override
+        public void visit(Addition addition) {
+            visitBinaryExpression(addition);
+        }
+
+        @Override
+        public void visit(Division division) {
+            visitBinaryExpression(division);
+        }
+
+        @Override
+        public void visit(Multiplication multiplication) {
+            visitBinaryExpression(multiplication);
+        }
+
+        @Override
+        public void visit(Subtraction subtraction) {
+            visitBinaryExpression(subtraction);
+        }
+
+        @Override
+        public void visit(AndExpression andExpression) {
+            visitBinaryExpression(andExpression);
+        }
+
+        @Override
+        public void visit(OrExpression orExpression) {
+            visitBinaryExpression(orExpression);
+        }
+
+        @Override
+        public void visit(Between between) {
+            between.getLeftExpression().accept(this);
+            between.getBetweenExpressionStart().accept(this);
+            between.getBetweenExpressionEnd().accept(this);
+        }
+
+        @Override
+        public void visit(EqualsTo equalsTo) {
+            visitBinaryExpression(equalsTo);
+        }
+
+        @Override
+        public void visit(GreaterThan greaterThan) {
+            visitBinaryExpression(greaterThan);
+        }
+
+        @Override
+        public void visit(GreaterThanEquals greaterThanEquals) {
+            visitBinaryExpression(greaterThanEquals);
+        }
+
+        @Override
+        public void visit(InExpression inExpression) {
+
+            //Expression e = inExpression.getLeftExpression();
+
+            // ROMAN (25 Sep 2015): why not getLeftExpression? getLeftItemList can be empty
+            // what about the right-hand side list?!
+
+            ItemsList e1 = inExpression.getLeftItemsList();
+            if (e1 instanceof SubSelect) {
+                ((SubSelect)e1).accept((ExpressionVisitor)this);
+            }
+            else if (e1 instanceof ExpressionList) {
+                for (Expression expr : ((ExpressionList)e1).getExpressions()) {
+                    expr.accept(this);
+                }
+            }
+            else if (e1 instanceof MultiExpressionList) {
+                for (ExpressionList exp : ((MultiExpressionList)e1).getExprList()){
+                    for (Expression expr : exp.getExpressions()) {
+                        expr.accept(this);
+                    }
+                }
+            }
+        }
+
+        /*
+         * We add the content of isNullExpression in SelectionJSQL
+         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.operators.relational.InExpression)
+         */
+        @Override
+        public void visit(IsNullExpression isNullExpression) {
+
+        }
+
+        @Override
+        public void visit(LikeExpression likeExpression) {
+            visitBinaryExpression(likeExpression);
+        }
+
+        @Override
+        public void visit(MinorThan minorThan) {
+            visitBinaryExpression(minorThan);
+        }
+
+        @Override
+        public void visit(MinorThanEquals minorThanEquals) {
+            visitBinaryExpression(minorThanEquals);
+        }
+
+        @Override
+        public void visit(NotEqualsTo notEqualsTo) {
+            visitBinaryExpression(notEqualsTo);
+        }
+
+    	/*
+    	 * Visit the column and remove the quotes if they are present(non-Javadoc)
+    	 * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.schema.Column)
+    	 */
+
+        @Override
+        public void visit(Column tableColumn) {
+            // CHANGES THE TABLE SCHEMA / NAME AND COLUMN NAME
+            ShallowlyParsedSQLQuery.normalizeColumnName(idFac, tableColumn);
+        }
+
+        /*
+         * we search for nested where in SubSelect
+         * @see net.sf.jsqlparser.statement.select.FromItemVisitor#visit(net.sf.jsqlparser.statement.select.SubSelect)
+         */
+        @Override
+        public void visit(SubSelect subSelect) {
+            visitSubSelect(subSelect);
+        }
+
+        @Override
+        public void visit(CaseExpression caseExpression) {
+            // it is not supported
+
+        }
+
+        @Override
+        public void visit(WhenClause whenClause) {
+            // it is not supported
+
+        }
+
+        @Override
+        public void visit(ExistsExpression existsExpression) {
+            // it is not supported
+
+        }
+
+        /*
+         * We add the content of AllComparisonExpression in SelectionJSQL
+         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.AllComparisonExpression)
+         */
+        @Override
+        public void visit(AllComparisonExpression allComparisonExpression) {
+
+        }
+
+        /*
+         * We add the content of AnyComparisonExpression in SelectionJSQL
+         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.AnyComparisonExpression)
+         */
+        @Override
+        public void visit(AnyComparisonExpression anyComparisonExpression) {
+
+        }
+
+        @Override
+        public void visit(Concat concat) {
+            visitBinaryExpression(concat);
+        }
+
+        @Override
+        public void visit(Matches matches) {
+            visitBinaryExpression(matches);
+        }
+
+        @Override
+        public void visit(BitwiseAnd bitwiseAnd) {
+            visitBinaryExpression(bitwiseAnd);
+        }
+
+        @Override
+        public void visit(BitwiseOr bitwiseOr) {
+            visitBinaryExpression(bitwiseOr);
+        }
+
+        @Override
+        public void visit(BitwiseXor bitwiseXor) {
+            visitBinaryExpression(bitwiseXor);
+        }
+
+        @Override
+        public void visit(Modulo modulo) {
+            visitBinaryExpression(modulo);
+        }
+
+
+        @Override
+        public void visit(CastExpression cast) {
+            // not supported
+        }
+
+        @Override
+        public void visit(AnalyticExpression aexpr) {
+            // not supported
+        }
+
+        @Override
+        public void visit(ExtractExpression eexpr) {
+            // not supported
+        }
+
+        @Override
+        public void visit(IntervalExpression iexpr) {
+            // not supported
+        }
+
+        @Override
+        public void visit(OracleHierarchicalExpression oexpr) {
+            //not supported
+        }
+
+    	/*
+    	 * We handle differently AnyComparisonExpression and AllComparisonExpression
+    	 *  since they do not have a toString method, we substitute them with ad hoc classes.
+    	 *  we continue to visit the subexpression.
+    	 */
+
+        private void visitBinaryExpression(BinaryExpression binaryExpression) {
+
+            Expression left = binaryExpression.getLeftExpression();
+            Expression right = binaryExpression.getRightExpression();
+
+            if (right instanceof AnyComparisonExpression){
+                right = new AnyComparison(((AnyComparisonExpression) right).getSubSelect());
+                binaryExpression.setRightExpression(right);
+            }
+
+            if (right instanceof AllComparisonExpression){
+                right = new AllComparison(((AllComparisonExpression) right).getSubSelect());
+                binaryExpression.setRightExpression(right);
+            }
+
+            left.accept(this);
+            right.accept(this);
+        }
+
+        @Override
+        public void visit(SignedExpression arg0) {
+            // do nothing
+        }
+
+        @Override
+        public void visit(RegExpMatchOperator arg0) {
+            // do nothing
+        }
+
+        @Override
+        public void visit(RegExpMySQLOperator arg0) {
+            // do nothing
+        }
+
+        @Override
+        public void visit(JsonExpression arg0) {
+            unsupported(arg0);
+        }
+    };
+
+    //endregion
+
+
+    //region Auxiliary Classes
+
+    /**
+     * Auxiliary Class used to visualize AnyComparison in string format.
+     * Any and Some are the same in SQL so we consider always the case of ANY
+     *
+     */
+    private final static class AllComparison extends AllComparisonExpression {
+
+        public AllComparison(SubSelect subSelect) {
+            super(subSelect);
+        }
+
+        @Override
+        public String toString(){
+            return "ALL "+ getSubSelect();
+        }
+    }
+
+    private final static class AnyComparison extends AnyComparisonExpression {
+
+        public AnyComparison(SubSelect subSelect) {
+            super(subSelect);
+        }
+
+        @Override
+        public String toString(){
+            return "ANY "+ getSubSelect();
+        }
+
+    }
+    //endregion
 
 
 }
