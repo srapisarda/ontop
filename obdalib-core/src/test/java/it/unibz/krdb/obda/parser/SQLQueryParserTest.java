@@ -135,7 +135,7 @@ public class SQLQueryParserTest extends TestCase {
         assertFalse(result);
     }
 
-    public void testOracleSiblingslNS(){
+    public void testOracleSiblingsNS(){
 
         final boolean result = parseUnquotedJSQL(
                 " select lpad('*', level, '*' ) || ename ename"
@@ -143,8 +143,52 @@ public class SQLQueryParserTest extends TestCase {
                 + " start with mgr is null "
                 + " connect by prior empno = mgr "
                 + " order SIBLINGS by enameivate String queryText; " );
-        printJSQL("testOracleSiblingslNS", result);
+        printJSQL("testOracleSiblingsNS", result);
         assertFalse(result);
+    }
+
+
+    public void testSubSelect(){
+        final boolean result = parseUnquotedJSQL("SELECT p.firstName, p.secondName "
+                + "FROM " +
+                " ( SELECT * FROM people) p");
+        printJSQL("testSubSelect", result);
+        assertTrue(result);
+
+    }
+
+
+    public void testSubSelectWhereNS(){
+        final boolean result = parseUnquotedJSQL("SELECT p.firstName, p.secondName "
+                + "FROM " +
+                " ( SELECT * FROM people sp where sp.age > 20 ) p");
+        printJSQL("testSubSelect", result);
+        assertFalse(result);
+
+    }
+
+    public void testSelectWithNS(){
+        final boolean result = parseUnquotedJSQL(
+                "WITH p2 as ( SELECT * FROM person p where p.age > 20 ) select * from p2 ");
+        printJSQL("testSelectWithNS", result);
+        assertFalse(result);
+
+    }
+
+    public void testJoin(){
+        final boolean result = parseUnquotedJSQL("SELECT p.firstName, p.secondName, b.email "
+                + "FROM person a  " +
+                " INNER JOIN email b on a.idPerson = b.idPerson ");
+        printJSQL("testJoin", result);
+        assertTrue(result);
+
+    }
+
+    public void test_5_1_1() {
+        final boolean result = parseUnquotedJSQL("SELECT t1.id as sid, t1.name as fullname FROM student t1 JOIN grade t2 ON t1.id=t2.st_id AND t2.mark='A'");
+        printJSQL("test_5_1_1", result);
+        assertTrue(result);
+
     }
 
     SQLQueryParser obdaVisitor;
