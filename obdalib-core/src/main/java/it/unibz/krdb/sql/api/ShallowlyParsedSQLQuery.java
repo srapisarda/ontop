@@ -155,18 +155,5 @@ public class ShallowlyParsedSQLQuery {
         return visitor.getColumns();
     }
 
-    /**
-	 *
-	 * @param idfac QuotedIDFactory object
-	 * @param tableColumn query columns
-	 */
-	public static void normalizeColumnName(QuotedIDFactory idfac, Column tableColumn) {
-		QuotedID columnName = idfac.createAttributeID(tableColumn.getColumnName());
-		tableColumn.setColumnName(columnName.getSQLRendering());
 
-		Table table = tableColumn.getTable();
-		RelationID tableName = idfac.createRelationID(table.getSchemaName(), table.getName());
-		table.setSchemaName(tableName.getSchemaSQLRendering());
-		table.setName(tableName.getTableNameSQLRendering());
-	}
 }

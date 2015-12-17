@@ -24,7 +24,6 @@ package it.unibz.krdb.obda.parser;
 import it.unibz.krdb.sql.QuotedID;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import it.unibz.krdb.sql.RelationID;
-import it.unibz.krdb.sql.api.ShallowlyParsedSQLQuery;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -36,7 +35,10 @@ import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /*
     This visitor is used to parse SQL amd check the OBDA query compatibility
@@ -54,8 +56,11 @@ public class SQLQueryParser {
     private Expression whereClause;
     private final List<SelectItem> projection = new LinkedList<>();
 
-    private final List<RelationID> relations = new LinkedList<>();
+    public List<RelationID> getRelations() {
+        return relations;
+    }
 
+    private final List<RelationID> relations = new LinkedList<>();
 
     //endregion
 
@@ -65,12 +70,11 @@ public class SQLQueryParser {
         // the WITH is not supported
         if (selectQuery.getWithItemsList() != null) {
             unsupported( selectQuery.getWithItemsList() );
-            //for (WithItem withItem : selectQuery.getWithItemsList())
-            //    withItem.accept(selectVisitor);
         }
 
         // CATCH ParseException
         selectQuery.getSelectBody().accept(selectVisitor);
+
     }
 
 
@@ -142,8 +146,8 @@ public class SQLQueryParser {
     private static class ParseException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
-		
-        private final Object unsupportedObject;
+
+        protected final Object unsupportedObject;
         
 		public ParseException (Object unsupportedObject) {
             this.unsupportedObject = unsupportedObject;
@@ -154,7 +158,7 @@ public class SQLQueryParser {
 
         private static final long serialVersionUID = 1L;
 
-        private final Object unsupportedObject;
+        protected final Object unsupportedObject;
 
         public MappingQueryException (Object unsupportedObject) {
             this.unsupportedObject = unsupportedObject;
@@ -176,6 +180,21 @@ public class SQLQueryParser {
             unsupported(subSelect);
     }
 
+    /**
+     *
+     * @param idFac QuotedIDFactory object
+     * @param tableColumn query columns
+     */
+    public static void normalizeColumnName(QuotedIDFactory idFac, Column tableColumn) {
+        QuotedID columnName = idFac.createAttributeID(tableColumn.getColumnName());
+        tableColumn.setColumnName(columnName.getSQLRendering());
+
+        Table table = tableColumn.getTable();
+        RelationID tableName = idFac.createRelationID(table.getSchemaName(), table.getName());
+        table.setSchemaName(tableName.getSchemaSQLRendering());
+        table.setName(tableName.getTableNameSQLRendering());
+    }
+
     private final SelectVisitor selectVisitor = new SelectVisitor() {
     	
         @Override
@@ -183,46 +202,20 @@ public class SQLQueryParser {
             // the SELECT should correspond to a CQ
             validatePlainSelect(plainSelect);
 
-
-
-            // todo: do I need to parse the unsupported query??
-
             // projection
             for (SelectItem item : plainSelect.getSelectItems())
                 item.accept(selectItemVisitor);
 
-            // alias
-            // this is checking for subSelect in the alias
-           // plainSelect.getFromItem().accept(aliasMapFromItemVisitor); // todo: commented this line because is already done after
-
             // from items
             plainSelect.getFromItem().accept(fromItemVisitor);
 
-
-//            if (plainSelect.getJoins() != null) {
-//                for (Join join : plainSelect.getJoins()) {
-//                    // this is checking for subSelect on all the outer items
-//                    // join.getRightItem().accept(aliasMapFromItemVisitor); // todo: commented this line because is already done after
-//                    join.getRightItem().accept(fromItemVisitor);
-//                }
-//            }
-            if (plainSelect.getWhere() != null) {
-                plainSelect.getWhere().accept(tableExpressionVisitor);
-            }
-
-
-            /// this operation has been already done
-//            for (SelectItem item : plainSelect.getSelectItems()) {
-//                item.accept(aliasMapSelectItemVisitor);
-//            }
-
             joinVisit(plainSelect);
 
-            Expression where = plainSelect.getWhere();
-            if (where != null) {
-                whereClause = where;
+            if (plainSelect.getWhere() != null) {
+                whereClause = plainSelect.getWhere();
                 //we visit the where clause to fix any and all comparison
-                where.accept(whereExpressionVisitor);
+                whereClause.accept(whereExpressionVisitor);
+                whereClause.accept(tableExpressionVisitor);
             }
 
         }
@@ -239,7 +232,7 @@ public class SQLQueryParser {
         /**
          * This validates that a PlainSelect Object is datalog suitable
          *
-         * @param plainSelect
+         * @param plainSelect Plain select query
          */
         private void validatePlainSelect(PlainSelect plainSelect) {
             if (plainSelect.getDistinct() != null) 
@@ -270,58 +263,72 @@ public class SQLQueryParser {
                 unsupported(plainSelect.isOracleSiblings());
         }
 
+        /**
+         * This validates that a Joins List of Object is datalog suitable
+         *
+         * @param joins, list of Join objects
+         */
+        private void validateJoins ( List<Join> joins ){
+
+            for ( Join join : joins) {
+                if (join.isOuter())
+                    unsupported(join.isOuter());
+
+                if (join.isFull())
+                    unsupported(join.isFull());
+
+                if (join.isRight())
+                    unsupported(join.isRight());
+
+                if (join.isLeft())
+                    unsupported(join.isLeft());
+            }
+        }
+
 
         private void joinVisit(PlainSelect plainSelect) {
-            FromItem fromItem = plainSelect.getFromItem();
-
-            //todo: the operation above has been already performed
-//          fromItem.accept(fromItemVisitor);
 
             List<Join> joins = plainSelect.getJoins();
 
-            if (joins != null)
-                for (Join join : joins) {
-                    Expression expr = join.getOnExpression();
+            if (joins == null)
+                return;
 
-                    if (join.getUsingColumns() != null) // JOIN USING column
-                        for (Column column : join.getUsingColumns()) {
+            validateJoins( joins );
 
-                            if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
-                                Table table1 = (Table)fromItem;
+            FromItem fromItem = plainSelect.getFromItem();
 
-                                Column column1 = new Column(table1, column.getColumnName());
-                                ShallowlyParsedSQLQuery.normalizeColumnName(idFac, column1);
+            for (Join join : joins) {
+                if (join.getUsingColumns() != null) { // JOIN USING column
+                    for (Column column : join.getUsingColumns()) {
+                        if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
 
-                                BinaryExpression binaryExpression = new EqualsTo();
-                                binaryExpression.setLeftExpression(column1);
+                            Column column1 = new Column((Table) fromItem, column.getColumnName());
+                            normalizeColumnName(idFac, column1);
+                            Column column2 = new Column((Table) join.getRightItem(), column.getColumnName());
+                            normalizeColumnName(idFac, column2);
 
-                                Column column2 = new Column((Table)join.getRightItem(), column.getColumnName());
-                                ShallowlyParsedSQLQuery.normalizeColumnName(idFac, column2);
-                                binaryExpression.setRightExpression(column2);
-                                joinConditions.add(binaryExpression);
-                            }
-                            else {
-                                //more complex structure in FROM or JOIN e.g. subSelects are not supported
-                                unsupported( fromItem );
-                            }
+                            BinaryExpression binaryExpression = new EqualsTo();
+                            binaryExpression.setLeftExpression(column1);
+                            binaryExpression.setRightExpression(column2);
+
+                            joinConditions.add(binaryExpression);
+                        } else {
+                            //more complex structure in FROM or JOIN e.g. subSelects are not supported
+                            unsupported(fromItem);
                         }
-
-                    else{ //JOIN ON cond
-                        if (expr != null) {
-                            join.getRightItem().accept(fromItemVisitor);
-                            // ROMAN (25 Sep 2015): this transforms (A.id = B.id) OR (A.id2 = B.id2) into the list
-                            // { (A.id = B.id), (A.id2 = B.id2) }, which is equivalent to AND!
-                            // similarly, it will transform NOT (A <> B) into { (A <> B) }, which gets rid of NOT
-                            expr.accept(joinExpressionVisitor);
-                        }
-                        //we do not consider simple joins
-//					else
-//						if(join.isSimple())
-//							joinConditions.add(plainSelect.getWhere().toString());
-
                     }
-
+                }else{ //JOIN ON cond
+                    if (join.getOnExpression() != null) {
+                        join.getRightItem().accept(fromItemVisitor);
+                        // ROMAN (25 Sep 2015): this transforms (A.id = B.id) OR (A.id2 = B.id2) into the list
+                        // { (A.id = B.id), (A.id2 = B.id2) }, which is equivalent to AND!
+                        // similarly, it will transform NOT (A <> B) into { (A <> B) }, which gets rid of NOT
+                        join.getOnExpression().accept(joinExpressionVisitor);
+                    }
+                    //we do not consider simple joins
                 }
+
+            }
         }
     };
 
@@ -375,7 +382,6 @@ public class SQLQueryParser {
     };
 
     private final FromItemVisitor subSelectFromItemVisitor = new FromItemVisitor() {
-        private boolean inSubSelect = false;
         // from visitor
         private Alias subSelectAlias = null;
 
@@ -423,13 +429,11 @@ public class SQLQueryParser {
                 unsupported(subSelect);
             }
 
-            inSubSelect = true;
             subSelectAlias = subSelect.getAlias();
 
             subSelect.getSelectBody().accept(selectVisitor);
 
             subSelectAlias = null;
-            inSubSelect = false;
         }
     };
 
@@ -1252,7 +1256,7 @@ public class SQLQueryParser {
         public void visit(Column tableColumn) {
             // CHANGES TABLE AND COLUMN NAMES
             // TODO: add implementation here
-            ShallowlyParsedSQLQuery.normalizeColumnName(idFac, tableColumn);
+            normalizeColumnName(idFac, tableColumn);
         }
 
         @Override
@@ -1547,8 +1551,8 @@ public class SQLQueryParser {
             Expression left = binaryExpression.getLeftExpression();
             Expression right = binaryExpression.getRightExpression();
 
-            if (!(left instanceof BinaryExpression) &&
-                    !(right instanceof BinaryExpression)) {
+            if (!( (left instanceof BinaryExpression) ||
+                    (right instanceof BinaryExpression) )) {
 
                 left.accept(this);
                 right.accept(this);
@@ -1645,7 +1649,7 @@ public class SQLQueryParser {
         public void visit(Column tableColumn) {
             // CHANGE TABLE / COLUMN NAME IN THE JOIN CONDITION
             // TableJSQL.unquoteColumnAndTableName(tableColumn);
-            ShallowlyParsedSQLQuery.normalizeColumnName(idFac, tableColumn);
+           normalizeColumnName(idFac, tableColumn);
         }
 
         /*
@@ -1980,7 +1984,7 @@ public class SQLQueryParser {
         @Override
         public void visit(Column tableColumn) {
             // CHANGES THE TABLE SCHEMA / NAME AND COLUMN NAME
-            ShallowlyParsedSQLQuery.normalizeColumnName(idFac, tableColumn);
+            normalizeColumnName(idFac, tableColumn);
         }
 
         /*

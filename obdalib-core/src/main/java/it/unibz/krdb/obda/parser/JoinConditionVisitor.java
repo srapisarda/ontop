@@ -76,7 +76,7 @@ public class JoinConditionVisitor {
 	public boolean isSupported() {
 		return !notSupported;
 	}
-	
+
 	private final SelectVisitor selectVisitor = new SelectVisitor() {
 		/*
 		 * visit PlainSelect, search for the join conditions, we do not consider the simple join that are considered in whereClause
@@ -101,11 +101,11 @@ public class JoinConditionVisitor {
 							Table table1 = (Table)fromItem;
 							BinaryExpression bexpr = new EqualsTo();
 							Column column1 = new Column(table1, column.getColumnName());
-							ShallowlyParsedSQLQuery.normalizeColumnName(idfac, column1);
+							SQLQueryParser.normalizeColumnName(idfac, column1);
 							bexpr.setLeftExpression(column1);
 							
 							Column column2 = new Column((Table)join.getRightItem(), column.getColumnName());
-							ShallowlyParsedSQLQuery.normalizeColumnName(idfac, column2);
+							SQLQueryParser.normalizeColumnName(idfac, column2);
 							bexpr.setRightExpression(column2);
 							joinConditions.add(bexpr);
 							//plainSelect.getFromItem()+"."+columnName+ bexpr.getStringExpression() +join.getRightItem()+"."+columnName);
@@ -490,7 +490,7 @@ public class JoinConditionVisitor {
 		public void visit(Column tableColumn) {
 			// CHANGE TABLE / COLUMN NAME IN THE JOIN CONDITION
 			// TableJSQL.unquoteColumnAndTableName(tableColumn);
-			ShallowlyParsedSQLQuery.normalizeColumnName(idfac, tableColumn);
+			SQLQueryParser.normalizeColumnName(idfac, tableColumn);
 		}
 		
 		/*

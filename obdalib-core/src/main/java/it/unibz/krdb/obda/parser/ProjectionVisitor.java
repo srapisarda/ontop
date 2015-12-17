@@ -326,7 +326,7 @@ public class ProjectionVisitor {
 		public void visit(Column tableColumn) {
 			// CHANGES TABLE AND COLUMN NAMES
 			// TODO: add implementation here
-			ShallowlyParsedSQLQuery.normalizeColumnName(idFac, tableColumn);
+			SQLQueryParser.normalizeColumnName(idFac, tableColumn);
 		}
 
 		@Override

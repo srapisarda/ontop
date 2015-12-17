@@ -197,6 +197,51 @@ public class SQLQueryParserTest extends TestCase {
 
     }
 
+    public void testTwoJoin(){
+
+        final boolean result = parseUnquotedJSQL("SELECT p.firstName, p.secondName, b.email "
+                + "FROM person a  " +
+                " INNER JOIN email b on a.personId = b.personId  " +
+                " INNER JOIN address c on a.personId = c.personId " +
+                " INNER JOIN postcodes d on d.postcode = c.postcode ");
+        printJSQL("testTwoJoin", result);
+        assertTrue(result);
+
+        String expected = "[A.PERSONID = B.PERSONID, A.PERSONID = C.PERSONID, D.POSTCODE = C.POSTCODE]";
+        String actual = obdaVisitor.getJoinConditions().toString();
+        assertEquals(expected, actual);
+
+    }
+
+    public void testTwoJoinNoAlias(){
+
+        final boolean result = parseUnquotedJSQL("SELECT firstName, secondName, email, address, postcode "
+                + " FROM person " +
+                " INNER JOIN email  on person.personId = email.personId  " +
+                " INNER JOIN address  on person.personId = address.personId " +
+                " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
+        printJSQL("testTwoJoinNoAlias", result);
+        assertTrue(result);
+
+        assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
+
+    }
+
+    public void testTwoJoinAlias(){
+
+        final boolean result = parseUnquotedJSQL("SELECT person.firstName as fname, person.secondName as surname, email.email as emailAddress, address.address as personAddress, postcode.postcode as postc"
+                + " FROM person " +
+                " INNER JOIN email  on person.personId = email.personId  " +
+                " INNER JOIN address  on person.personId = address.personId " +
+                " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
+        printJSQL("testTwoJoinNoAlias", result);
+        assertTrue(result);
+
+        assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
+        assertEquals("{FNAME=PERSON.FIRSTNAME, SURNAME=PERSON.SECONDNAME, EMAILADDRESS=EMAIL.EMAIL, PERSONADDRESS=ADDRESS.ADDRESS, POSTC=POSTCODE.POSTCODE}", obdaVisitor.getAliasMap().toString() );
+    }
+
+
     public void testJoinAndAlias() {
         final boolean result = parseUnquotedJSQL("SELECT t1.id as sid, t1.name as fullName FROM student t1 JOIN grade t2 ON t1.id=t2.st_id AND t2.mark='A'");
         printJSQL("testJoinAndAlias", result);
@@ -223,6 +268,23 @@ public class SQLQueryParserTest extends TestCase {
         assertTrue(result);
     }
 
+    /*
+     join grammar definition
+    Join ::-
+        rightItem: FromItem,
+        natural: Boolean,
+        inner: Boolean,
+        cross: Boolean,
+        simple: Boolean, 	# check
+        onExpression: Expression,
+        usingColumns: Column*, 	# column names
+        outer: Boolean,  	# ns
+        right: Boolean,  	# ns
+        left: Boolean,  	# ns
+        full: Boolean  	# ns
+    */
+
+
     //no support for similar to in postgres
     public void testRegexPostgresSimilarTo(){
         final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE 'abc' SIMILAR TO 'abc'");
@@ -239,10 +301,38 @@ public class SQLQueryParserTest extends TestCase {
     //no support for not without parenthesis
     public void testRegexNotOracle(){
         final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE NOT REGEXP_LIKE(testcol, '[[:alpha:]]')");
-        printJSQL("testRegexNotMySQL", result);
+        printJSQL("testRegexNotOracle", result);
         assertFalse(result);
     }
 
+
+    // the Left Outer join condition is not supported
+    public  void testLeftOuterJoinNS(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person a  left outer join  email b on a.idPerson = b.idPerson");
+        printJSQL("testLeftOuterJoinNS", result);
+        assertFalse(result);
+    }
+
+    // the Right Outer join condition is not supported
+    public  void testRightOuterJoinNS(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person a  right outer join  email b on a.idPerson = b.idPerson");
+        printJSQL("testRightOuterJoinNS", result);
+        assertFalse(result);
+    }
+
+    // the Right join condition is not supported
+    public  void testRightJoinNS(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person a right join email b on a.idPerson = b.idPerson");
+        printJSQL("testRightJoinNS", result);
+        assertFalse(result);
+    }
+
+    // the Right join condition is not supported
+    public  void testLeftJoinNS(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person a left join email b on a.idPerson = b.idPerson");
+        printJSQL("testLeftJoinNS", result);
+        assertFalse(result);
+    }
 
 
     SQLQueryParser obdaVisitor;

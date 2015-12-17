@@ -298,7 +298,7 @@ public class WhereClauseVisitor {
     	@Override
     	public void visit(Column tableColumn) {
     		// CHANGES THE TABLE SCHEMA / NAME AND COLUMN NAME
-			ShallowlyParsedSQLQuery.normalizeColumnName(idfac, tableColumn);
+			SQLQueryParser.normalizeColumnName(idfac, tableColumn);
     	}
 
     	/*
