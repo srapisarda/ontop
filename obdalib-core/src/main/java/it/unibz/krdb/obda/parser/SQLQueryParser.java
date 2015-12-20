@@ -53,6 +53,10 @@ public class SQLQueryParser {
     private final Map<RelationID, RelationID> tableAlias = new HashMap<>();
     private final Map<QuotedID, Expression> expressionAlias = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
+    private final List<CartesianProduct> crossJoinTables = new LinkedList<>();
+    private final List<CartesianProduct> naturalJoinTables = new LinkedList<>();
+
+
     private Expression whereClause;
     private final List<SelectItem> projection = new LinkedList<>();
 
@@ -128,6 +132,22 @@ public class SQLQueryParser {
     }
 
 
+    /**
+     * Return a list of natural join tables
+     * @return List of natural join tables
+     */
+    public List<CartesianProduct> getNaturalJoinTables() {
+        return naturalJoinTables;
+    }
+
+    /**
+     * Return a list of cross join tables
+     * @return List of cross join tables
+     */
+    public List<CartesianProduct> getCrossJoinTables() {
+        return crossJoinTables;
+    }
+
     //endregion
 
     private void unsupported(Object unsupportedObject )  {
@@ -194,6 +214,8 @@ public class SQLQueryParser {
         table.setSchemaName(tableName.getSchemaSQLRendering());
         table.setName(tableName.getTableNameSQLRendering());
     }
+
+
 
     private final SelectVisitor selectVisitor = new SelectVisitor() {
     	
@@ -320,12 +342,21 @@ public class SQLQueryParser {
                         }
                     }
                 }else if ( join.isNatural() ||  join.isCross() ) {
-                    // Natural join
-                    // J(x,y,z) :- R(x,y)S(y,z)
-                    // when is
-                    // Cross-product
-                    // C(x,y,u,v) :- R(x,y)S(u,v)
-                    join.getRightItem().accept(fromItemVisitor); // TODO: check how to make evident for the parser the natural and cross join
+                    if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
+                        if ( join.isNatural() ) {
+                            // Natural join
+                            // J(x,y,z) :- R(x,y)S(y,z)
+                            naturalJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem, (Table) join.getRightItem()));
+                        }else{
+                            // Cross-product
+                            // C(x,y,u,v) :- R(x,y)S(u,v)
+                            crossJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem,  (Table) join.getRightItem() ));
+                        }
+                    }else {
+                        unsupported(fromItem);
+                    }
+
+                    join.getRightItem().accept(fromItemVisitor);
                 }else{ //JOIN ON cond
                     if (join.getOnExpression() != null ) {
                         join.getRightItem().accept(fromItemVisitor);
@@ -340,6 +371,8 @@ public class SQLQueryParser {
             }
         }
     };
+
+
 
     private final SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
 
@@ -2179,5 +2212,36 @@ public class SQLQueryParser {
     }
     //endregion
 
+
+    private static class CartesianProduct {
+        public RelationID getLeftRelationID() {
+            return leftRelationID;
+        }
+
+        public RelationID getRightRelationID() {
+            return rightRelationID;
+        }
+
+        private RelationID leftRelationID;
+        private RelationID rightRelationID;
+
+        public CartesianProduct(RelationID left, RelationID right ){
+            this.leftRelationID = left ;
+            this.rightRelationID = right;
+        }
+
+        public static CartesianProduct getCartesianProduct(QuotedIDFactory idFac, Table left, Table right )
+        {
+            RelationID leftRelationId = idFac.createRelationID(left.getSchemaName(), left.getName());
+            RelationID rightRelationId = idFac.createRelationID(right.getSchemaName(), right.getName());
+            return new CartesianProduct(leftRelationId,rightRelationId);
+        }
+
+
+        @Override
+        public String toString() {
+            return new StringBuilder().append(getLeftRelationID()).append( " |><| ").append(getRightRelationID()).toString();
+        }
+    }
 
 }

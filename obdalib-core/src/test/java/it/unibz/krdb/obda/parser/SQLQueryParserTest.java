@@ -246,7 +246,7 @@ public class SQLQueryParserTest extends TestCase {
         final boolean result = parseUnquotedJSQL("SELECT personId, name, email"
                 + " FROM person " +
                 " NATURAL JOIN email ");
-        printJSQL("testTwoJoinNoAlias", result);
+        printJSQL("testNaturalJoin", result);
         assertTrue(result);
 
         assertEquals("{PERSON=PERSON, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
@@ -260,7 +260,7 @@ public class SQLQueryParserTest extends TestCase {
                 " NATURAL JOIN email " +
                 " NATURAL JOIN address " +
                 " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
-        printJSQL("testTwoJoinNoAlias", result);
+        printJSQL("testNaturalAndInnerJoin", result);
         assertTrue(result);
 
         assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, EMAIL=EMAIL, POSTCODES=POSTCODES}", obdaVisitor.getTableAlias().toString());
@@ -277,7 +277,7 @@ public class SQLQueryParserTest extends TestCase {
                 " NATURAL JOIN email " +
                 " NATURAL JOIN person ");
 
-        printJSQL("testTwoJoinNoAlias", result);
+        printJSQL("testInnerAndNaturalJoin", result);
         assertTrue(result);
 
         assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODES=POSTCODES, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
@@ -288,7 +288,7 @@ public class SQLQueryParserTest extends TestCase {
 
     public void testCrossJoin(){
         final boolean result = parseUnquotedJSQL("SELECT * FROM CITIES CROSS JOIN FLIGHTS" );
-        printJSQL("testTwoJoinNoAlias", result);
+        printJSQL("testCrossJoin", result);
         assertTrue(result);
 
 
@@ -447,6 +447,15 @@ public class SQLQueryParserTest extends TestCase {
                 System.out.println("  Join conditions: "
                         + (obdaVisitor.getJoinConditions().isEmpty() ? "--" : obdaVisitor
                         .getJoinConditions()));
+
+                System.out.println("  Natural Join conditions: "
+                        + (obdaVisitor.getNaturalJoinTables().isEmpty() ? "--" : obdaVisitor
+                        .getNaturalJoinTables()));
+
+                System.out.println("  Cross Join conditions: "
+                        + (obdaVisitor.getCrossJoinTables().isEmpty() ? "--" : obdaVisitor
+                        .getCrossJoinTables()));
+
             } catch (Exception e) {
 
                 e.printStackTrace();
