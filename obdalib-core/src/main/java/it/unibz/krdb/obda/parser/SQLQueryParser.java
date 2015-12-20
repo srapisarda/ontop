@@ -50,8 +50,8 @@ public class SQLQueryParser {
 
     private final QuotedIDFactory idFac;
 
-    private final Map<RelationID, RelationID> tables = new HashMap<>();
-    private final Map<QuotedID, Expression> aliasMap = new HashMap<>();
+    private final Map<RelationID, RelationID> tableAlias = new HashMap<>();
+    private final Map<QuotedID, Expression> expressionAlias = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
     private Expression whereClause;
     private final List<SelectItem> projection = new LinkedList<>();
@@ -80,19 +80,19 @@ public class SQLQueryParser {
 
     //region Properties
     /**
-     *  All found tables is returned as a Map of RelationID @see it.unibz.krdb.sql.RelationID
+     *  All found tableAlias is returned as a Map of RelationID @see it.unibz.krdb.sql.RelationID
      *  @return Map of RelationID
      */
-    public Map<RelationID, RelationID> getTables() {
-        return tables;
+    public Map<RelationID, RelationID> getTableAlias() {
+        return tableAlias;
     }
 
     /**
      * Return a map between the column in the select statement and its alias.
      * @return alias map
     */
-    public Map<QuotedID, Expression> getAliasMap() {
-        return aliasMap;
+    public Map<QuotedID, Expression> getExpressionAlias() {
+        return expressionAlias;
     }
 
     /**
@@ -301,24 +301,33 @@ public class SQLQueryParser {
                 if (join.getUsingColumns() != null) { // JOIN USING column
                     for (Column column : join.getUsingColumns()) {
                         if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
-
-                            Column column1 = new Column((Table) fromItem, column.getColumnName());
-                            normalizeColumnName(idFac, column1);
-                            Column column2 = new Column((Table) join.getRightItem(), column.getColumnName());
-                            normalizeColumnName(idFac, column2);
-
+                            // we add the right item to the table alias.
+                            join.getRightItem().accept(fromItemVisitor);
+                            // create left and right column
+                            Column leftColumn = new Column((Table) fromItem, column.getColumnName());
+                            leftColumn.accept(joinExpressionVisitor);
+                            Column rightColumn = new Column((Table) join.getRightItem(), column.getColumnName());
+                            rightColumn.accept(joinExpressionVisitor);
+                            // create the binary EqualTo expression between left an right columns
                             BinaryExpression binaryExpression = new EqualsTo();
-                            binaryExpression.setLeftExpression(column1);
-                            binaryExpression.setRightExpression(column2);
-
+                            binaryExpression.setLeftExpression(leftColumn);
+                            binaryExpression.setRightExpression(rightColumn);
                             joinConditions.add(binaryExpression);
+
                         } else {
                             //more complex structure in FROM or JOIN e.g. subSelects are not supported
                             unsupported(fromItem);
                         }
                     }
+                }else if ( join.isNatural() ||  join.isCross() ) {
+                    // Natural join
+                    // J(x,y,z) :- R(x,y)S(y,z)
+                    // when is
+                    // Cross-product
+                    // C(x,y,u,v) :- R(x,y)S(u,v)
+                    join.getRightItem().accept(fromItemVisitor); // TODO: check how to make evident for the parser the natural and cross join
                 }else{ //JOIN ON cond
-                    if (join.getOnExpression() != null) {
+                    if (join.getOnExpression() != null ) {
                         join.getRightItem().accept(fromItemVisitor);
                         // ROMAN (25 Sep 2015): this transforms (A.id = B.id) OR (A.id2 = B.id2) into the list
                         // { (A.id = B.id), (A.id2 = B.id2) }, which is equivalent to AND!
@@ -374,7 +383,7 @@ public class SQLQueryParser {
                 // NORMALIZE EXPRESSION ALIAS NAME (ROMAN 9 Dec 2015: this should be done later; the visitor should not modify the query)
                 QuotedID aliasName = idFac.createAttributeID(alias.getName());
                 alias.setName(aliasName.getSQLRendering());
-                aliasMap.put(aliasName, expr);
+                expressionAlias.put(aliasName, expr);
             }
 
 
@@ -395,7 +404,7 @@ public class SQLQueryParser {
             // ONLY SIMPLE SUBSELECTS, WITH ONE TABLE: see WhereClauseVisitor and ProjectionVisitor
 
             RelationID subSelectAliasId = idFac.createRelationID(null, subSelectAlias.getName());
-            tables.put(subSelectAliasId, relationId);
+            tableAlias.put(subSelectAliasId, relationId);
         }
 
         @Override
@@ -441,14 +450,14 @@ public class SQLQueryParser {
 
         // from visitor
       //  private Alias subSelectAlias = null;
-        // There are special names that are not table names but are parsed as tables.
+        // There are special names that are not table names but are parsed as tableAlias.
         // These names are collected here and are not included in the table names
         //private final Set<String> withTCEs = new HashSet<>();
      //   private boolean inSubSelect = false;
 
 		/*
 		 * Visit Table and store its value in the list of TableJSQL (non-Javadoc)
-		 * We maintain duplicate tables to retrieve the different aliases assigned
+		 * We maintain duplicate tableAlias to retrieve the different aliases assigned
 		 * we use the class TableJSQL to handle quotes and user case choice if present
 		 *
 		 * @see net.sf.jsqlparser.statement.select.FromItemVisitor#visit(net.sf.jsqlparser.schema.Table)
@@ -466,12 +475,12 @@ public class SQLQueryParser {
 //                if (inSubSelect && subSelectAlias != null) {
 //                    // ONLY SIMPLE SUBSELECTS, WITH ONE TABLE: see WhereClauseVisitor and ProjectionVisitor
 //                    RelationID subSelectAliasId = idFac.createRelationID(null, subSelectAlias.getName());
-//                    tables.put(subSelectAliasId, relationId);
+//                    tableAlias.put(subSelectAliasId, relationId);
 //                }
 //                else {
                     Alias as = table.getAlias();
                     RelationID aliasId = (as != null) ? idFac.createRelationID(null, as.getName()) : relationId;
-                    tables.put(aliasId, relationId);
+                    tableAlias.put(aliasId, relationId);
 //                }
 //            }
         }

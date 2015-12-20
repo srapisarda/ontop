@@ -238,8 +238,76 @@ public class SQLQueryParserTest extends TestCase {
         assertTrue(result);
 
         assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
-        assertEquals("{FNAME=PERSON.FIRSTNAME, SURNAME=PERSON.SECONDNAME, EMAILADDRESS=EMAIL.EMAIL, PERSONADDRESS=ADDRESS.ADDRESS, POSTC=POSTCODE.POSTCODE}", obdaVisitor.getAliasMap().toString() );
+        assertEquals("{FNAME=PERSON.FIRSTNAME, SURNAME=PERSON.SECONDNAME, EMAILADDRESS=EMAIL.EMAIL, PERSONADDRESS=ADDRESS.ADDRESS, POSTC=POSTCODE.POSTCODE}", obdaVisitor.getExpressionAlias().toString() );
     }
+
+    public void testNaturalJoin(){
+
+        final boolean result = parseUnquotedJSQL("SELECT personId, name, email"
+                + " FROM person " +
+                " NATURAL JOIN email ");
+        printJSQL("testTwoJoinNoAlias", result);
+        assertTrue(result);
+
+        assertEquals("{PERSON=PERSON, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSONID, NAME, EMAIL]", obdaVisitor.getProjection().toString());
+    }
+
+    public void testNaturalAndInnerJoin(){
+
+        final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode "
+                + " FROM person " +
+                " NATURAL JOIN email " +
+                " NATURAL JOIN address " +
+                " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
+        printJSQL("testTwoJoinNoAlias", result);
+        assertTrue(result);
+
+        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, EMAIL=EMAIL, POSTCODES=POSTCODES}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
+        assertEquals("[POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
+
+    }
+
+    public void testInnerAndNaturalJoin(){
+
+        final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode " +
+                " FROM postcodes " +
+                " INNER JOIN address on postcodes.postcode = address.postcode " +
+                " NATURAL JOIN email " +
+                " NATURAL JOIN person ");
+
+        printJSQL("testTwoJoinNoAlias", result);
+        assertTrue(result);
+
+        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODES=POSTCODES, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
+        assertEquals("[POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
+
+    }
+
+    public void testCrossJoin(){
+        final boolean result = parseUnquotedJSQL("SELECT * FROM CITIES CROSS JOIN FLIGHTS" );
+        printJSQL("testTwoJoinNoAlias", result);
+        assertTrue(result);
+
+
+
+    }
+
+    public void testJoinUsingColumns(){
+        final boolean result = parseUnquotedJSQL("select owners.name as owner, pets.name as pet, pets.animal " +
+                " from owners join pets using (owners_id);");
+
+        printJSQL("testJoinUsingColumns", result);
+        assertTrue(result);
+
+        assertEquals("{PETS=PETS, OWNERS=OWNERS}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[OWNERS.NAME AS OWNER, PETS.NAME AS PET, PETS.ANIMAL]", obdaVisitor.getProjection().toString());
+        assertEquals("{OWNER=OWNERS.NAME, PET=PETS.NAME}", obdaVisitor.getExpressionAlias().toString() );
+        assertEquals("[OWNERS.OWNERS_ID = PETS.OWNERS_ID]", obdaVisitor.getJoinConditions().toString() );
+    }
+
 
 
     public void testJoinAndAlias() {
@@ -365,16 +433,16 @@ public class SQLQueryParserTest extends TestCase {
             System.out.println(title + ": " + obdaVisitor.toString());
 
             try {
-                System.out.println("  Tables: " + obdaVisitor.getTables());
+                System.out.println("  Table Alias: " + obdaVisitor.getTableAlias());
                 System.out.println("  Projection: " + obdaVisitor.getProjection());
 
                 System.out.println("  Selection: "
                         + ((obdaVisitor.getWhereClause() == null) ? "--" : obdaVisitor
                         .getWhereClause()));
 
-                System.out.println("  Aliases: "
-                        + (obdaVisitor.getAliasMap().isEmpty() ? "--" : obdaVisitor
-                        .getAliasMap()));
+                System.out.println("  Expression Aliases: "
+                        + (obdaVisitor.getExpressionAlias().isEmpty() ? "--" : obdaVisitor
+                        .getExpressionAlias()));
                 //System.out.println("  GroupBy: " + queryP.getGroupByClause());
                 System.out.println("  Join conditions: "
                         + (obdaVisitor.getJoinConditions().isEmpty() ? "--" : obdaVisitor
