@@ -2,12 +2,17 @@ package it.unibz.krdb.obda.parser;
 
 import it.unibz.krdb.sql.DBMetadata;
 import it.unibz.krdb.sql.DBMetadataExtractor;
+import it.unibz.krdb.sql.DatabaseRelationDefinition;
 import it.unibz.krdb.sql.QuotedIDFactory;
 import junit.framework.TestCase;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
+import org.junit.Before;
+import org.junit.BeforeClass;
+
+import java.sql.Types;
 
 /*
  * #%L
@@ -203,7 +208,7 @@ public class SQLQueryParserTest extends TestCase {
                 + "FROM person a  " +
                 " INNER JOIN email b on a.personId = b.personId  " +
                 " INNER JOIN address c on a.personId = c.personId " +
-                " INNER JOIN postcodes d on d.postcode = c.postcode ");
+                " INNER JOIN postcode d on d.postcode = c.postcode ");
         printJSQL("testTwoJoin", result);
         assertTrue(result);
 
@@ -219,11 +224,11 @@ public class SQLQueryParserTest extends TestCase {
                 + " FROM person " +
                 " INNER JOIN email  on person.personId = email.personId  " +
                 " INNER JOIN address  on person.personId = address.personId " +
-                " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
+                " INNER JOIN postcode on postcode.postcode = address.postcode ");
         printJSQL("testTwoJoinNoAlias", result);
         assertTrue(result);
 
-        assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
+        assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
 
     }
 
@@ -233,11 +238,11 @@ public class SQLQueryParserTest extends TestCase {
                 + " FROM person " +
                 " INNER JOIN email  on person.personId = email.personId  " +
                 " INNER JOIN address  on person.personId = address.personId " +
-                " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
+                " INNER JOIN postcode on postcode.postcode = address.postcode ");
         printJSQL("testTwoJoinNoAlias", result);
         assertTrue(result);
 
-        assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
+        assertEquals("[PERSON.PERSONID = EMAIL.PERSONID, PERSON.PERSONID = ADDRESS.PERSONID, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString());
         assertEquals("{FNAME=PERSON.FIRSTNAME, SURNAME=PERSON.SECONDNAME, EMAILADDRESS=EMAIL.EMAIL, PERSONADDRESS=ADDRESS.ADDRESS, POSTC=POSTCODE.POSTCODE}", obdaVisitor.getExpressionAlias().toString() );
     }
 
@@ -259,30 +264,29 @@ public class SQLQueryParserTest extends TestCase {
                 + " FROM person " +
                 " NATURAL JOIN email " +
                 " NATURAL JOIN address " +
-                " INNER JOIN postcodes on postcodes.postcode = address.postcode ");
+                " INNER JOIN postcode on postcode.postcode = address.postcode ");
         printJSQL("testNaturalAndInnerJoin", result);
         assertTrue(result);
 
-        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, EMAIL=EMAIL, POSTCODES=POSTCODES}", obdaVisitor.getTableAlias().toString());
+        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODE=POSTCODE, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
+        assertEquals("[EMAIL.IDPERSON = PERSON.IDPERSON, ADDRESS.IDPERSON = PERSON.IDPERSON, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
 
     }
 
     public void testInnerAndNaturalJoin(){
 
         final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode " +
-                " FROM postcodes " +
-                " INNER JOIN address on postcodes.postcode = address.postcode " +
-                " NATURAL JOIN email " +
-                " NATURAL JOIN person ");
+                " FROM person " +
+                " INNER JOIN email on  person.idperson = email.idperson " +
+                " NATURAL JOIN address ");
 
         printJSQL("testInnerAndNaturalJoin", result);
         assertTrue(result);
 
-        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODES=POSTCODES, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
+        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[POSTCODES.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
+        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, ADDRESS.IDPERSON = PERSON.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
 
     }
 
@@ -405,19 +409,51 @@ public class SQLQueryParserTest extends TestCase {
 
     SQLQueryParser obdaVisitor;
     private String queryText;
+    DBMetadata dbMetadata;
+    QuotedIDFactory idfac;
+
+    public SQLQueryParserTest(){
+        createDatabaseRelationDefinition();
+    }
+
+    private void createDatabaseRelationDefinition(){
+
+        this.dbMetadata = DBMetadataExtractor.createDummyMetadata();
+        this.idfac = dbMetadata.getQuotedIDFactory();
+
+        DatabaseRelationDefinition tdPerson = dbMetadata.createDatabaseRelation(idfac.createRelationID(null, "PERSON"));
+        tdPerson.addAttribute(idfac.createAttributeID("idPerson"), Types.INTEGER, null, false);
+        tdPerson.addAttribute(idfac.createAttributeID("name"), Types.VARCHAR, null, false);
+
+        DatabaseRelationDefinition tdEmail = dbMetadata.createDatabaseRelation(idfac.createRelationID(null, "EMAIL"));
+        tdEmail.addAttribute(idfac.createAttributeID("idEmail"), Types.INTEGER, null, false);
+        tdEmail.addAttribute(idfac.createAttributeID("idPerson"), Types.INTEGER, null, false);
+        tdEmail.addAttribute(idfac.createAttributeID("email"), Types.VARCHAR, null, false);
+
+        DatabaseRelationDefinition tdAddress = dbMetadata.createDatabaseRelation( idfac.createRelationID(null, "ADDRESS") );
+        tdAddress.addAttribute(idfac.createAttributeID("idAddress"), Types.INTEGER, null, false);
+        tdAddress.addAttribute(idfac.createAttributeID("idPerson"), Types.INTEGER, null, false);
+        tdAddress.addAttribute(idfac.createAttributeID("idPostcode"), Types.INTEGER, null, false);
+        tdAddress.addAttribute(idfac.createAttributeID("address"), Types.VARCHAR, null, false);
+
+        DatabaseRelationDefinition tdPostcode = dbMetadata.createDatabaseRelation( idfac.createRelationID(null, "POSTCODE") );
+        tdPostcode.addAttribute(idfac.createAttributeID("idPostcode"), Types.INTEGER, null, false);
+        tdPostcode.addAttribute(idfac.createAttributeID("postcode"), Types.VARCHAR, null, false);
+        tdPostcode.addAttribute(idfac.createAttributeID("city"), Types.VARCHAR, null, false);
+        tdPostcode.addAttribute(idfac.createAttributeID("rangeNumbers"), Types.VARCHAR, null, false);
+
+    }
 
     private boolean parseUnquotedJSQL(String input) {
-
         queryText = input;
 
         try {
-            DBMetadata dbMetadata = DBMetadataExtractor.createDummyMetadata();
-            QuotedIDFactory idfac = dbMetadata.getQuotedIDFactory();
+
             Statement st = CCJSqlParserUtil.parse(input);
             if (!(st instanceof Select))
                 throw new JSQLParserException("The inserted query is not a SELECT statement");
 
-            obdaVisitor = new SQLQueryParser((Select) st, idfac);
+            obdaVisitor = new SQLQueryParser((Select) st, dbMetadata);
             return true;
 
         }catch (Exception e) {
@@ -448,13 +484,7 @@ public class SQLQueryParserTest extends TestCase {
                         + (obdaVisitor.getJoinConditions().isEmpty() ? "--" : obdaVisitor
                         .getJoinConditions()));
 
-                System.out.println("  Natural Join conditions: "
-                        + (obdaVisitor.getNaturalJoinTables().isEmpty() ? "--" : obdaVisitor
-                        .getNaturalJoinTables()));
 
-                System.out.println("  Cross Join conditions: "
-                        + (obdaVisitor.getCrossJoinTables().isEmpty() ? "--" : obdaVisitor
-                        .getCrossJoinTables()));
 
             } catch (Exception e) {
 

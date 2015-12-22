@@ -21,9 +21,7 @@ package it.unibz.krdb.obda.parser;
  */
 
 
-import it.unibz.krdb.sql.QuotedID;
-import it.unibz.krdb.sql.QuotedIDFactory;
-import it.unibz.krdb.sql.RelationID;
+import it.unibz.krdb.sql.*;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -47,15 +45,12 @@ public class SQLQueryParser {
 
     //region Private Variables
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-
+    private final DBMetadata dbMetadata;
     private final QuotedIDFactory idFac;
 
     private final Map<RelationID, RelationID> tableAlias = new HashMap<>();
     private final Map<QuotedID, Expression> expressionAlias = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
-    private final List<CartesianProduct> crossJoinTables = new LinkedList<>();
-    private final List<CartesianProduct> naturalJoinTables = new LinkedList<>();
-
 
     private Expression whereClause;
     private final List<SelectItem> projection = new LinkedList<>();
@@ -68,8 +63,9 @@ public class SQLQueryParser {
 
     //endregion
 
-    public SQLQueryParser(Select selectQuery, QuotedIDFactory idFac) {
-        this.idFac = idFac;
+    public SQLQueryParser(Select selectQuery, DBMetadata dbMetadata) {
+        this.dbMetadata = dbMetadata;
+        this.idFac =  this.dbMetadata.getQuotedIDFactory();
 
         // the WITH is not supported
         if (selectQuery.getWithItemsList() != null) {
@@ -132,21 +128,6 @@ public class SQLQueryParser {
     }
 
 
-    /**
-     * Return a list of natural join tables
-     * @return List of natural join tables
-     */
-    public List<CartesianProduct> getNaturalJoinTables() {
-        return naturalJoinTables;
-    }
-
-    /**
-     * Return a list of cross join tables
-     * @return List of cross join tables
-     */
-    public List<CartesianProduct> getCrossJoinTables() {
-        return crossJoinTables;
-    }
 
     //endregion
 
@@ -214,6 +195,8 @@ public class SQLQueryParser {
         table.setSchemaName(tableName.getSchemaSQLRendering());
         table.setName(tableName.getTableNameSQLRendering());
     }
+
+
 
 
 
@@ -308,6 +291,13 @@ public class SQLQueryParser {
         }
 
 
+        private void addNewBinaryJoinCondition( Column leftColumn, Column rightColumn, BinaryExpression binaryExpression ){
+            binaryExpression.setLeftExpression(leftColumn);
+            binaryExpression.setRightExpression(rightColumn);
+            joinConditions.add(binaryExpression);
+        }
+
+
         private void joinVisit(PlainSelect plainSelect) {
 
             List<Join> joins = plainSelect.getJoins();
@@ -331,10 +321,7 @@ public class SQLQueryParser {
                             Column rightColumn = new Column((Table) join.getRightItem(), column.getColumnName());
                             rightColumn.accept(joinExpressionVisitor);
                             // create the binary EqualTo expression between left an right columns
-                            BinaryExpression binaryExpression = new EqualsTo();
-                            binaryExpression.setLeftExpression(leftColumn);
-                            binaryExpression.setRightExpression(rightColumn);
-                            joinConditions.add(binaryExpression);
+                            addNewBinaryJoinCondition(leftColumn, rightColumn, new EqualsTo());
 
                         } else {
                             //more complex structure in FROM or JOIN e.g. subSelects are not supported
@@ -346,11 +333,39 @@ public class SQLQueryParser {
                         if ( join.isNatural() ) {
                             // Natural join
                             // J(x,y,z) :- R(x,y)S(y,z)
-                            naturalJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem, (Table) join.getRightItem()));
+                           //  naturalJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem, (Table) join.getRightItem()));
+
+                            Table leftTable = (Table) fromItem;
+                            Table rightTable = (Table) join.getRightItem();
+                            RelationID leftRelationId = idFac.createRelationID(leftTable.getSchemaName(), leftTable.getName());
+                            RelationID rightRelationId = idFac.createRelationID(rightTable.getSchemaName(), rightTable.getName());
+                            RelationDefinition leftRd = dbMetadata.getRelation(leftRelationId);
+                            RelationDefinition rightRd = dbMetadata.getRelation(rightRelationId);
+
+                            if (leftRd == null || leftRd.getAttributes() == null ||  leftRd.getAttributes().isEmpty() ){unsupported( leftRelationId);}
+                            if (rightRd == null || rightRd.getAttributes() == null || rightRd.getAttributes().isEmpty() ) { unsupported(rightRelationId);}
+
+                            for ( Attribute leftAttribute :  leftRd.getAttributes() ) {
+                                for (  Attribute rightAttribute  : rightRd.getAttributes() ){
+                                    if ( leftAttribute.getID().getName().compareTo( rightAttribute.getID().getName() ) == 0  &&
+                                            leftAttribute.getType()==rightAttribute.getType()  ){
+
+                                        String columnName = leftAttribute.getID().getName();
+                                        Column leftColumn = new Column(leftTable, columnName );
+                                        leftColumn.accept(joinExpressionVisitor);
+                                        Column rightColumn = new Column(rightTable, columnName);
+                                        rightColumn.accept(joinExpressionVisitor);
+                                        addNewBinaryJoinCondition( rightColumn, leftColumn, new EqualsTo() );
+                                        break;
+                                    }
+                                }
+                            }
+
                         }else{
                             // Cross-product
                             // C(x,y,u,v) :- R(x,y)S(u,v)
-                            crossJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem,  (Table) join.getRightItem() ));
+                         //    crossJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem,  (Table) join.getRightItem() ));
+                            // TODO : create the a the common  attribute from DBMetadata
                         }
                     }else {
                         unsupported(fromItem);
@@ -371,6 +386,8 @@ public class SQLQueryParser {
             }
         }
     };
+
+
 
 
 
@@ -2211,37 +2228,5 @@ public class SQLQueryParser {
 
     }
     //endregion
-
-
-    private static class CartesianProduct {
-        public RelationID getLeftRelationID() {
-            return leftRelationID;
-        }
-
-        public RelationID getRightRelationID() {
-            return rightRelationID;
-        }
-
-        private RelationID leftRelationID;
-        private RelationID rightRelationID;
-
-        public CartesianProduct(RelationID left, RelationID right ){
-            this.leftRelationID = left ;
-            this.rightRelationID = right;
-        }
-
-        public static CartesianProduct getCartesianProduct(QuotedIDFactory idFac, Table left, Table right )
-        {
-            RelationID leftRelationId = idFac.createRelationID(left.getSchemaName(), left.getName());
-            RelationID rightRelationId = idFac.createRelationID(right.getSchemaName(), right.getName());
-            return new CartesianProduct(leftRelationId,rightRelationId);
-        }
-
-
-        @Override
-        public String toString() {
-            return new StringBuilder().append(getLeftRelationID()).append( " |><| ").append(getRightRelationID()).toString();
-        }
-    }
 
 }
