@@ -43,23 +43,23 @@ public class SQLQueryParserTest extends TestCase {
     //add support for CAST also in unquoted visited query
     public void testPalinSelect1(){
         final boolean result = parseUnquotedJSQL("SELECT * "
-                + "FROM people p "
-                + "WHERE p.id IS NOT NULL AND p.salvo IS NOT NULL");
+                + "FROM person p "
+                + "WHERE p.idPerson IS NOT NULL AND p.name IS NOT NULL");
         printJSQL("testPalinSelect1", result);
         assertTrue(result);
     }
 
     //add support for CAST also in unquoted visited query
     public void testPalinSelec2(){
-        final boolean result = parseUnquotedJSQL("SELECT 3 AS \"v0QuestType\", NULL AS \"v0Lang\", CAST(\"QpeopleVIEW0\".\"nick2\" AS CHAR) AS \"v0\", 1 AS \"v1QuestType\", NULL AS \"v1Lang\", QpeopleVIEW0.id AS \"v1\""
-                + "FROM people \"QpeopleVIEW0\" "
-                + "WHERE \"QpeopleVIEW0\".\"id\" IS NOT NULL AND \"QpeopleVIEW0\".\"nick2\" IS NOT NULL");
+        final boolean result = parseUnquotedJSQL("SELECT 3 AS \"v0QuestType\", NULL AS \"v0Lang\", CAST(\"QpeopleVIEW0\".\"name\" AS CHAR) AS \"v0\", 1 AS \"v1QuestType\", NULL AS \"v1Lang\", QpeopleVIEW0.idPerson AS \"v1\""
+                + "FROM person \"QpeopleVIEW0\" "
+                + "WHERE \"QpeopleVIEW0\".\"idPerson\" IS NOT NULL AND \"QpeopleVIEW0\".\"name\" IS NOT NULL");
         printJSQL("testPalinSelec2", result);
         assertTrue(result);
     }
 
     public void testCast1(){
-        final boolean result = parseUnquotedJSQL("SELECT CAST(`view0`.`nick2` AS CHAR (8000) CHARACTER SET utf8) AS `v0` FROM people `view0` WHERE `view0`.`nick2` IS NOT NULL");
+        final boolean result = parseUnquotedJSQL("SELECT CAST(`view0`.`name` AS CHAR (8000) CHARACTER SET utf8) AS `v0` FROM person `view0` WHERE `view0`.`name` IS NOT NULL");
         printJSQL("testCast1", result);
         assertTrue(result);
     }
@@ -169,7 +169,7 @@ public class SQLQueryParserTest extends TestCase {
     public void testSubSelect(){
         final boolean result = parseUnquotedJSQL("SELECT p.firstName, p.secondName "
                 + "FROM " +
-                " ( SELECT * FROM people) p");
+                " ( SELECT * FROM person) p");
         printJSQL("testSubSelect", result);
         assertTrue(result);
 
@@ -278,7 +278,7 @@ public class SQLQueryParserTest extends TestCase {
 
         final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode " +
                 " FROM person " +
-                " INNER JOIN email on  person.idperson = email.idperson " +
+                " INNER JOIN email on  person.idPerson = email.idPerson " +
                 " NATURAL JOIN address ");
 
         printJSQL("testInnerAndNaturalJoin", result);
@@ -291,7 +291,7 @@ public class SQLQueryParserTest extends TestCase {
     }
 
     public void testCrossJoin(){
-        final boolean result = parseUnquotedJSQL("SELECT * FROM CITIES CROSS JOIN FLIGHTS" );
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person CROSS JOIN email" );
         printJSQL("testCrossJoin", result);
         assertTrue(result);
 
@@ -300,22 +300,22 @@ public class SQLQueryParserTest extends TestCase {
     }
 
     public void testJoinUsingColumns(){
-        final boolean result = parseUnquotedJSQL("select owners.name as owner, pets.name as pet, pets.animal " +
-                " from owners join pets using (owners_id);");
+        final boolean result = parseUnquotedJSQL("select person.name as sender, email.email as email " +
+                " from person join email using (idPerson);");
 
         printJSQL("testJoinUsingColumns", result);
         assertTrue(result);
 
-        assertEquals("{PETS=PETS, OWNERS=OWNERS}", obdaVisitor.getTableAlias().toString());
-        assertEquals("[OWNERS.NAME AS OWNER, PETS.NAME AS PET, PETS.ANIMAL]", obdaVisitor.getProjection().toString());
-        assertEquals("{OWNER=OWNERS.NAME, PET=PETS.NAME}", obdaVisitor.getExpressionAlias().toString() );
-        assertEquals("[OWNERS.OWNERS_ID = PETS.OWNERS_ID]", obdaVisitor.getJoinConditions().toString() );
+        assertEquals("{PERSON=PERSON, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSON.NAME AS SENDER, EMAIL.EMAIL AS EMAIL]", obdaVisitor.getProjection().toString());
+        assertEquals("{SENDER=PERSON.NAME, EMAIL=EMAIL.EMAIL}", obdaVisitor.getExpressionAlias().toString() );
+        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
     }
 
 
 
     public void testJoinAndAlias() {
-        final boolean result = parseUnquotedJSQL("SELECT t1.id as sid, t1.name as fullName FROM student t1 JOIN grade t2 ON t1.id=t2.st_id AND t2.mark='A'");
+        final boolean result = parseUnquotedJSQL("SELECT t1.idPerson as pid, t1.name as fullName FROM Person t1 JOIN email t2 ON t1.idPerson=t2.idPerson AND t2.active=1");
         printJSQL("testJoinAndAlias", result);
         assertTrue(result);
 
@@ -323,19 +323,19 @@ public class SQLQueryParserTest extends TestCase {
 
     /* Regex in MySQL, Oracle and Postgres*/
     public void testRegexMySQL(){
-        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE name REGEXP '^b'");
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person WHERE name REGEXP '^b'");
         printJSQL("testRegexMySQL", result);
         assertTrue(result);
     }
 
     public void testRegexBinaryMySQL(){
-        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE name REGEXP BINARY '^b'");
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person WHERE name REGEXP BINARY '^b'");
         printJSQL("testRegexBinaryMySQL", result);
         assertTrue(result);
     }
 
     public void testRegexPostgres(){
-        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE name ~ 'foo'");
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person WHERE name ~ 'foo'");
         printJSQL("testRegexPostgres", result);
         assertTrue(result);
     }
@@ -365,7 +365,7 @@ public class SQLQueryParserTest extends TestCase {
     }
 
     public void testRegexOracle(){
-        final boolean result = parseUnquotedJSQL("SELECT * FROM pet WHERE REGEXP_LIKE(testcol, '[[:alpha:]]')");
+        final boolean result = parseUnquotedJSQL("SELECT * FROM person WHERE REGEXP_LIKE(name, '[[:alpha:]]')");
         printJSQL("testRegexMySQL", result);
         assertTrue(result);
     }
@@ -429,6 +429,7 @@ public class SQLQueryParserTest extends TestCase {
         tdEmail.addAttribute(idfac.createAttributeID("idEmail"), Types.INTEGER, null, false);
         tdEmail.addAttribute(idfac.createAttributeID("idPerson"), Types.INTEGER, null, false);
         tdEmail.addAttribute(idfac.createAttributeID("email"), Types.VARCHAR, null, false);
+        tdEmail.addAttribute(idfac.createAttributeID("active"), Types.BIT, null, false);
 
         DatabaseRelationDefinition tdAddress = dbMetadata.createDatabaseRelation( idfac.createRelationID(null, "ADDRESS") );
         tdAddress.addAttribute(idfac.createAttributeID("idAddress"), Types.INTEGER, null, false);

@@ -33,10 +33,7 @@ import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*
     This visitor is used to parse SQL amd check the OBDA query compatibility
@@ -51,6 +48,7 @@ public class SQLQueryParser {
     private final Map<RelationID, RelationID> tableAlias = new HashMap<>();
     private final Map<QuotedID, Expression> expressionAlias = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
+    private final Map<QualifiedAttributeID, Attribute> joinsAttributesIds = new HashMap<>();
 
     private Expression whereClause;
     private final List<SelectItem> projection = new LinkedList<>();
@@ -197,11 +195,14 @@ public class SQLQueryParser {
     }
 
 
-
-
+    private void  addJoinAttributeIds(Attribute attribute){
+        if (! joinsAttributesIds.containsKey(attribute.getQualifiedID()))
+            joinsAttributesIds.put(attribute.getQualifiedID(), attribute );
+    }
 
     private final SelectVisitor selectVisitor = new SelectVisitor() {
-    	
+
+
         @Override
         public void visit(PlainSelect plainSelect) {
             // the SELECT should correspond to a CQ
@@ -295,8 +296,34 @@ public class SQLQueryParser {
             binaryExpression.setLeftExpression(leftColumn);
             binaryExpression.setRightExpression(rightColumn);
             joinConditions.add(binaryExpression);
+
         }
 
+
+
+        private void naturalJoinVisit(Collection<Attribute> joinAttributes, RelationDefinition rightRd  ){
+
+            for ( Attribute rightAttribute  : rightRd.getAttributes() ){
+                for ( Attribute leftAttribute :  joinAttributes ) {
+                    if ( leftAttribute.getQualifiedID().toString().compareTo( rightAttribute.getQualifiedID().toString() ) !=0 &&
+                            leftAttribute.getID().getName().compareTo( rightAttribute.getID().getName() ) == 0  &&
+                            leftAttribute.getType()==rightAttribute.getType()){
+
+                        String columnName = leftAttribute.getID().getName();
+                        Column leftColumn = new Column(
+                                new Table( leftAttribute.getRelation().getID().getSchemaName(),
+                                        leftAttribute.getRelation().getID().getTableName()), columnName );
+                        leftColumn.accept(joinExpressionVisitor);
+                        Column rightColumn = new Column(
+                                new Table(  rightAttribute.getRelation().getID().getSchemaName(),
+                                        rightAttribute.getRelation().getID().getTableName()), columnName);
+                        rightColumn.accept(joinExpressionVisitor);
+                        addNewBinaryJoinCondition( rightColumn, leftColumn, new EqualsTo() );
+                        break;
+                    }
+                }
+            }
+        }
 
         private void joinVisit(PlainSelect plainSelect) {
 
@@ -313,8 +340,6 @@ public class SQLQueryParser {
                 if (join.getUsingColumns() != null) { // JOIN USING column
                     for (Column column : join.getUsingColumns()) {
                         if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
-                            // we add the right item to the table alias.
-                            join.getRightItem().accept(fromItemVisitor);
                             // create left and right column
                             Column leftColumn = new Column((Table) fromItem, column.getColumnName());
                             leftColumn.accept(joinExpressionVisitor);
@@ -323,54 +348,34 @@ public class SQLQueryParser {
                             // create the binary EqualTo expression between left an right columns
                             addNewBinaryJoinCondition(leftColumn, rightColumn, new EqualsTo());
 
+                            // we add the right item to the table alias.
+                            join.getRightItem().accept(fromItemVisitor);
                         } else {
                             //more complex structure in FROM or JOIN e.g. subSelects are not supported
                             unsupported(fromItem);
                         }
                     }
                 }else if ( join.isNatural() ||  join.isCross() ) {
-                    if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
+                    if ( fromItem instanceof Table  &&  join.getRightItem() instanceof Table) {
                         if ( join.isNatural() ) {
                             // Natural join
                             // J(x,y,z) :- R(x,y)S(y,z)
-                           //  naturalJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem, (Table) join.getRightItem()));
-
-                            Table leftTable = (Table) fromItem;
                             Table rightTable = (Table) join.getRightItem();
-                            RelationID leftRelationId = idFac.createRelationID(leftTable.getSchemaName(), leftTable.getName());
                             RelationID rightRelationId = idFac.createRelationID(rightTable.getSchemaName(), rightTable.getName());
-                            RelationDefinition leftRd = dbMetadata.getRelation(leftRelationId);
                             RelationDefinition rightRd = dbMetadata.getRelation(rightRelationId);
 
-                            if (leftRd == null || leftRd.getAttributes() == null ||  leftRd.getAttributes().isEmpty() ){unsupported( leftRelationId);}
                             if (rightRd == null || rightRd.getAttributes() == null || rightRd.getAttributes().isEmpty() ) { unsupported(rightRelationId);}
 
-                            for ( Attribute leftAttribute :  leftRd.getAttributes() ) {
-                                for (  Attribute rightAttribute  : rightRd.getAttributes() ){
-                                    if ( leftAttribute.getID().getName().compareTo( rightAttribute.getID().getName() ) == 0  &&
-                                            leftAttribute.getType()==rightAttribute.getType()  ){
+                            naturalJoinVisit (joinsAttributesIds.values(), rightRd  );
 
-                                        String columnName = leftAttribute.getID().getName();
-                                        Column leftColumn = new Column(leftTable, columnName );
-                                        leftColumn.accept(joinExpressionVisitor);
-                                        Column rightColumn = new Column(rightTable, columnName);
-                                        rightColumn.accept(joinExpressionVisitor);
-                                        addNewBinaryJoinCondition( rightColumn, leftColumn, new EqualsTo() );
-                                        break;
-                                    }
-                                }
-                            }
-
-                        }else{
+                         }else{
                             // Cross-product
                             // C(x,y,u,v) :- R(x,y)S(u,v)
-                         //    crossJoinTables.add(CartesianProduct.getCartesianProduct(idFac, (Table) fromItem,  (Table) join.getRightItem() ));
                             // TODO : create the a the common  attribute from DBMetadata
                         }
                     }else {
                         unsupported(fromItem);
                     }
-
                     join.getRightItem().accept(fromItemVisitor);
                 }else{ //JOIN ON cond
                     if (join.getOnExpression() != null ) {
@@ -518,8 +523,21 @@ public class SQLQueryParser {
         	// ROMAN (9 Dec 2015): TCEs are not supported 
  //           if (!withTCEs.contains(table.getFullyQualifiedName().toLowerCase())) {
 
-                RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
-                relations.add(relationId);
+
+
+            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
+            relations.add(relationId);
+
+
+            RelationDefinition relationDefinition = dbMetadata.getRelation(relationId);
+            if (relationDefinition  == null || relationDefinition.getAttributes()  == null ||  relationDefinition.getAttributes().isEmpty() ) {unsupported( relationId);}
+
+            for (Attribute attribute : relationDefinition.getAttributes()) {
+                addJoinAttributeIds(attribute);
+            }
+
+
+
 
                 // ROMAN (9 Dec 2015): make a separate visitor for sub-selects
 //                if (inSubSelect && subSelectAlias != null) {
@@ -533,6 +551,8 @@ public class SQLQueryParser {
                     tableAlias.put(aliasId, relationId);
 //                }
 //            }
+
+
         }
 
         @Override
