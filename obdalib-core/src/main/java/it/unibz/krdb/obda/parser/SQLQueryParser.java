@@ -48,7 +48,7 @@ public class SQLQueryParser {
     private final Map<RelationID, RelationID> tableAlias = new HashMap<>();
     private final Map<QuotedID, Expression> expressionAlias = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
-    private final Map<QualifiedAttributeID, Attribute> joinsAttributesIds = new HashMap<>();
+    private final Map<QualifiedAttributeID, Attribute> fromAttributesIds = new HashMap<>();
 
     private Expression whereClause;
     private final List<SelectItem> projection = new LinkedList<>();
@@ -195,14 +195,12 @@ public class SQLQueryParser {
     }
 
 
-    private void  addJoinAttributeIds(Attribute attribute){
-        if (! joinsAttributesIds.containsKey(attribute.getQualifiedID()))
-            joinsAttributesIds.put(attribute.getQualifiedID(), attribute );
+    private void addFromAttributeIds(Attribute attribute){
+        if (! fromAttributesIds.containsKey(attribute.getQualifiedID()))
+            fromAttributesIds.put(attribute.getQualifiedID(), attribute );
     }
 
     private final SelectVisitor selectVisitor = new SelectVisitor() {
-
-
         @Override
         public void visit(PlainSelect plainSelect) {
             // the SELECT should correspond to a CQ
@@ -210,7 +208,7 @@ public class SQLQueryParser {
 
             // projection
             for (SelectItem item : plainSelect.getSelectItems())
-                item.accept(selectItemVisitor);
+                item.accept(selectItemVisitor); // todo : review
 
             // from items
             plainSelect.getFromItem().accept(fromItemVisitor);
@@ -300,20 +298,19 @@ public class SQLQueryParser {
         }
 
 
-
-        private void naturalJoinVisit(Collection<Attribute> joinAttributes, RelationDefinition rightRd  ){
-
+        private void naturalJoinVisit( RelationDefinition rightRd  ){
+            // todo : replace with a contain
             for ( Attribute rightAttribute  : rightRd.getAttributes() ){
-                for ( Attribute leftAttribute :  joinAttributes ) {
-                    if ( leftAttribute.getQualifiedID().toString().compareTo( rightAttribute.getQualifiedID().toString() ) !=0 &&
-                            leftAttribute.getID().getName().compareTo( rightAttribute.getID().getName() ) == 0  &&
+                for ( Attribute leftAttribute :  fromAttributesIds.values()) {
+                    if (  ! leftAttribute.getQualifiedID().equals(rightAttribute.getQualifiedID()) &&
+                            leftAttribute.getID().equals(rightAttribute.getID() )  &&
                             leftAttribute.getType()==rightAttribute.getType()){
 
                         String columnName = leftAttribute.getID().getName();
                         Column leftColumn = new Column(
                                 new Table( leftAttribute.getRelation().getID().getSchemaName(),
                                         leftAttribute.getRelation().getID().getTableName()), columnName );
-                        leftColumn.accept(joinExpressionVisitor);
+
                         Column rightColumn = new Column(
                                 new Table(  rightAttribute.getRelation().getID().getSchemaName(),
                                         rightAttribute.getRelation().getID().getTableName()), columnName);
@@ -325,75 +322,54 @@ public class SQLQueryParser {
             }
         }
 
+
+        private RelationDefinition getTableRelationDefinition(FromItem rightItem){
+            if ( ! (rightItem instanceof  Table) ) { unsupported(rightItem);}
+
+            Table rightTable = (Table) rightItem;
+            RelationID rightRelationId = idFac.createRelationID(rightTable.getSchemaName(), rightTable.getName());
+            RelationDefinition rightRd = dbMetadata.getRelation(rightRelationId);
+
+            if (rightRd == null ) { unsupportedMapping(rightRelationId);}
+
+            return rightRd;
+        }
+
+
+
         private void joinVisit(PlainSelect plainSelect) {
 
             List<Join> joins = plainSelect.getJoins();
 
-            if (joins == null)
-                return;
+            if (joins == null) {return;}
 
             validateJoins( joins );
 
+            // todo: remove this
             FromItem fromItem = plainSelect.getFromItem();
 
             for (Join join : joins) {
+                join.getRightItem().accept(fromItemVisitor);
                 if (join.getUsingColumns() != null) { // JOIN USING column
                     for (Column column : join.getUsingColumns()) {
-                        if (fromItem instanceof Table && join.getRightItem() instanceof Table) {
-                            // create left and right column
-                            Column leftColumn = new Column((Table) fromItem, column.getColumnName());
-                            leftColumn.accept(joinExpressionVisitor);
-                            Column rightColumn = new Column((Table) join.getRightItem(), column.getColumnName());
-                            rightColumn.accept(joinExpressionVisitor);
-                            // create the binary EqualTo expression between left an right columns
-                            addNewBinaryJoinCondition(leftColumn, rightColumn, new EqualsTo());
-
-                            // we add the right item to the table alias.
-                            join.getRightItem().accept(fromItemVisitor);
-                        } else {
-                            //more complex structure in FROM or JOIN e.g. subSelects are not supported
-                            unsupported(fromItem);
-                        }
+                        Column leftColumn = new Column((Table) fromItem, column.getColumnName());
+                        leftColumn.accept(joinExpressionVisitor);
+                        Column rightColumn = new Column((Table) join.getRightItem(), column.getColumnName());
+                        rightColumn.accept(joinExpressionVisitor);
+                        addNewBinaryJoinCondition(leftColumn, rightColumn, new EqualsTo());
                     }
-                }else if ( join.isNatural() ||  join.isCross() ) {
-                    if ( fromItem instanceof Table  &&  join.getRightItem() instanceof Table) {
-                        if ( join.isNatural() ) {
-                            // Natural join
-                            // J(x,y,z) :- R(x,y)S(y,z)
-                            Table rightTable = (Table) join.getRightItem();
-                            RelationID rightRelationId = idFac.createRelationID(rightTable.getSchemaName(), rightTable.getName());
-                            RelationDefinition rightRd = dbMetadata.getRelation(rightRelationId);
-
-                            if (rightRd == null || rightRd.getAttributes() == null || rightRd.getAttributes().isEmpty() ) { unsupported(rightRelationId);}
-
-                            naturalJoinVisit (joinsAttributesIds.values(), rightRd  );
-
-                         }else{
-                            // Cross-product
-                            // C(x,y,u,v) :- R(x,y)S(u,v)
-                            // TODO : create the a the common  attribute from DBMetadata
-                        }
-                    }else {
-                        unsupported(fromItem);
-                    }
-                    join.getRightItem().accept(fromItemVisitor);
-                }else{ //JOIN ON cond
-                    if (join.getOnExpression() != null ) {
-                        join.getRightItem().accept(fromItemVisitor);
-                        // ROMAN (25 Sep 2015): this transforms (A.id = B.id) OR (A.id2 = B.id2) into the list
-                        // { (A.id = B.id), (A.id2 = B.id2) }, which is equivalent to AND!
-                        // similarly, it will transform NOT (A <> B) into { (A <> B) }, which gets rid of NOT
+                }else if ( join.isNatural() ) {
+                        RelationDefinition rightRd = getTableRelationDefinition(join.getRightItem());
+                        naturalJoinVisit(rightRd);
+                }else if ( join.isCross()){
+                    // TODO : create the a the common  attribute from DBMetadata
+                }else if (join.getOnExpression() != null ) {
                         join.getOnExpression().accept(joinExpressionVisitor);
-                    }
-                    //we do not consider simple joins
                 }
 
             }
         }
     };
-
-
-
 
 
     private final SelectItemVisitor selectItemVisitor = new SelectItemVisitor() {
@@ -445,121 +421,34 @@ public class SQLQueryParser {
         }
     };
 
-    private final FromItemVisitor subSelectFromItemVisitor = new FromItemVisitor() {
-        // from visitor
-        private Alias subSelectAlias = null;
+    // todo: remove all the commnet
+    private final FromItemVisitor fromItemVisitor = new FromItemVisitor() {
 
-
-        @Override
+		@Override
         public void visit(Table table) {
 
-
             RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
-            relations.add(relationId);
-            // ONLY SIMPLE SUBSELECTS, WITH ONE TABLE: see WhereClauseVisitor and ProjectionVisitor
+            RelationDefinition relationDefinition = dbMetadata.getRelation(relationId);
+            if (relationDefinition  == null ) {unsupportedMapping( relationId);}
 
-            RelationID subSelectAliasId = idFac.createRelationID(null, subSelectAlias.getName());
-            tableAlias.put(subSelectAliasId, relationId);
+            relations.add(relationId);
+
+            for (Attribute attribute : relationDefinition.getAttributes()) {
+                addFromAttributeIds(attribute);
+            }
+
+
+            Alias as = table.getAlias();
+            RelationID aliasId = (as != null) ? idFac.createRelationID(null, as.getName()) : relationId;
+            tableAlias.put(aliasId, relationId);
+
         }
 
         @Override
         public void visit(SubSelect subSelect) {
             visitSubSelect(subSelect);
-        }
-
-        @Override
-        public void visit(SubJoin subjoin) {
-
-        }
-
-        @Override
-        public void visit(LateralSubSelect lateralSubSelect) {
-
-        }
-
-        @Override
-        public void visit(ValuesList valuesList) {
-
-        }
-
-        private void visitSubSelect(SubSelect subSelect) {
-
-            if (subSelect.getSelectBody() instanceof PlainSelect) {
-                PlainSelect subSelBody = (PlainSelect) (subSelect.getSelectBody());
-                if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
-                    unsupported(subSelect);
-            }
-            else {
-                unsupported(subSelect);
-            }
-
-            subSelectAlias = subSelect.getAlias();
-
-            subSelect.getSelectBody().accept(selectVisitor);
-
-            subSelectAlias = null;
-        }
-    };
-
-    private final FromItemVisitor fromItemVisitor = new FromItemVisitor() {
-
-        // from visitor
-      //  private Alias subSelectAlias = null;
-        // There are special names that are not table names but are parsed as tableAlias.
-        // These names are collected here and are not included in the table names
-        //private final Set<String> withTCEs = new HashSet<>();
-     //   private boolean inSubSelect = false;
-
-		/*
-		 * Visit Table and store its value in the list of TableJSQL (non-Javadoc)
-		 * We maintain duplicate tableAlias to retrieve the different aliases assigned
-		 * we use the class TableJSQL to handle quotes and user case choice if present
-		 *
-		 * @see net.sf.jsqlparser.statement.select.FromItemVisitor#visit(net.sf.jsqlparser.schema.Table)
-		 */
-
-        @Override
-        public void visit(Table table) {
-        	// ROMAN (9 Dec 2015): TCEs are not supported 
- //           if (!withTCEs.contains(table.getFullyQualifiedName().toLowerCase())) {
-
-
-
-            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
-            relations.add(relationId);
-
-
-            RelationDefinition relationDefinition = dbMetadata.getRelation(relationId);
-            if (relationDefinition  == null || relationDefinition.getAttributes()  == null ||  relationDefinition.getAttributes().isEmpty() ) {unsupported( relationId);}
-
-            for (Attribute attribute : relationDefinition.getAttributes()) {
-                addJoinAttributeIds(attribute);
-            }
-
-
-
-
-                // ROMAN (9 Dec 2015): make a separate visitor for sub-selects
-//                if (inSubSelect && subSelectAlias != null) {
-//                    // ONLY SIMPLE SUBSELECTS, WITH ONE TABLE: see WhereClauseVisitor and ProjectionVisitor
-//                    RelationID subSelectAliasId = idFac.createRelationID(null, subSelectAlias.getName());
-//                    tableAlias.put(subSelectAliasId, relationId);
-//                }
-//                else {
-                    Alias as = table.getAlias();
-                    RelationID aliasId = (as != null) ? idFac.createRelationID(null, as.getName()) : relationId;
-                    tableAlias.put(aliasId, relationId);
-//                }
-//            }
-
-
-        }
-
-        @Override
-        public void visit(SubSelect subSelect) {
-            subSelectFromItemVisitor.visit(subSelect);
-
-//                visitSubSelect(subSelect);
+            // TODO: 30/12/2015 Does it should be integrate in the visitSubselect
+            // subSelect.getSelectBody().accept(selectVisitor);
         }
 
 
@@ -567,41 +456,18 @@ public class SQLQueryParser {
         @Override
         public void visit(SubJoin subjoin) {
             unsupported(subjoin);
-            subjoin.getLeft().accept(this);
-            subjoin.getJoin().getRightItem().accept(this);
+
         }
 
         @Override
         public void visit(LateralSubSelect lateralSubSelect) {
             unsupported(lateralSubSelect);
-            //lateralSubSelect.getSubSelect().getSelectBody().accept(selectVisitor);
         }
 
         @Override
         public void visit(ValuesList valuesList) {
             unsupported(valuesList);
         }
-
-
-//        private void visitSubSelect(SubSelect subSelect) {
-//
-//            if (subSelect.getSelectBody() instanceof PlainSelect) {
-//                PlainSelect subSelBody = (PlainSelect) (subSelect.getSelectBody());
-//                if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
-//                    unsupported(subSelect);
-//            }
-//            else {
-//                unsupported(subSelect);
-//            }
-//
-//            inSubSelect = true;
-//            subSelectAlias = subSelect.getAlias();
-//
-//            subSelect.getSelectBody().accept(selectVisitor);
-//
-//            subSelectAlias = null;
-//            inSubSelect = false;
-//        }
 
     };
 
@@ -622,27 +488,17 @@ public class SQLQueryParser {
 
         @Override
         public void visit(SubSelect subSelect) {
-
             visitSubSelect(subSelect);
         }
     };
-
-
-    //region ExpressionVisitors: aliasMapExpressionVisitor, tableExpressionVisitor, projectorExpressionVisitor, joinExpressionVisitor, whereExpressionVisitor
 
     private ExpressionVisitor aliasMapExpressionVisitor = new ExpressionVisitor() {
 
         @Override
         public void visit(SubSelect subSelect) {
-            // subSelect.getSelectBody().accept(selectVisitor);
             visitSubSelect(subSelect);
         }
 
-        /*
-         * We do not modify the column we are only interested if the alias is present.
-         * Each alias has a distinct column (non-Javadoc)
-         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.schema.Column)
-         */
         @Override
         public void visit(Column tableColumn) {
         }
