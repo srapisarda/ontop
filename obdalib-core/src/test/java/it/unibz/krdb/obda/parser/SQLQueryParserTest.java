@@ -294,10 +294,24 @@ public class SQLQueryParserTest extends TestCase {
         final boolean result = parseUnquotedJSQL("SELECT * FROM person CROSS JOIN email" );
         printJSQL("testCrossJoin", result);
         assertTrue(result);
+    }
 
+    public void testNaturalAndCrosslJoin(){
 
+        final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode "
+                + " FROM person " +
+                " NATURAL JOIN email " +
+                " CROSS JOIN address " +
+                " CROSS JOIN postcode on postcode.postcode = address.postcode ");
+        printJSQL("testNaturalAndInnerJoin", result);
+        assertTrue(result);
+
+        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODE=POSTCODE, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
+        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, PERSON.IDPERSON = ADDRESS.IDPERSON, EMAIL.IDPERSON = ADDRESS.IDPERSON, ADDRESS.IDPOSTCODE = POSTCODE.IDPOSTCODE]", obdaVisitor.getJoinConditions().toString() );
 
     }
+
 
     public void testJoinUsingColumns(){
         final boolean result = parseUnquotedJSQL("select person.name as sender, email.email as email " +
@@ -339,6 +353,9 @@ public class SQLQueryParserTest extends TestCase {
         printJSQL("testRegexPostgres", result);
         assertTrue(result);
     }
+
+
+
 
     /*
      join grammar definition

@@ -32,7 +32,6 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Attr;
 
 import java.util.*;
 
@@ -301,15 +300,21 @@ public class SQLQueryParser {
                             rightAttribute.getRelation().getID().getTableName()), columnName);
             rightColumn.accept(joinExpressionVisitor);
 
-            binaryExpression.setLeftExpression(leftColumn);
-            binaryExpression.setRightExpression(rightColumn);
-            joinConditions.add(binaryExpression);
+            binaryExpression.setLeftExpression(rightColumn);
+            binaryExpression.setRightExpression(leftColumn);
 
+            if ( ! joinConditions.contains( binaryExpression ) ) {
+                binaryExpression.setLeftExpression(leftColumn);
+                binaryExpression.setRightExpression(rightColumn);
+                if ( ! joinConditions.contains( binaryExpression ) ) {
+                    joinConditions.add(binaryExpression);
+                }
+            }
         }
 
 
 
-        private void naturalJoinVisit( Join join ){
+        private void commonAttributesJoinVisit(Join join ){
             RelationDefinition rightRd = getTableRelationDefinition(join.getRightItem());
             Map<QuotedID, Attribute> mappedRightAttributes = getMappedAttributeByQuotedId(rightRd.getAttributes());
             for ( Attribute leftAttribute :  fromAttributesIds.values()) {
@@ -323,14 +328,17 @@ public class SQLQueryParser {
                         leftAttribute.getID().equals(rightAttribute.getID() )  &&
                         leftAttribute.getType()==rightAttribute.getType()){
 
-                    addNewBinaryJoinCondition( leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo() );
-                    break;
+                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo() );
+
+                    if ( join.isNatural() ) {
+                        break;
+                    }
                 }
             }
 
         }
 
-        private void visitJoinUsingColumns(Join join ){
+        private void usingColumnsJoinVisit(Join join ){
 
             RelationDefinition rightRd = getTableRelationDefinition( join.getRightItem() );
             List<Attribute> rightAttributes = rightRd.getAttributes();
@@ -390,13 +398,11 @@ public class SQLQueryParser {
                 join.getRightItem().accept(fromItemVisitor);
 
                 if (join.getUsingColumns() != null) {
-                    visitJoinUsingColumns(join);
-                }else if ( join.isNatural() ) {
-                        naturalJoinVisit(join);
-                }else if ( join.isCross()){
-                    // TODO : create the a the common  attribute from DBMetadata
+                    usingColumnsJoinVisit(join);
+                }else if ( join.isNatural() || join.isCross() ) {
+                    commonAttributesJoinVisit(join);
                 }else if (join.getOnExpression() != null ) {
-                        join.getOnExpression().accept(joinExpressionVisitor);
+                    join.getOnExpression().accept(joinExpressionVisitor);
                 }
 
             }
