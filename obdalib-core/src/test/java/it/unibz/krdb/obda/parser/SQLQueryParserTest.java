@@ -270,7 +270,7 @@ public class SQLQueryParserTest extends TestCase {
 
         assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODE=POSTCODE, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[EMAIL.IDPERSON = PERSON.IDPERSON, ADDRESS.IDPERSON = PERSON.IDPERSON, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
+        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, PERSON.IDPERSON = ADDRESS.IDPERSON, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
 
     }
 
@@ -286,7 +286,7 @@ public class SQLQueryParserTest extends TestCase {
 
         assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, ADDRESS.IDPERSON = PERSON.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
+        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, PERSON.IDPERSON = ADDRESS.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
 
     }
 
