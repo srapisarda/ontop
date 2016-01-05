@@ -289,8 +289,15 @@ public class SQLQueryParser {
             }
         }
 
-
-        private void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,  BinaryExpression binaryExpression ){
+        /**
+         * Adds a new binary expression to the joinExpressionVisitor list
+         * @param leftAttribute - LHS binary attribute
+         * @param rightAttribute - RHS binary attribute
+         * @param columnName - common column name between LHS and RHS
+         * @param binaryExpression - Binary exspession or one of its extensions
+         * @param isReflexive - if true the binary expression is reflexive.
+         */
+        private void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,  BinaryExpression binaryExpression, boolean isReflexive ){
             Column leftColumn = new Column(
                     new Table( leftAttribute.getRelation().getID().getSchemaName(),
                             leftAttribute.getRelation().getID().getTableName()), columnName );
@@ -303,17 +310,29 @@ public class SQLQueryParser {
             binaryExpression.setLeftExpression(rightColumn);
             binaryExpression.setRightExpression(leftColumn);
 
-            if ( ! joinConditions.contains( binaryExpression ) ) {
+            if ( isReflexive ) {
+                if (!joinConditions.contains(binaryExpression)) {
+                    binaryExpression.setLeftExpression(leftColumn);
+                    binaryExpression.setRightExpression(rightColumn);
+                    if (!joinConditions.contains(binaryExpression)) {
+                        joinConditions.add(binaryExpression);
+                    }
+                }
+            }else {
                 binaryExpression.setLeftExpression(leftColumn);
                 binaryExpression.setRightExpression(rightColumn);
-                if ( ! joinConditions.contains( binaryExpression ) ) {
+                if (!joinConditions.contains(binaryExpression)) {
                     joinConditions.add(binaryExpression);
                 }
             }
         }
 
 
-
+        /**
+         * this is used as visitor for join condition where the attribute that create the join are implicit defined
+         * such in relation as Natural or Cross join
+          * @param join
+         */
         private void commonAttributesJoinVisit(Join join ){
             RelationDefinition rightRd = getTableRelationDefinition(join.getRightItem());
             Map<QuotedID, Attribute> mappedRightAttributes = getMappedAttributeByQuotedId(rightRd.getAttributes());
@@ -328,16 +347,18 @@ public class SQLQueryParser {
                         leftAttribute.getID().equals(rightAttribute.getID() )  &&
                         leftAttribute.getType()==rightAttribute.getType()){
 
-                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo() );
+                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo(), true );
 
-                    if ( join.isNatural() ) {
-                        break;
-                    }
+
                 }
             }
 
         }
 
+        /**
+         * this is used to visit join using columns
+         * @param join
+         */
         private void usingColumnsJoinVisit(Join join ){
 
             RelationDefinition rightRd = getTableRelationDefinition( join.getRightItem() );
@@ -361,7 +382,7 @@ public class SQLQueryParser {
                         // todo: verify the correctness of rise an exception
                         unsupportedMapping(attributeID);
                     }
-                    addNewBinaryJoinCondition( leftAttribute, rightAttribute, attributeID.getName(), new EqualsTo() );
+                    addNewBinaryJoinCondition( leftAttribute, rightAttribute, attributeID.getName(), new EqualsTo(), true  );
 
                 } else {
                     // todo: verify the correctness of rise an exception
@@ -400,6 +421,7 @@ public class SQLQueryParser {
                 if (join.getUsingColumns() != null) {
                     usingColumnsJoinVisit(join);
                 }else if ( join.isNatural() || join.isCross() ) {
+                    // TODO : the only difference between this is during the select  ...  verify the correctness
                     commonAttributesJoinVisit(join);
                 }else if (join.getOnExpression() != null ) {
                     join.getOnExpression().accept(joinExpressionVisitor);
