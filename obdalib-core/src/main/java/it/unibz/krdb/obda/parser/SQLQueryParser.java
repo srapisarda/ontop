@@ -329,11 +329,10 @@ public class SQLQueryParser {
 
 
         /**
-         * this is used as visitor for join condition where the attribute that create the join are implicit defined
-         * such in relation as Natural or Cross join
-          * @param join
+         * this is used as visitor for natural join condition where the attributes that create the join are implicit defined
+         *  @param join
          */
-        private void commonAttributesJoinVisit(Join join ){
+        private void naturalJoinVisit(Join join ){
             RelationDefinition rightRd = getTableRelationDefinition(join.getRightItem());
             Map<QuotedID, Attribute> mappedRightAttributes = getMappedAttributeByQuotedId(rightRd.getAttributes());
             for ( Attribute leftAttribute :  fromAttributesIds.values()) {
@@ -348,7 +347,6 @@ public class SQLQueryParser {
                         leftAttribute.getType()==rightAttribute.getType()){
 
                     addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo(), true );
-
 
                 }
             }
@@ -420,9 +418,11 @@ public class SQLQueryParser {
 
                 if (join.getUsingColumns() != null) {
                     usingColumnsJoinVisit(join);
-                }else if ( join.isNatural() || join.isCross() ) {
+                }else if ( join.isNatural() ) {
                     // TODO : the only difference between this is during the select  ...  verify the correctness
-                    commonAttributesJoinVisit(join);
+                    naturalJoinVisit(join);
+                }else if ( join.isCross()){
+                    // to do no yet implemented
                 }else if (join.getOnExpression() != null ) {
                     join.getOnExpression().accept(joinExpressionVisitor);
                 }
