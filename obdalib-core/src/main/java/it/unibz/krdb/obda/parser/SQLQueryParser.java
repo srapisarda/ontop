@@ -22,7 +22,6 @@ package it.unibz.krdb.obda.parser;
 
 
 import it.unibz.krdb.sql.*;
-import jdk.nashorn.internal.objects.annotations.Where;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -49,6 +48,11 @@ public class SQLQueryParser {
     private final Map<RelationID, RelationID> tableAlias = new HashMap<>();
     private final Map<QuotedID, Expression> expressionAlias = new HashMap<>();
     private final List<Expression> joinConditions = new LinkedList<>();
+
+    // maps attribute names to attributes
+    // important: it maps both
+    //       (a) fully qualified names that include relation names or aliseses (if present)
+    //       (b) unqualified names that can be unambiguously resolved
     private final Map<QualifiedAttributeID, Attribute> fromAttributesIds = new HashMap<>();
 
     private Expression whereClause;
@@ -67,9 +71,8 @@ public class SQLQueryParser {
         this.idFac =  this.dbMetadata.getQuotedIDFactory();
 
         // the WITH is not supported
-        if (selectQuery.getWithItemsList() != null) {
-            unsupported( selectQuery.getWithItemsList() );
-        }
+        if (selectQuery.getWithItemsList() != null)
+            throw new ParseException(selectQuery.getWithItemsList());
 
         // CATCH ParseException
         selectQuery.getSelectBody().accept(selectVisitor);
@@ -130,18 +133,10 @@ public class SQLQueryParser {
 
     //endregion
 
-    private void unsupported(Object unsupportedObject )  {
-        log.warn(this.getClass() + " DOES NOT SUPPORT " + unsupportedObject);
-        throw new ParseException(unsupportedObject) ;
-    }
-
-    private void unsupportedMapping(Object unsupportedObject )  {
-        log.warn(this.getClass() + " DOES NOT SUPPORT " + unsupportedObject);
-        throw new MappingQueryException(unsupportedObject) ;
-    }
 
     /**
-     * This exceptions is throwing when the parser cannot support an operation
+     * This exception is thrown when the parser encounters a construct that
+     * is not supported (cannot be translated into a conjunctive query)
      */
     private static class ParseException extends RuntimeException {
 
@@ -149,35 +144,36 @@ public class SQLQueryParser {
 
         protected final Object unsupportedObject;
         
-		public ParseException (Object unsupportedObject) {
+		public ParseException(Object unsupportedObject) {
             this.unsupportedObject = unsupportedObject;
         }
     }
+
+    /*
+     * This exception is thrown when a mapping contains an error
+     * (that is, when the query is not a valid SQL query for the data source)
+     */
 
     private static class MappingQueryException extends RuntimeException {
 
         private static final long serialVersionUID = 1L;
 
-        protected final Object unsupportedObject;
-
-        public MappingQueryException (Object unsupportedObject) {
-            this.unsupportedObject = unsupportedObject;
+        public MappingQueryException(String message, Object object) {
+            super(message + object.toString());
         }
     }
 
-    private void visitSubSelect(SubSelect subSelect ){
-        if (subSelect.getSelectBody() instanceof PlainSelect) {
-            PlainSelect subSelBody = (PlainSelect) (subSelect.getSelectBody());
+    private void visitSubSelect(SubSelect subSelect) {
+        if (!(subSelect.getSelectBody() instanceof PlainSelect))
+            throw new ParseException(subSelect);
 
-            if (subSelBody.getJoins() != null || subSelBody.getWhere() != null) {
-                unsupported(subSelect);
-            }
-            else {
-                subSelBody.accept(selectVisitor);
-            }
-        }
-        else
-            unsupported(subSelect);
+        PlainSelect subSelBody = (PlainSelect)subSelect.getSelectBody();
+
+        // only very simple subqueries are supported at the moment
+        if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
+            throw new ParseException(subSelect);
+
+        subSelBody.accept(selectVisitor);
     }
 
     /**
@@ -196,11 +192,6 @@ public class SQLQueryParser {
     }
 
 
-    private void addFromAttributeIds(Attribute attribute){
-        if (! fromAttributesIds.containsKey(attribute.getQualifiedID()))
-            fromAttributesIds.put(attribute.getQualifiedID(), attribute );
-    }
-
     private final SelectVisitor selectVisitor = new SelectVisitor() {
         @Override
         public void visit(PlainSelect plainSelect) {
@@ -212,9 +203,7 @@ public class SQLQueryParser {
                 item.accept(selectItemVisitor); // todo: review
 
             // from items
-            plainSelect.getFromItem().accept(fromItemVisitor);
-
-            joinVisit(plainSelect);
+            processFROM(plainSelect);
 
             if (plainSelect.getWhere() != null) {
                 whereClause = plainSelect.getWhere();
@@ -226,12 +215,12 @@ public class SQLQueryParser {
         }
         @Override
         public void visit(SetOperationList setOpList) {
-            unsupported(setOpList);
+            throw new ParseException(setOpList);
         }
 
         @Override
         public void visit(WithItem withItem) {
-            unsupported(withItem);
+            throw new ParseException(withItem);
         }
 
         /**
@@ -240,62 +229,41 @@ public class SQLQueryParser {
          * @param plainSelect Plain select query
          */
         private void validatePlainSelect(PlainSelect plainSelect) {
-            if (plainSelect.getDistinct() != null) 
-                unsupported(plainSelect.getDistinct());
-            
-            if (plainSelect.getIntoTables() != null)
-                unsupportedMapping(plainSelect.getIntoTables());
-            
-            if (plainSelect.getHaving() != null) 
-                unsupported(plainSelect.getHaving());
-            
-            if (plainSelect.getGroupByColumnReferences() != null) 
-                unsupported(plainSelect.getGroupByColumnReferences());
-            
+            if (plainSelect.getDistinct() != null)
+                throw new ParseException(plainSelect.getDistinct());
+
+            if (plainSelect.getIntoTables() != null) // ERROR in the mapping
+                throw new MappingQueryException("Mappings cannot contain SELECT INTO", plainSelect.getIntoTables());
+
+            if (plainSelect.getHaving() != null)
+                throw new ParseException(plainSelect.getHaving());
+
+            if (plainSelect.getGroupByColumnReferences() != null)
+                throw new ParseException(plainSelect.getGroupByColumnReferences());
+
             if (plainSelect.getOrderByElements() != null)
-                unsupported(plainSelect.getOrderByElements());
-            
-            if (plainSelect.getLimit() != null) 
-                unsupported(plainSelect.getLimit());
+                throw new ParseException(plainSelect.getOrderByElements());
 
-            if (plainSelect.getTop() != null) 
-                unsupported(plainSelect.getTop());
-                
+            if (plainSelect.getLimit() != null)
+                throw new ParseException(plainSelect.getLimit());
+
+            if (plainSelect.getTop() != null)
+                throw new ParseException(plainSelect.getTop());
+
             if (plainSelect.getOracleHierarchical() != null)
-                unsupported(plainSelect.getOracleHierarchical());
-            
+                throw new ParseException(plainSelect.getOracleHierarchical());
+
             if (plainSelect.isOracleSiblings())
-                unsupported(plainSelect.isOracleSiblings());
+                throw new ParseException(plainSelect.isOracleSiblings());
         }
 
-        /**
-         * This validates that a Joins List of Object is datalog suitable
-         *
-         * @param joins, list of Join objects
-         */
-        private void validateJoins ( List<Join> joins ){
-
-            for ( Join join : joins) {
-                if (join.isOuter())
-                    unsupported(join.isOuter());
-
-                if (join.isFull())
-                    unsupported(join.isFull());
-
-                if (join.isRight())
-                    unsupported(join.isRight());
-
-                if (join.isLeft())
-                    unsupported(join.isLeft());
-            }
-        }
 
         /**
          * Adds a new binary expression to the joinExpressionVisitor list
          * @param leftAttribute - LHS binary attribute
          * @param rightAttribute - RHS binary attribute
          * @param columnName - common column name between LHS and RHS
-         * @param binaryExpression - Binary exspession or one of its extensions
+         * @param binaryExpression - Binary expression or one of its extensions
          * @param isReflexive - if true the binary expression is reflexive.
          */
         private void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,  BinaryExpression binaryExpression, boolean isReflexive ){
@@ -311,6 +279,7 @@ public class SQLQueryParser {
             binaryExpression.setLeftExpression(rightColumn);
             binaryExpression.setRightExpression(leftColumn);
 
+            // ROMAN: I DO NOT UNDERSTAND THE MEANING OF REFLEXIVE HERE
             if ( isReflexive ) {
                 if (!joinConditions.contains(binaryExpression)) {
                     binaryExpression.setLeftExpression(leftColumn);
@@ -329,39 +298,15 @@ public class SQLQueryParser {
         }
 
 
-        /**
-         * this is used as visitor for natural join condition where the attributes that create the join are implicit defined
-         *  @param join
-         */
-        private void naturalJoinVisit(Join join ){
-            RelationDefinition rightRd = getTableRelationDefinition(join.getRightItem());
-            Map<QuotedID, Attribute> mappedRightAttributes = getMappedAttributeByQuotedId(rightRd.getAttributes());
-            for ( Attribute leftAttribute :  fromAttributesIds.values()) {
-                Attribute rightAttribute = null;
-                if ( mappedRightAttributes.containsKey(leftAttribute.getID()) ){
-                    rightAttribute = mappedRightAttributes.get(leftAttribute.getID());
-                }
-
-                if ( rightAttribute != null &&
-                        ! leftAttribute.getQualifiedID().equals(rightAttribute.getQualifiedID()) &&
-                        leftAttribute.getID().equals(rightAttribute.getID() )  &&
-                        leftAttribute.getType()==rightAttribute.getType()){
-
-                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo(), true );
-
-                }
-            }
-
-        }
 
         /**
          * this is used to visit join using columns
          * @param join
          */
-        private void usingColumnsJoinVisit(Join join ){
+        private void usingColumnsJoinVisit(Join join){
 
-            RelationDefinition rightRd = getTableRelationDefinition( join.getRightItem() );
-            List<Attribute> rightAttributes = rightRd.getAttributes();
+            Map.Entry<RelationID, RelationDefinition> rightRd = getTableDefinitionWithAlias(join.getRightItem());
+            List<Attribute> rightAttributes = rightRd.getValue().getAttributes();
             Map<QuotedID, Attribute> mappedRightAttributes = getMappedAttributeByQuotedId(rightAttributes);
 
             for (Column column : join.getUsingColumns()) {
@@ -378,76 +323,81 @@ public class SQLQueryParser {
                         }
                     }
                     if (leftAttribute == null) {
-                        // todo: verify the correctness of rise an exception
-                        unsupportedMapping(attributeID);
+                        // todo: verify the correctness of raise an exception
+                        throw new MappingQueryException("??", attributeID);
                     }
                     addNewBinaryJoinCondition( leftAttribute, rightAttribute, attributeID.getName(), new EqualsTo(), true  );
 
                 } else {
                     // todo: verify the correctness of rise an exception
-                    unsupportedMapping(attributeID);
+                    throw new MappingQueryException("??", attributeID);
                 }
             }
 
         }
 
-        /**
-         * this is not yet in use
-         * @param whereConditions
-         */
-        private void crossJoinVisitor(Expression whereConditions ){
-
-            if ( whereConditions == null) { return;}
-             whereConditions.accept( joinExpressionVisitor );
-
-        }
-
-        private RelationDefinition getTableRelationDefinition(FromItem rightItem){
-            if ( ! (rightItem instanceof  Table) ) { unsupported(rightItem);}
-
-            Table rightTable = (Table) rightItem;
-            RelationID rightRelationId = idFac.createRelationID(rightTable.getSchemaName(), rightTable.getName());
-            RelationDefinition rightRd = dbMetadata.getRelation(rightRelationId);
-
-            if (rightRd == null ) { unsupportedMapping(rightRelationId);}
-
-            return rightRd;
-        }
 
 
 
+        private void processFROM(PlainSelect plainSelect) {
 
-        private void joinVisit(PlainSelect plainSelect) {
+            plainSelect.getFromItem().accept(fromItemVisitor);
+
             List<Join> joins = plainSelect.getJoins();
-
-            if (joins == null) {
+            if (joins == null)
                 return;
-            }
-
-            validateJoins( joins );
 
             for (Join join : joins) {
-                join.getRightItem().accept(fromItemVisitor);
+                if (join.isOuter() || join.isFull() || join.isRight() || join.isLeft())
+                    throw new ParseException(join);
 
+                // ROMAN: NATURAL JOIN REQUIRES A DIFFERENT WAY OF DOING IT
+                //join.getRightItem().accept(fromItemVisitor);
+
+                // ROMAN: why is this check here?
                 if (join.getUsingColumns() != null) {
                     usingColumnsJoinVisit(join);
-                }else if ( join.isNatural() ) {
-                    naturalJoinVisit(join);
-                }else if ( join.isCross()){
-                    crossJoinVisitor( plainSelect.getWhere() ) ;
-                }else if (join.getOnExpression() != null ) {
+                }
+                else if (join.isNatural()) {
+                    Map.Entry<RelationID, RelationDefinition> rightRd = getTableDefinitionWithAlias(join.getRightItem());
+
+                    for (Attribute rightAttribute :  rightRd.getValue().getAttributes()) {
+                        QualifiedAttributeID shortId = new QualifiedAttributeID(null, rightAttribute.getID());
+                        if (fromAttributesIds.containsKey(shortId)) {
+                            Attribute leftAttribute = fromAttributesIds.get(shortId);
+                            if (leftAttribute == null)
+                                throw new MappingQueryException("Ambiguous attribute", join); // ambiguity
+
+                            // this attribute is shared -- add a join condition
+                            addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo(), true);
+                        }
+                        else {
+                            // this attribute is not shared -- add to the list instead
+                            RelationID aliasId = rightRd.getKey();
+                            QualifiedAttributeID id = new QualifiedAttributeID(aliasId, rightAttribute.getID());
+                            fromAttributesIds.put(id, rightAttribute);
+                            fromAttributesIds.put(shortId, rightAttribute); // add an unqualified version (unambiguous)
+                        }
+                    }
+                }
+                else if (join.isCross()){
+                    join.getRightItem().accept(fromItemVisitor);
+                }
+                // ROMAN: why is this check here?
+                else if (join.getOnExpression() != null) {
+                    join.getRightItem().accept(fromItemVisitor);
+                    // ROMAN: careful with the joinExpressionVisitor - requires careful revision
                     join.getOnExpression().accept(joinExpressionVisitor);
                 }
-
             }
-            plainSelect.getWhere();
+            plainSelect.getWhere(); // ROMAN: WHAT IS THIS?
         }
     };
 
     private Map<QuotedID, Attribute> getMappedAttributeByQuotedId(Collection <Attribute> attributes ){
         Map<QuotedID,Attribute> map = new HashMap<>();
-        for (Attribute i : attributes)
-            map.put(i.getID(), i);
+        for (Attribute a : attributes)
+            map.put(a.getID(), a);
         return map;
     }
 
@@ -489,7 +439,7 @@ public class SQLQueryParser {
             Alias alias = selectExpr.getAlias();
             // all complex expressions in SELECT must be named (by aliases)
             if (!(expr instanceof Column) && alias == null)
-                unsupported(selectExpr);
+                throw new ParseException(selectExpr);
 
             // alias
             if (alias  != null) {
@@ -503,54 +453,66 @@ public class SQLQueryParser {
         }
     };
 
-    // todo: remove all the commnet
+    private Map.Entry<RelationID, RelationDefinition> getTableDefinitionWithAlias(FromItem fromItem) {
+        if (!(fromItem instanceof  Table))
+            throw new ParseException(fromItem);
+
+        Table table = (Table) fromItem;
+
+        RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
+        RelationDefinition relation = dbMetadata.getRelation(relationId);
+        if (relation  == null )
+            throw new MappingQueryException("Relation does not exist", relationId);
+
+        relations.add(relationId);
+
+        Alias as = table.getAlias();
+        RelationID aliasId = (as != null) ? idFac.createRelationID(null, as.getName()) : relationId;
+        if (tableAlias.containsKey(aliasId))
+            throw new MappingQueryException("Ambiguous alias", aliasId);
+
+        tableAlias.put(aliasId, relationId);
+        return new AbstractMap.SimpleImmutableEntry<>(aliasId, relation);
+    }
+
     private final FromItemVisitor fromItemVisitor = new FromItemVisitor() {
 
 		@Override
         public void visit(Table table) {
-
-            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
-            RelationDefinition relationDefinition = dbMetadata.getRelation(relationId);
-            if (relationDefinition  == null ) {unsupportedMapping( relationId);}
-
-            relations.add(relationId);
-
-            for (Attribute attribute : relationDefinition.getAttributes()) {
-                addFromAttributeIds(attribute);
+            Map.Entry<RelationID, RelationDefinition> e = getTableDefinitionWithAlias(table);
+            RelationID aliasId = e.getKey();
+            for (Attribute att : e.getValue().getAttributes()) {
+                QualifiedAttributeID id = new QualifiedAttributeID(aliasId, att.getID());
+                fromAttributesIds.put(id, att);
+                // short name, without any table name or alias
+                QualifiedAttributeID shortId = new QualifiedAttributeID(null, att.getID());
+                if (!fromAttributesIds.containsKey(shortId))
+                    fromAttributesIds.put(shortId, att); // add an unqualified version (unambiguous)
+                else
+                    fromAttributesIds.put(shortId, null); // ambiguous - replace with the null marker
             }
-
-
-            Alias as = table.getAlias();
-            RelationID aliasId = (as != null) ? idFac.createRelationID(null, as.getName()) : relationId;
-            tableAlias.put(aliasId, relationId);
-
         }
 
         @Override
         public void visit(SubSelect subSelect) {
+            // TODO: the code from visitSubSelect should be copied here
             visitSubSelect(subSelect);
-            // TODO: 30/12/2015 Does it should be integrate in the visitSubselect
-            // subSelect.getSelectBody().accept(selectVisitor);
         }
-
-
 
         @Override
         public void visit(SubJoin subjoin) {
-            unsupported(subjoin);
-
+            throw new ParseException(subjoin);
         }
 
         @Override
         public void visit(LateralSubSelect lateralSubSelect) {
-            unsupported(lateralSubSelect);
+            throw new ParseException(lateralSubSelect);
         }
 
         @Override
         public void visit(ValuesList valuesList) {
-            unsupported(valuesList);
+            throw new ParseException(valuesList);
         }
-
     };
 
     //
@@ -563,9 +525,9 @@ public class SQLQueryParser {
 
         @Override
         public void visit(MultiExpressionList multiExprList) {
-            unsupported(multiExprList);
-            for (ExpressionList exprList : multiExprList.getExprList())
-                exprList.accept(this);
+            throw new ParseException(multiExprList);
+            //for (ExpressionList exprList : multiExprList.getExprList())
+            //    exprList.accept(this);
         }
 
         @Override
@@ -630,8 +592,7 @@ public class SQLQueryParser {
                     break;
 
                 default:
-                    unsupported(function);
-                    break;
+                    throw new ParseException(function);
             }
         }
 
@@ -657,7 +618,7 @@ public class SQLQueryParser {
 
         @Override
         public void visit(JdbcParameter jdbcParameter) {
-            unsupported(jdbcParameter);
+            throw new ParseException(jdbcParameter);
         }
 
         @Override
@@ -737,24 +698,24 @@ public class SQLQueryParser {
 
         @Override
         public void visit(CaseExpression caseExpression) {
-            unsupported(caseExpression);
+            throw new ParseException(caseExpression);
         }
 
         @Override
         public void visit(WhenClause whenClause) {
-            unsupported(whenClause);
+            throw new ParseException(whenClause);
         }
 
         @Override
         public void visit(AllComparisonExpression allComparisonExpression) {
-            unsupported(allComparisonExpression);
-            allComparisonExpression.getSubSelect().getSelectBody().accept(selectVisitor);
+            throw new ParseException(allComparisonExpression);
+            //allComparisonExpression.getSubSelect().getSelectBody().accept(selectVisitor);
         }
 
         @Override
         public void visit(AnyComparisonExpression anyComparisonExpression) {
-            unsupported(anyComparisonExpression);
-            anyComparisonExpression.getSubSelect().getSelectBody().accept(selectVisitor);
+            throw new ParseException(anyComparisonExpression);
+            //anyComparisonExpression.getSubSelect().getSelectBody().accept(selectVisitor);
         }
 
         @Override
@@ -764,26 +725,26 @@ public class SQLQueryParser {
 
         @Override
         public void visit(Matches matches) {
-            unsupported(matches);
-            visitBinaryExpression(matches);
+            throw new ParseException(matches);
+            //visitBinaryExpression(matches);
         }
 
         @Override
         public void visit(BitwiseAnd bitwiseAnd) {
-            unsupported(bitwiseAnd);
-            visitBinaryExpression(bitwiseAnd);
+            throw new ParseException(bitwiseAnd);
+            //visitBinaryExpression(bitwiseAnd);
         }
 
         @Override
         public void visit(BitwiseOr bitwiseOr) {
-            unsupported(bitwiseOr);
-            visitBinaryExpression(bitwiseOr);
+            throw new ParseException(bitwiseOr);
+            //visitBinaryExpression(bitwiseOr);
         }
 
         @Override
         public void visit(BitwiseXor bitwiseXor) {
-            unsupported(bitwiseXor);
-            visitBinaryExpression(bitwiseXor);
+            throw new ParseException(bitwiseXor);
+            //visitBinaryExpression(bitwiseXor);
         }
 
         @Override
@@ -793,33 +754,33 @@ public class SQLQueryParser {
 
         @Override
         public void visit(Modulo modulo) {
-            unsupported(modulo);
-            visitBinaryExpression(modulo);
+            throw new ParseException(modulo);
+            //visitBinaryExpression(modulo);
         }
 
         @Override
         public void visit(AnalyticExpression analytic) {
-            unsupported(analytic);
+            throw new ParseException(analytic);
         }
 
         @Override
         public void visit(ExtractExpression eexpr) {
-            unsupported(eexpr);
+            throw new ParseException(eexpr);
         }
 
         @Override
         public void visit(IntervalExpression iexpr) {
-            unsupported(iexpr);
+            throw new ParseException(iexpr);
         }
 
         @Override
         public void visit(JdbcNamedParameter jdbcNamedParameter) {
-            unsupported(jdbcNamedParameter);
+            throw new ParseException(jdbcNamedParameter);
         }
 
         @Override
         public void visit(OracleHierarchicalExpression arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
@@ -832,7 +793,7 @@ public class SQLQueryParser {
         @Override
         public void visit(SignedExpression arg0) {
             System.out.println("WARNING: SignedExpression   not implemented ");
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
@@ -876,7 +837,7 @@ public class SQLQueryParser {
                         ex.accept(this);
                     break;
                 default:
-                    unsupported(function);
+                    throw new ParseException(function);
             }
 
         }
@@ -913,12 +874,12 @@ public class SQLQueryParser {
 
         @Override
         public void visit(AndExpression andExpression) {
-            unsupported(andExpression);
+            throw new ParseException(andExpression);
         }
 
         @Override
         public void visit(OrExpression orExpression) {
-            unsupported(orExpression);
+            throw new ParseException(orExpression);
         }
 
         @Override
@@ -930,17 +891,17 @@ public class SQLQueryParser {
 
         @Override
         public void visit(EqualsTo equalsTo) {
-            unsupported(equalsTo);
+            throw new ParseException(equalsTo);
         }
 
         @Override
         public void visit(GreaterThan greaterThan) {
-            unsupported(greaterThan);
+            throw new ParseException(greaterThan);
         }
 
         @Override
         public void visit(GreaterThanEquals greaterThanEquals) {
-            unsupported(greaterThanEquals);
+            throw new ParseException(greaterThanEquals);
         }
 
         @Override
@@ -966,27 +927,27 @@ public class SQLQueryParser {
 
         @Override
         public void visit(IsNullExpression isNullExpression) {
-            unsupported(isNullExpression);
+            throw new ParseException(isNullExpression);
         }
 
         @Override
         public void visit(LikeExpression likeExpression) {
-            unsupported(likeExpression);
+            throw new ParseException(likeExpression);
         }
 
         @Override
         public void visit(MinorThan minorThan) {
-            unsupported(minorThan);
+            throw new ParseException(minorThan);
         }
 
         @Override
         public void visit(MinorThanEquals minorThanEquals) {
-            unsupported(minorThanEquals);
+            throw new ParseException(minorThanEquals);
         }
 
         @Override
         public void visit(NotEqualsTo notEqualsTo) {
-            unsupported(notEqualsTo);
+            throw new ParseException(notEqualsTo);
         }
 
         /*
@@ -1007,27 +968,27 @@ public class SQLQueryParser {
 
         @Override
         public void visit(CaseExpression caseExpression) {
-            unsupported(caseExpression);
+            throw new ParseException(caseExpression);
         }
 
         @Override
         public void visit(WhenClause whenClause) {
-            unsupported(whenClause);
+            throw new ParseException(whenClause);
         }
 
         @Override
         public void visit(ExistsExpression existsExpression) {
-            unsupported(existsExpression);
+            throw new ParseException(existsExpression);
         }
 
         @Override
         public void visit(AllComparisonExpression allComparisonExpression) {
-            unsupported(allComparisonExpression);
+            throw new ParseException(allComparisonExpression);
         }
 
         @Override
         public void visit(AnyComparisonExpression anyComparisonExpression) {
-            unsupported(anyComparisonExpression);
+            throw new ParseException(anyComparisonExpression);
         }
 
         @Override
@@ -1037,22 +998,22 @@ public class SQLQueryParser {
 
         @Override
         public void visit(Matches matches) {
-            unsupported(matches);
+            throw new ParseException(matches);
         }
 
         @Override
         public void visit(BitwiseAnd bitwiseAnd) {
-            unsupported(bitwiseAnd);
+            throw new ParseException(bitwiseAnd);
         }
 
         @Override
         public void visit(BitwiseOr bitwiseOr) {
-            unsupported(bitwiseOr);
+            throw new ParseException(bitwiseOr);
         }
 
         @Override
         public void visit(BitwiseXor bitwiseXor) {
-            unsupported(bitwiseXor);
+            throw new ParseException(bitwiseXor);
         }
 
         @Override
@@ -1063,32 +1024,32 @@ public class SQLQueryParser {
 
         @Override
         public void visit(Modulo modulo) {
-            unsupported(modulo);
+            throw new ParseException(modulo);
         }
 
         @Override
         public void visit(AnalyticExpression aexpr) {
-            unsupported(aexpr);
+            throw new ParseException(aexpr);
         }
 
         @Override
         public void visit(ExtractExpression eexpr) {
-            unsupported(eexpr);
+            throw new ParseException(eexpr);
         }
 
         @Override
         public void visit(IntervalExpression iexpr) {
-            unsupported(iexpr);
+            throw new ParseException(iexpr);
         }
 
         @Override
         public void visit(OracleHierarchicalExpression oexpr) {
-            unsupported(oexpr);
+            throw new ParseException(oexpr);
         }
 
         @Override
         public void visit(RegExpMatchOperator arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
 
@@ -1102,12 +1063,12 @@ public class SQLQueryParser {
 
         @Override
         public void visit(JdbcParameter jdbcParameter) {
-            unsupported(jdbcParameter);
+            throw new ParseException(jdbcParameter);
         }
 
         @Override
         public void visit(JdbcNamedParameter jdbcNamedParameter) {
-            unsupported(jdbcNamedParameter);
+            throw new ParseException(jdbcNamedParameter);
         }
 
 
@@ -1406,20 +1367,20 @@ public class SQLQueryParser {
         @Override
         public void visit(CaseExpression arg0) {
             // we do not support case expression
-            unsupported(arg0);
+            throw new ParseException(arg0);
 
         }
 
         @Override
         public void visit(WhenClause arg0) {
             // we do not support when expression
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
         public void visit(ExistsExpression exists) {
             // we do not support exists
-            unsupported(exists);
+            throw new ParseException(exists);
         }
 
         /*
@@ -1428,7 +1389,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(AllComparisonExpression all) {
-            unsupported(all);
+            throw new ParseException(all);
         }
 
         /*
@@ -1437,7 +1398,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(AnyComparisonExpression any) {
-            unsupported(any);
+            throw new ParseException(any);
         }
 
         /*
@@ -1446,7 +1407,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(Concat arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         /*
@@ -1455,7 +1416,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(Matches arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         /*
@@ -1464,7 +1425,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(BitwiseAnd arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         /*
@@ -1473,7 +1434,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(BitwiseOr arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         /*
@@ -1482,7 +1443,7 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(BitwiseXor arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
@@ -1496,42 +1457,42 @@ public class SQLQueryParser {
          */
         @Override
         public void visit(Modulo arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
         public void visit(AnalyticExpression arg0) {
             // we do not consider AnalyticExpression
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
         public void visit(ExtractExpression arg0) {
             // we do not consider ExtractExpression
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
         public void visit(IntervalExpression arg0) {
             // we do not consider IntervalExpression
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
         public void visit(OracleHierarchicalExpression arg0) {
             // we do not consider OracleHierarchicalExpression
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
 
         @Override
         public void visit(RegExpMatchOperator arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
         }
 
         @Override
         public void visit(SignedExpression arg0) {
-            unsupported(arg0);
+            throw new ParseException(arg0);
 
         }
 
@@ -1563,7 +1524,7 @@ public class SQLQueryParser {
                     ex.accept(this);
             }
             else
-                unsupported(function);
+                throw new ParseException(function);
         }
 
         @Override
