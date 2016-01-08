@@ -296,6 +296,34 @@ public class SQLQueryParserTest extends TestCase {
         assertTrue(result);
     }
 
+    public void testCrossJoinAndWhere(){
+        final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode "
+                + " FROM person a " +
+                " CROSS JOIN email b" +
+                " WHERE a.personId = b.personId ");
+        printJSQL("testNaturalAndInnerJoin", result);
+        assertTrue(result);
+
+        assertEquals("{A=PERSON, B=EMAIL}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
+        assertEquals("[A.IDPERSON = B.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
+    }
+
+    public void testCrossJoinAndWhereMoreConditions(){
+        final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode "
+                + " FROM person a " +
+                " CROSS JOIN email b" +
+                " CROSS JOIN address c " +
+                " WHERE a.personId = b.personId AND a.personId=  c.personId");
+        printJSQL("testNaturalAndInnerJoin", result);
+        assertTrue(result);
+
+        assertEquals("{A=PERSON, B=EMAIL, C=ADDRESS}", obdaVisitor.getTableAlias().toString());
+        assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
+        assertEquals("[A.IDPERSON = B.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
+    }
+
+
     public void testNaturalAndCrosslJoin(){
 
         final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode "

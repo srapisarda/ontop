@@ -396,17 +396,9 @@ public class SQLQueryParser {
          * @param whereConditions
          */
         private void crossJoinVisitor(Expression whereConditions ){
-            //todo: it is necessary to add any where condition in AND as join expression
-
-
 
             if ( whereConditions == null) { return;}
-
-            if (whereConditions instanceof AndExpression) {
-                AndExpression andExpression = (AndExpression) whereConditions;
-                andExpression.getLeftExpression();
-
-            }
+             whereConditions.accept( joinExpressionVisitor );
 
         }
 
@@ -442,8 +434,7 @@ public class SQLQueryParser {
                 }else if ( join.isNatural() ) {
                     naturalJoinVisit(join);
                 }else if ( join.isCross()){
-                    // todo: not  implemented yet.
-                    // crossJoinVisitor( plainSelect.getWhere() ) ;
+                    crossJoinVisitor( plainSelect.getWhere() ) ;
                 }else if (join.getOnExpression() != null ) {
                     join.getOnExpression().accept(joinExpressionVisitor);
                 }
@@ -1308,6 +1299,7 @@ public class SQLQueryParser {
                 right.accept(this);
                 // ROMAN (25 Sep 2015): this transforms OR into AND
                 joinConditions.add(binaryExpression);
+                // TODO: Verify the nature of the binary expression, e.c. for reflexive avoid duplicates
             }
             else {
                 left.accept(this);
