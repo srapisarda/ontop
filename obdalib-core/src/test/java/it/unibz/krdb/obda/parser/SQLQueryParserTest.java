@@ -270,24 +270,19 @@ public class SQLQueryParserTest extends TestCase {
 
         assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, POSTCODE=POSTCODE, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, PERSON.IDPERSON = ADDRESS.IDPERSON, EMAIL.IDPERSON = ADDRESS.IDPERSON, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
+        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, PERSON.IDPERSON = ADDRESS.IDPERSON, POSTCODE.POSTCODE = ADDRESS.POSTCODE]", obdaVisitor.getJoinConditions().toString() );
 
     }
 
-    public void testInnerAndNaturalJoin(){
+    public void testAmbiguousInnerAndNaturalJoin(){
 
         final boolean result = parseUnquotedJSQL("SELECT personId, name, email, address, postcode " +
                 " FROM person " +
                 " INNER JOIN email on  person.idPerson = email.idPerson " +
                 " NATURAL JOIN address ");
 
-        printJSQL("testInnerAndNaturalJoin", result);
-        assertTrue(result);
-
-        assertEquals("{ADDRESS=ADDRESS, PERSON=PERSON, EMAIL=EMAIL}", obdaVisitor.getTableAlias().toString());
-        assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[PERSON.IDPERSON = EMAIL.IDPERSON, PERSON.IDPERSON = ADDRESS.IDPERSON, EMAIL.IDPERSON = ADDRESS.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
-
+        printJSQL("testAmbiguousInnerAndNaturalJoin", result);
+        assertFalse(result);
     }
 
     public void testCrossJoin(){
@@ -306,7 +301,6 @@ public class SQLQueryParserTest extends TestCase {
 
         assertEquals("{A=PERSON, B=EMAIL}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[A.IDPERSON = B.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
     }
 
     public void testCrossJoinAndWhereMoreConditions(){
@@ -320,7 +314,6 @@ public class SQLQueryParserTest extends TestCase {
 
         assertEquals("{A=PERSON, B=EMAIL, C=ADDRESS}", obdaVisitor.getTableAlias().toString());
         assertEquals("[PERSONID, NAME, EMAIL, ADDRESS, POSTCODE]", obdaVisitor.getProjection().toString());
-        assertEquals("[A.IDPERSON = B.IDPERSON]", obdaVisitor.getJoinConditions().toString() );
     }
 
 
