@@ -286,35 +286,35 @@ public class SQLQueryParser {
          * @param join
          */
         private void usingColumnsJoinVisit(Join join){
+
             Map.Entry<RelationID, RelationDefinition> rightRd = getTableDefinitionWithAlias(join.getRightItem());
-            for (Column column : join.getUsingColumns()) {
-                QuotedID attributeID = idFac.createAttributeID(column.getColumnName());
-                QualifiedAttributeID  shortColumnId = new QualifiedAttributeID(null, attributeID);
-                for (Attribute rightAttribute :  rightRd.getValue().getAttributes()) {
 
-                    QualifiedAttributeID shortId = new QualifiedAttributeID(null, rightAttribute.getID());
-
-                    if ( shortColumnId.equals(shortId)  &&  fromAttributesIds.containsKey(shortId)) {
-                        Attribute leftAttribute = fromAttributesIds.get(shortId);
-                        if (leftAttribute == null)
-                            throw new MappingQueryException("Ambiguous attribute", join); // ambiguity
-
-                            // this attribute is shared -- add a join condition
-                            addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
-                        }
-                        else {
-                            // this attribute is not shared -- add to the list instead
-                            RelationID aliasId = rightRd.getKey();
-                            QualifiedAttributeID id = new QualifiedAttributeID(aliasId, rightAttribute.getID());
-                            fromAttributesIds.put(id, rightAttribute);
-                            fromAttributesIds.put(shortId, rightAttribute); // add an unqualified version (unambiguous)
-                    }
-                }
+            RelationID aliasId = rightRd.getKey();
+            for (Attribute att : rightRd.getValue().getAttributes()) {
+                QualifiedAttributeID id = new QualifiedAttributeID(aliasId, att.getID());
+                fromAttributesIds.put(id, att);
+                // short name, without any table name or alias
+                QualifiedAttributeID shortId = new QualifiedAttributeID(null, att.getID());
+                if (!fromAttributesIds.containsKey(shortId))
+                    fromAttributesIds.put(shortId, att); // add an unqualified version (unambiguous)
             }
 
+
+            for (Column column : join.getUsingColumns()) {
+                QuotedID attributeID = idFac.createAttributeID(column.getColumnName());
+                QualifiedAttributeID  rightColumnId = new QualifiedAttributeID(aliasId, attributeID);
+                QualifiedAttributeID  leftColumnId = new QualifiedAttributeID(null, attributeID);
+                if (  fromAttributesIds.containsKey(leftColumnId) &&  fromAttributesIds.containsKey(rightColumnId) ) {
+                    Attribute rightAttribute = fromAttributesIds.get(rightColumnId);
+                    Attribute leftAttribute = fromAttributesIds.get(leftColumnId);
+                    if (leftAttribute == null)
+                        throw new MappingQueryException("Ambiguous attribute", join); // ambiguity
+
+                   addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
+                }else
+                    throw new MappingQueryException("Ambiguous attribute", join);
+            }
         }
-
-
 
 
         private void processFROM(PlainSelect plainSelect) {
