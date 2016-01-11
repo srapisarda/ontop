@@ -287,25 +287,25 @@ public class SQLQueryParser {
          */
         private void usingColumnsJoinVisit(Join join){
 
-            Map.Entry<RelationID, RelationDefinition> rightRd = getTableDefinitionWithAlias(join.getRightItem());
+            if (!(join.getRightItem() instanceof  Table))
+                throw new ParseException(join.getRightItem());
 
-            RelationID aliasId = rightRd.getKey();
-            for (Attribute att : rightRd.getValue().getAttributes()) {
-                QualifiedAttributeID id = new QualifiedAttributeID(aliasId, att.getID());
-                fromAttributesIds.put(id, att);
-                // short name, without any table name or alias
-                QualifiedAttributeID shortId = new QualifiedAttributeID(null, att.getID());
-                if (!fromAttributesIds.containsKey(shortId))
-                    fromAttributesIds.put(shortId, att); // add an unqualified version (unambiguous)
-            }
+            Table table = (Table) join.getRightItem();
+            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
+            RelationDefinition relation = dbMetadata.getRelation(relationId);
+            if (relation  == null )
+                throw new MappingQueryException("Relation does not exist", relationId);
 
+            Map<QualifiedAttributeID, Attribute > rightAttributes = new HashMap<>();
+            for ( Attribute attribute : relation.getAttributes()  )
+                rightAttributes.put( attribute.getQualifiedID(), attribute );
 
             for (Column column : join.getUsingColumns()) {
                 QuotedID attributeID = idFac.createAttributeID(column.getColumnName());
-                QualifiedAttributeID  rightColumnId = new QualifiedAttributeID(aliasId, attributeID);
+                QualifiedAttributeID  rightColumnId = new QualifiedAttributeID(relationId, attributeID);
                 QualifiedAttributeID  leftColumnId = new QualifiedAttributeID(null, attributeID);
-                if (  fromAttributesIds.containsKey(leftColumnId) &&  fromAttributesIds.containsKey(rightColumnId) ) {
-                    Attribute rightAttribute = fromAttributesIds.get(rightColumnId);
+                if (  fromAttributesIds.containsKey(leftColumnId) &&  rightAttributes.containsKey(rightColumnId) ) {
+                    Attribute rightAttribute = rightAttributes.get(rightColumnId);
                     Attribute leftAttribute = fromAttributesIds.get(leftColumnId);
                     if (leftAttribute == null)
                         throw new MappingQueryException("Ambiguous attribute", join); // ambiguity
@@ -314,6 +314,9 @@ public class SQLQueryParser {
                 }else
                     throw new MappingQueryException("Ambiguous attribute", join);
             }
+
+            join.getRightItem().accept(fromItemVisitor);
+
         }
 
 
