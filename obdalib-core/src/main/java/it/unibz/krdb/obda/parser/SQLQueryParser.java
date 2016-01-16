@@ -437,8 +437,8 @@ public class SQLQueryParser {
 
         @Override
         public void visit(SubSelect subSelect) {
-            // TODO: the code from visitSubSelect should be copied here
-            visitSubSelect(subSelect);
+            // todo : for now it rises an exception but this should be implemented for query such as: SELECT * FROM ...
+            throw new ParseException(subSelect);
         }
 
         @Override
