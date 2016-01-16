@@ -73,6 +73,7 @@ public class SQLQueryParser {
 
     private final List<RelationID> relations = new LinkedList<>();
 
+    private  List<Column>  joinUsingColumns = null;
 
     private final ExpressionVisitor tableExpressionVisitor;
     private final ExpressionVisitor projectorExpressionVisitor;
@@ -248,69 +249,6 @@ public class SQLQueryParser {
         }
 
 
-        /**
-         * Adds a new binary expression to the joinExpressionVisitor list
-         * @param leftAttribute - LHS binary attribute
-         * @param rightAttribute - RHS binary attribute
-         * @param columnName - common column name between LHS and RHS
-         * @param binaryExpression - Binary expression or one of its extensions
-         */
-        private void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,  BinaryExpression binaryExpression){
-            Column leftColumn = new Column(
-                    new Table( leftAttribute.getRelation().getID().getSchemaName(),
-                            leftAttribute.getRelation().getID().getTableName()), columnName );
-
-            Column rightColumn = new Column(
-                    new Table(  rightAttribute.getRelation().getID().getSchemaName(),
-                            rightAttribute.getRelation().getID().getTableName()), columnName);
-            rightColumn.accept(joinExpressionVisitor);
-
-            binaryExpression.setLeftExpression(leftColumn);
-            binaryExpression.setRightExpression(rightColumn);
-            if (!joinConditions.contains(binaryExpression)) {
-                joinConditions.add(binaryExpression);
-            }
-        }
-
-        /**
-         * this is used to visit join using columns
-         * @param join join
-         */
-        private void usingColumnsJoinVisit(Join join){
-
-            if (!(join.getRightItem() instanceof  Table))
-                throw new ParseException(join.getRightItem());
-
-            Table table = (Table) join.getRightItem();
-            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
-            RelationDefinition relation = dbMetadata.getRelation(relationId);
-            if (relation  == null )
-                throw new MappingQueryException("Relation does not exist", relationId);
-
-            Map<QualifiedAttributeID, Attribute > rightAttributes = new HashMap<>();
-            for ( Attribute attribute : relation.getAttributes()  )
-                rightAttributes.put( attribute.getQualifiedID(), attribute );
-
-            for (Column column : join.getUsingColumns()) {
-                QuotedID attributeID = idFac.createAttributeID(column.getColumnName());
-                QualifiedAttributeID  rightColumnId = new QualifiedAttributeID(relationId, attributeID);
-                QualifiedAttributeID  leftColumnId = new QualifiedAttributeID(null, attributeID);
-                if (  fromAttributesIds.containsKey(leftColumnId) &&  rightAttributes.containsKey(rightColumnId) ) {
-                    Attribute rightAttribute = rightAttributes.get(rightColumnId);
-                    Attribute leftAttribute = fromAttributesIds.get(leftColumnId);
-                    if (leftAttribute == null)
-                        throw new MappingQueryException("Ambiguous attribute", join); // ambiguity
-
-                   addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
-                }else
-                    throw new MappingQueryException("Ambiguous attribute", join);
-            }
-
-            join.getRightItem().accept(fromItemVisitor);
-
-        }
-
-
         private void processFROM(PlainSelect plainSelect) {
 
             plainSelect.getFromItem().accept(fromItemVisitor);
@@ -323,25 +261,7 @@ public class SQLQueryParser {
                 if (join.isOuter() || join.isLeft() || join.isRight() ) {
                     throw new ParseException(join);
                 }else if ( join.isNatural() ){
-                    Map.Entry<RelationID, RelationDefinition> rightRd = getTableDefinitionWithAlias(join.getRightItem());
-                    for (Attribute rightAttribute :  rightRd.getValue().getAttributes()) {
-                        QualifiedAttributeID shortId = new QualifiedAttributeID(null, rightAttribute.getID());
-                        if (fromAttributesIds.containsKey(shortId)) {
-                            Attribute leftAttribute = fromAttributesIds.get(shortId);
-                            if (leftAttribute == null)
-                                throw new MappingQueryException("Ambiguous attribute", join); // ambiguity
-
-                            // this attribute is shared -- add a join condition
-                            addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
-                        }
-                        else {
-                            // this attribute is not shared -- add to the list instead
-                            RelationID aliasId = rightRd.getKey();
-                            QualifiedAttributeID id = new QualifiedAttributeID(aliasId, rightAttribute.getID());
-                            fromAttributesIds.put(id, rightAttribute);
-                            fromAttributesIds.put(shortId, rightAttribute); // add an unqualified version (unambiguous)
-                        }
-                    }
+                    join.getRightItem().accept(fromNaturalJoinItemVisitor);
                 } else if( join.isCross() || join.isSimple() ){
                     join.getRightItem().accept(fromItemVisitor);
                 } else if (join.getOnExpression() != null) {
@@ -349,7 +269,10 @@ public class SQLQueryParser {
                     // ROMAN: careful with the joinExpressionVisitor - requires careful revision
                     join.getOnExpression().accept(joinExpressionVisitor);
                 } else if ( join.getUsingColumns() != null) {
-                    usingColumnsJoinVisit(join);
+                    joinUsingColumns =  join.getUsingColumns();
+                    join.getRightItem().accept(fromUsingColumnJoinItemVisitor);
+                    joinUsingColumns = null;
+                    join.getRightItem().accept(fromItemVisitor);
                 }
             }
         }
@@ -429,6 +352,111 @@ public class SQLQueryParser {
         return new AbstractMap.SimpleImmutableEntry<>(aliasId, relation);
     }
 
+
+    private final FromItemVisitor fromUsingColumnJoinItemVisitor = new FromItemVisitor() {
+
+        /**
+         * this is used to visit join using columns
+         * @param table join
+         **/
+       @Override
+        public void visit(Table table) {
+
+            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
+            RelationDefinition relation = dbMetadata.getRelation(relationId);
+            if (relation == null)
+                throw new MappingQueryException("Relation does not exist", relationId);
+
+            Map<QualifiedAttributeID, Attribute> rightAttributes = new HashMap<>();
+            for (Attribute attribute : relation.getAttributes())
+                rightAttributes.put(attribute.getQualifiedID(), attribute);
+
+            for (Column column : joinUsingColumns ) {
+                QuotedID attributeID = idFac.createAttributeID(column.getColumnName());
+                QualifiedAttributeID rightColumnId = new QualifiedAttributeID(relationId, attributeID);
+                QualifiedAttributeID leftColumnId = new QualifiedAttributeID(null, attributeID);
+                if (fromAttributesIds.containsKey(leftColumnId) && rightAttributes.containsKey(rightColumnId)) {
+                    Attribute rightAttribute = rightAttributes.get(rightColumnId);
+                    Attribute leftAttribute = fromAttributesIds.get(leftColumnId);
+                    if (leftAttribute == null)
+                        throw new MappingQueryException("Ambiguous attribute", leftAttribute); // ambiguity
+
+                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
+                } else
+                    throw new MappingQueryException("Ambiguous attribute", rightAttributes);
+            }
+
+        }
+
+        @Override
+        public void visit(SubSelect subSelect) {
+            // todo : for now it rises an exception but this should be implemented for query such as: SELECT * FROM ...
+            throw new ParseException(subSelect);
+        }
+
+        @Override
+        public void visit(SubJoin subjoin) {
+            throw new ParseException(subjoin);
+        }
+
+        @Override
+        public void visit(LateralSubSelect lateralSubSelect) {
+            throw new ParseException(lateralSubSelect);
+        }
+
+        @Override
+        public void visit(ValuesList valuesList) {
+            throw new ParseException(valuesList);
+        }
+    };
+
+    private final FromItemVisitor fromNaturalJoinItemVisitor = new FromItemVisitor() {
+
+        @Override
+        public void visit(Table table) {
+            Map.Entry<RelationID, RelationDefinition> rightRd = getTableDefinitionWithAlias(table);
+            for (Attribute rightAttribute :  rightRd.getValue().getAttributes()) {
+                QualifiedAttributeID shortId = new QualifiedAttributeID(null, rightAttribute.getID());
+                if (fromAttributesIds.containsKey(shortId)) {
+                    Attribute leftAttribute = fromAttributesIds.get(shortId);
+                    if (leftAttribute == null)
+                        throw new MappingQueryException("Ambiguous attribute", shortId); // ambiguity
+
+                    // this attribute is shared -- add a join condition
+                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
+                }
+                else {
+                    // this attribute is not shared -- add to the list instead
+                    RelationID aliasId = rightRd.getKey();
+                    QualifiedAttributeID id = new QualifiedAttributeID(aliasId, rightAttribute.getID());
+                    fromAttributesIds.put(id, rightAttribute);
+                    fromAttributesIds.put(shortId, rightAttribute); // add an unqualified version (unambiguous)
+                }
+            }
+        }
+
+        @Override
+        public void visit(SubSelect subSelect) {
+            // TODO: the code from visitSubSelect should be copied here
+            visitSubSelect(subSelect);
+        }
+
+        @Override
+        public void visit(SubJoin subjoin) {
+            throw new ParseException(subjoin);
+        }
+
+        @Override
+        public void visit(LateralSubSelect lateralSubSelect) {
+            throw new ParseException(lateralSubSelect);
+        }
+
+        @Override
+        public void visit(ValuesList valuesList) {
+            throw new ParseException(valuesList);
+        }
+    };
+
     private final FromItemVisitor fromItemVisitor = new FromItemVisitor() {
 
 		@Override
@@ -491,6 +519,30 @@ public class SQLQueryParser {
     };
 
 
+
+    /**
+     * Adds a new binary expression to the joinExpressionVisitor list
+     * @param leftAttribute - LHS binary attribute
+     * @param rightAttribute - RHS binary attribute
+     * @param columnName - common column name between LHS and RHS
+     * @param binaryExpression - Binary expression or one of its extensions
+     */
+    private void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,  BinaryExpression binaryExpression){
+        Column leftColumn = new Column(
+                new Table( leftAttribute.getRelation().getID().getSchemaName(),
+                        leftAttribute.getRelation().getID().getTableName()), columnName );
+
+        Column rightColumn = new Column(
+                new Table(  rightAttribute.getRelation().getID().getSchemaName(),
+                        rightAttribute.getRelation().getID().getTableName()), columnName);
+        rightColumn.accept(joinExpressionVisitor);
+
+        binaryExpression.setLeftExpression(leftColumn);
+        binaryExpression.setRightExpression(rightColumn);
+        if (!joinConditions.contains(binaryExpression)) {
+            joinConditions.add(binaryExpression);
+        }
+    }
     //endregion
 
 }

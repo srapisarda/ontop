@@ -31,8 +31,6 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 
-
-
 public class TableExpressionVisitor implements ExpressionVisitor {
 
     private final ItemsListVisitor itemsListVisitor;

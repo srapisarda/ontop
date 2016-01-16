@@ -27,9 +27,7 @@ import net.sf.jsqlparser.expression.operators.relational.MultiExpressionList;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
-/**
- * Created by salvo on 13/01/2016.
- */
+
 public class ParserItemsListVisitor implements net.sf.jsqlparser.expression.operators.relational.ItemsListVisitor {
 
     private final TableExpressionVisitor tableExpressionVisitor;

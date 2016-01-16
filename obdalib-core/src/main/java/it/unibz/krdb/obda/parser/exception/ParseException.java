@@ -1,4 +1,5 @@
 package it.unibz.krdb.obda.parser.exception;
+
 /*
  * #%L
  * ontop-obdalib-core
@@ -18,8 +19,6 @@ package it.unibz.krdb.obda.parser.exception;
  * limitations under the License.
  * #L%
  */
-
-
 
 
 

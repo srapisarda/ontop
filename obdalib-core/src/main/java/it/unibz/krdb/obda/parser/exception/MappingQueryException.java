@@ -23,9 +23,6 @@ package it.unibz.krdb.obda.parser.exception;
 
 
 /**
- * Created by salvo on 13/01/2016.
- */
-/**
  * This exception is thrown when a mapping contains an error
  * (that is, when the query is not a valid SQL query for the data source)
  */
