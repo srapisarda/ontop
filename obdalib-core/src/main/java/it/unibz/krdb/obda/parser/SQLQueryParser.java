@@ -23,10 +23,7 @@ package it.unibz.krdb.obda.parser;
 
 import it.unibz.krdb.obda.parser.exception.MappingQueryException;
 import it.unibz.krdb.obda.parser.exception.ParseException;
-import it.unibz.krdb.obda.parser.visitor.JoinExpressionVisitor;
-import it.unibz.krdb.obda.parser.visitor.ProjectorExpressionVisitor;
-import it.unibz.krdb.obda.parser.visitor.TableExpressionVisitor;
-import it.unibz.krdb.obda.parser.visitor.WhereExpressionVisitor;
+import it.unibz.krdb.obda.parser.visitor.*;
 import it.unibz.krdb.sql.*;
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -72,8 +69,6 @@ public class SQLQueryParser {
     }
 
     private final List<RelationID> relations = new LinkedList<>();
-
-    private  List<Column>  joinUsingColumns = null;
 
     private final ExpressionVisitor tableExpressionVisitor;
     private final ExpressionVisitor projectorExpressionVisitor;
@@ -269,9 +264,9 @@ public class SQLQueryParser {
                     // ROMAN: careful with the joinExpressionVisitor - requires careful revision
                     join.getOnExpression().accept(joinExpressionVisitor);
                 } else if ( join.getUsingColumns() != null) {
-                    joinUsingColumns =  join.getUsingColumns();
-                    join.getRightItem().accept(fromUsingColumnJoinItemVisitor);
-                    joinUsingColumns = null;
+                    join.getRightItem().accept(
+                            new FromUsingColumnJoinItemVisitor(dbMetadata, join.getUsingColumns(),
+                                    fromAttributesIds, joinConditions, joinExpressionVisitor));
                     join.getRightItem().accept(fromItemVisitor);
                 }
             }
@@ -353,63 +348,6 @@ public class SQLQueryParser {
     }
 
 
-    private final FromItemVisitor fromUsingColumnJoinItemVisitor = new FromItemVisitor() {
-
-        /**
-         * this is used to visit join using columns
-         * @param table join
-         **/
-       @Override
-        public void visit(Table table) {
-
-            RelationID relationId = idFac.createRelationID(table.getSchemaName(), table.getName());
-            RelationDefinition relation = dbMetadata.getRelation(relationId);
-            if (relation == null)
-                throw new MappingQueryException("Relation does not exist", relationId);
-
-            Map<QualifiedAttributeID, Attribute> rightAttributes = new HashMap<>();
-            for (Attribute attribute : relation.getAttributes())
-                rightAttributes.put(attribute.getQualifiedID(), attribute);
-
-            for (Column column : joinUsingColumns ) {
-                QuotedID attributeID = idFac.createAttributeID(column.getColumnName());
-                QualifiedAttributeID rightColumnId = new QualifiedAttributeID(relationId, attributeID);
-                QualifiedAttributeID leftColumnId = new QualifiedAttributeID(null, attributeID);
-                if (fromAttributesIds.containsKey(leftColumnId) && rightAttributes.containsKey(rightColumnId)) {
-                    Attribute rightAttribute = rightAttributes.get(rightColumnId);
-                    Attribute leftAttribute = fromAttributesIds.get(leftColumnId);
-                    if (leftAttribute == null)
-                        throw new MappingQueryException("Ambiguous attribute", leftAttribute); // ambiguity
-
-                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
-                } else
-                    throw new MappingQueryException("Ambiguous attribute", rightAttributes);
-            }
-
-        }
-
-        @Override
-        public void visit(SubSelect subSelect) {
-            // todo : for now it rises an exception but this should be implemented for query such as: SELECT * FROM ...
-            throw new ParseException(subSelect);
-        }
-
-        @Override
-        public void visit(SubJoin subjoin) {
-            throw new ParseException(subjoin);
-        }
-
-        @Override
-        public void visit(LateralSubSelect lateralSubSelect) {
-            throw new ParseException(lateralSubSelect);
-        }
-
-        @Override
-        public void visit(ValuesList valuesList) {
-            throw new ParseException(valuesList);
-        }
-    };
-
     private final FromItemVisitor fromNaturalJoinItemVisitor = new FromItemVisitor() {
 
         @Override
@@ -423,7 +361,8 @@ public class SQLQueryParser {
                         throw new MappingQueryException("Ambiguous attribute", shortId); // ambiguity
 
                     // this attribute is shared -- add a join condition
-                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(), new EqualsTo());
+                    addNewBinaryJoinCondition(leftAttribute, rightAttribute, leftAttribute.getID().getName(),
+                            new EqualsTo(), joinExpressionVisitor, joinConditions);
                 }
                 else {
                     // this attribute is not shared -- add to the list instead
@@ -527,7 +466,10 @@ public class SQLQueryParser {
      * @param columnName - common column name between LHS and RHS
      * @param binaryExpression - Binary expression or one of its extensions
      */
-    private void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,  BinaryExpression binaryExpression){
+    public static void addNewBinaryJoinCondition( Attribute leftAttribute, Attribute rightAttribute, String columnName,
+                                                  BinaryExpression binaryExpression,
+                                                  ExpressionVisitor joinExpressionVisitor,
+                                                  List<Expression> joinConditions ){
         Column leftColumn = new Column(
                 new Table( leftAttribute.getRelation().getID().getSchemaName(),
                         leftAttribute.getRelation().getID().getTableName()), columnName );
