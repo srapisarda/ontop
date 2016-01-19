@@ -241,20 +241,20 @@ public class WhereExpressionVisitor implements ExpressionVisitor {
 
         @Override
         public void visit(CaseExpression caseExpression) {
-            // it is not supported
+             // todo: not yet, but should be supported)
 
         }
 
         @Override
         public void visit(WhenClause whenClause) {
-            // it is not supported
+            // todo:  not yet, but should be supported)
 
         }
 
         @Override
         public void visit(ExistsExpression existsExpression) {
-            // it is not supported
-
+            // not supported (Expression2FunctionConverter, support would require proper sub-selects)
+            throw new ParseException(existsExpression);
         }
 
         /*
@@ -263,7 +263,8 @@ public class WhereExpressionVisitor implements ExpressionVisitor {
          */
         @Override
         public void visit(AllComparisonExpression allComparisonExpression) {
-
+            // not supported (Expression2FunctionConverter, support would require proper sub-selects)
+            throw new ParseException(allComparisonExpression);
         }
 
         /*
@@ -272,7 +273,8 @@ public class WhereExpressionVisitor implements ExpressionVisitor {
          */
         @Override
         public void visit(AnyComparisonExpression anyComparisonExpression) {
-
+            // not supported (Expression2FunctionConverter, support would require proper sub-selects)
+            throw new ParseException(anyComparisonExpression);
         }
 
         @Override
@@ -308,27 +310,30 @@ public class WhereExpressionVisitor implements ExpressionVisitor {
 
         @Override
         public void visit(CastExpression cast) {
-            // not supported
+            //  todo: this should be supported
         }
 
         @Override
         public void visit(AnalyticExpression aexpr) {
             // not supported
+            throw new ParseException(aexpr);
         }
 
         @Override
         public void visit(ExtractExpression eexpr) {
-            // not supported
+            // not supported (no yet)
+            throw new ParseException(eexpr);
         }
 
         @Override
         public void visit(IntervalExpression iexpr) {
-            // not supported
+            // not supported (no yet)
+            throw new ParseException(iexpr);
         }
 
         @Override
         public void visit(OracleHierarchicalExpression oexpr) {
-            //not supported
+            throw new ParseException(oexpr);
         }
 
     	/*
@@ -358,12 +363,14 @@ public class WhereExpressionVisitor implements ExpressionVisitor {
 
         @Override
         public void visit(SignedExpression arg0) {
-            // do nothing
+            // TODO: this should be supported
+
         }
 
         @Override
         public void visit(RegExpMatchOperator arg0) {
-            // do nothing
+            // TODO: this should be supported
+
         }
 
         @Override
