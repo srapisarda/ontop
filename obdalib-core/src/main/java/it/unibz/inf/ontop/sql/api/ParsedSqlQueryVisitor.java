@@ -22,7 +22,6 @@ package it.unibz.inf.ontop.sql.api;
 
 
 import it.unibz.inf.ontop.exception.MappingQueryException;
-import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.QuotedIDFactory;
 import it.unibz.inf.ontop.sql.RelationID;
@@ -68,29 +67,32 @@ public class ParsedSqlQueryVisitor implements  Serializable, FromItemVisitor, Se
         logger.info("Visit Table");
         RelationID name =  RelationID.createRelationIdFromDatabaseRecord ( idFac,  table.getSchemaName(),  table.getName() );
         if ( metadata.getRelation( name ) != null ) {
-            this.tables.add(name);
+            if (!this.tables.contains(name)) {
+                this.tables.add(name);
+            }else{
+                logger.info("table has been visited again!!!");
+            }
         }else {
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
         }
-
 
     }
 
     @Override
     public void visit(SubSelect subSelect) {
         logger.info("Visit SubSelect");
-        if (!(subSelect.getSelectBody() instanceof PlainSelect))
-            throw new ParseException(subSelect);
+        //if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
+            //throw new ParseException(subSelect);
 
-        PlainSelect subSelBody = (PlainSelect)subSelect.getSelectBody();
+            PlainSelect subSelBody = (PlainSelect) subSelect.getSelectBody();
 
-        // only very simple subqueries are supported at the moment
-        if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
-            throw new ParseException(subSelect);
+          // only very simple subqueries are supported at the moment
+//        if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
+//            throw new ParseException(subSelect);
 
-        subSelBody.accept(this);
+            subSelBody.accept(this);
 
-        plainSelectSelectJoin(subSelBody);
+            plainSelectSelectJoin(subSelBody);
 
 //        if (subSelBody.getWhere() != null)
 //            subSelBody.getWhere().accept(this);
