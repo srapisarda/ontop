@@ -76,8 +76,6 @@ public class ParsedSqlQueryVisitor implements  FromItemVisitor, SelectVisitor {
                 logger.info("table has been visited again!!!");
         }else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
-
-
     }
 
     @Override
