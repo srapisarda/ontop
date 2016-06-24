@@ -30,7 +30,7 @@ import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,13 +38,16 @@ import java.util.List;
  * A structure to store the parsed SQL query string. It returns the information
  * about the query using the visitor classes
  */
-public class ParsedSqlQueryVisitor implements  Serializable, FromItemVisitor, SelectVisitor {
+public class ParsedSqlQueryVisitor implements  FromItemVisitor, SelectVisitor {
 
-    private static final long serialVersionUID = -1L;
+    // fromItemVisitor in inner class
+
     private final QuotedIDFactory idFac;
     private final DBMetadata metadata;
 
     private final List<RelationID> tables;
+
+    // TODO: chang list to SET
     public List<RelationID> getTables() {
         return tables;
     }
@@ -56,7 +59,7 @@ public class ParsedSqlQueryVisitor implements  Serializable, FromItemVisitor, Se
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
         this.tables = new ArrayList<>();
-        if (selectQuery == null){return;}
+
         selectQuery.getSelectBody().accept(this);
     }
 
@@ -67,14 +70,13 @@ public class ParsedSqlQueryVisitor implements  Serializable, FromItemVisitor, Se
         logger.info("Visit Table");
         RelationID name =  RelationID.createRelationIdFromDatabaseRecord ( idFac,  table.getSchemaName(),  table.getName() );
         if ( metadata.getRelation( name ) != null ) {
-            if (!this.tables.contains(name)) {
+            if (!this.tables.contains(name))
                 this.tables.add(name);
-            }else{
+            else
                 logger.info("table has been visited again!!!");
-            }
-        }else {
+        }else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
-        }
+
 
     }
 
@@ -100,16 +102,19 @@ public class ParsedSqlQueryVisitor implements  Serializable, FromItemVisitor, Se
 
     @Override
     public void visit(SubJoin subjoin) {
+
         logger.info("Visit SubJoin");
     }
 
     @Override
     public void visit(LateralSubSelect lateralSubSelect) {
+
         logger.info("Visit LateralSubSelect");
     }
 
     @Override
     public void visit(ValuesList valuesList) {
+
         logger.info("Visit ValuesList");
     }
 
