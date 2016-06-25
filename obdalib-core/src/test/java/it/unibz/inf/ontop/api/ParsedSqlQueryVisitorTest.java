@@ -1,6 +1,7 @@
 package it.unibz.inf.ontop.api;
 
 import it.unibz.inf.ontop.exception.MappingQueryException;
+import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.DBMetadataExtractor;
 import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
@@ -48,12 +49,13 @@ public class ParsedSqlQueryVisitorTest {
 
     @Test
     public void MetadataContaisExpectedTable(){
-        String expected = "PERSON";
-        String sql = "select * from " + expected + " p";
+        String [] expected = {"PERSON"};
+        String sql = "select * from " + expected[0] + " p";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
 
         assertFalse(  p.getTables().isEmpty() );
-        assertEquals(expected, p.getTables().get(0).getTableName().toUpperCase());
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -63,9 +65,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -75,9 +76,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -87,9 +87,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -99,9 +98,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -111,9 +109,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
 
@@ -124,9 +121,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -136,9 +132,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -148,9 +143,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -160,9 +154,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test(expected = MappingQueryException.class)
@@ -172,9 +165,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -184,9 +176,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -196,9 +187,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test(expected= MappingQueryException.class)
@@ -208,9 +198,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
 
@@ -232,9 +221,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test
@@ -244,9 +232,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test // (expected = ParseException.class) // this need to be reviewed
@@ -256,9 +243,8 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test // (expected = ParseException.class) // this need to be reviewed
@@ -271,11 +257,96 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
-        for (int i = 0; i<expected.length; i++) {
-            assertEquals(expected[i], p.getTables().get(i).getTableName().toUpperCase());
-        }
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
+    @Test(expected = ParseException.class)
+    public void WithOperationIsNotSupported(){
+        String [] expected = { "PERSON"};
+        String sql = String.format(
+                        "WITH names as ( " +
+                        "select name from %1$s ) "
+                                + "select * from names "
+                        , expected[0]);
+        logger.info(sql);
+      new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+
+    /*
+    All the set operation are not supported !!!
+    INTERSECT,
+    EXCEPT,
+    MINUS,
+    UNION
+    */
+
+    @Test(expected = ParseException.class)
+    public void UnionOperationIsNotSupported(){
+        String [] expected = { "PERSON"};
+        String sql = String.format(
+                        "select name from %1$s  where  name = 'a' " +
+                                "union "
+                        + "select name from %1$s  where  name = 'b'"
+                , expected[0]);
+        logger.info(sql);
+        new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+    @Test(expected = ParseException.class)
+    public void UnionAllOperationIsNotSupported(){
+        String [] expected = { "PERSON"};
+        String sql = String.format(
+                "select name from %1$s  where  name = 'a' " +
+                        "union all "
+                        + "select name from %1$s  where  name = 'b'"
+                , expected[0]);
+        logger.info(sql);
+        new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+    @Test(expected = ParseException.class)
+    public void IntersectOperationIsNotSupported(){
+        String [] expected = { "PERSON"};
+        String sql = String.format(
+                "select name from %1$s  where  name = 'a' " +
+                        "intersect "
+                        + "select name from %1$s  where  name = 'b'"
+                , expected[0]);
+        logger.info(sql);
+        new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+    @Test(expected = ParseException.class)
+    public void MinusOperationIsNotSupported(){
+        String [] expected = { "PERSON"};
+        String sql = String.format(
+                "select name from %1$s  " +
+                        "minus "
+                        + "select name from %1$s  where  name = 'b'"
+                , expected[0]);
+        logger.info(sql);
+        new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+    @Test(expected = ParseException.class)
+    public void ExceptOperationIsNotSupported(){
+        String [] expected = { "PERSON"};
+        String sql = String.format(
+                "select name from %1$s  " +
+                        "Except "
+                        + "select name from %1$s  where  name = 'b'"
+                , expected[0]);
+        logger.info(sql);
+        new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+    // TODO:
+    // Add tests for not supported: PIVOT,
+    //                              LateralSubSelect, Distinct, Expression,
+    //                              groupByColumnReferences, OrderByElement,
+    //                              Limit, Top, oracleHierarchical, into Tables
 
 
     private  Statement getStatementFromUnquotedSQL(String input) {
@@ -292,6 +363,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
+    // http://sqlfiddle.com/#!15/3319c
     private static void createDatabaseRelationDefinition(){
 
         dbMetadata = DBMetadataExtractor.createDummyMetadata();
