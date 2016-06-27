@@ -251,9 +251,9 @@ public class ParsedSqlQueryVisitorTest {
     public void MetadataContaisExpectedFourTablesSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format(
-                "select * from %1$s, " +
-                "(select * from %2$s, " +
-                        "(select * from  %3$s inner join %2$s using(personId)))", expected[0], expected[1], expected[2]);
+                "select * from %1$s a, " +
+                "(select * from %2$s a, " +
+                        "(select * from  %3$s a inner join %2$s b using(personId)))", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );

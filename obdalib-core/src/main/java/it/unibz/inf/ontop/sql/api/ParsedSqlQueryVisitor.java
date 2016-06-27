@@ -73,12 +73,6 @@ public class ParsedSqlQueryVisitor  {
         selectQuery.getSelectBody().accept(selectVisitor);
     }
 
-    private void plainSelectSelectJoin(PlainSelect plainSelect){
-        if (plainSelect.getJoins() != null) {
-            plainSelect.getJoins().forEach( join -> join.getRightItem().accept(fromItemVisitor) );
-        }
-    }
-
     /**
      * The only operation sported for this visitor is the PlainSelect
      *
@@ -129,7 +123,9 @@ public class ParsedSqlQueryVisitor  {
                 throw new MappingQueryException("INTO TABLE IS NOT ALLOWED!!! FAIL!", plainSelect.getIntoTables() );
 
             plainSelect.getFromItem().accept(fromItemVisitor);
-            plainSelectSelectJoin(plainSelect);
+            if (plainSelect.getJoins() != null) {
+                plainSelect.getJoins().forEach( join -> join.getRightItem().accept(fromItemVisitor) );
+            }
 
 //        if (subSelBody.getWhere() != null)
 //            subSelBody.getWhere().accept(this);
@@ -181,6 +177,7 @@ public class ParsedSqlQueryVisitor  {
                 tables.add(name);
             }else
                 throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
+            logger.info( "Table alias: " + table.getAlias() + " --> " + table.getName());
         }
 
         @Override
@@ -197,7 +194,7 @@ public class ParsedSqlQueryVisitor  {
                 throw new ParseException(subSelect);*/
 
             subSelBody.accept(selectVisitor);
-            plainSelectSelectJoin(subSelBody);
+
 /*
             if (subSelBody.getWhere() != null)
                 subSelBody.getWhere().accept(this);
@@ -249,6 +246,8 @@ public class ParsedSqlQueryVisitor  {
         @Override
         public void visit(ValuesList valuesList) {
             logger.info("Visit ValuesList");
+
+            logger.info("ValuesList instance of " + valuesList.getClass().getName());
             // TODO:  implement logic ...  get alias
         }
 
