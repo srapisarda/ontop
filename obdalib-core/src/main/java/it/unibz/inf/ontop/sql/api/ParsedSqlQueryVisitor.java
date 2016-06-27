@@ -183,6 +183,10 @@ public class ParsedSqlQueryVisitor  {
         @Override
         public void visit(SubSelect subSelect) {
             logger.info("Visit SubSelect");
+
+            if (subSelect.getPivot() != null )
+                throw new ParseException(subSelect.getPivot());
+            logger.info("subselect: " + subSelect.toString() );
             /* if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
             throw new ParseException(subSelect);
             */
@@ -192,14 +196,13 @@ public class ParsedSqlQueryVisitor  {
             // only very simple subqueries are supported at the moment
             /*if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
                 throw new ParseException(subSelect);*/
-
             subSelBody.accept(selectVisitor);
 
 /*
             if (subSelBody.getWhere() != null)
                 subSelBody.getWhere().accept(this);
 
-            // TODO: needs to get the alias
+
 */
         }
 

@@ -253,7 +253,8 @@ public class ParsedSqlQueryVisitorTest {
         String sql = String.format(
                 "select * from %1$s a, " +
                 "(select * from %2$s a, " +
-                        "(select * from  %3$s a inner join %2$s b using(personId)))", expected[0], expected[1], expected[2]);
+                        "(select * from  %3$s a inner join %2$s b using(personId))) b," +
+                "(select * from %2$s a) c", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
