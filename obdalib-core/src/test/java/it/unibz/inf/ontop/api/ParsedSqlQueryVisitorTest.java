@@ -270,8 +270,17 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
+    /**
+     * (0.0) 0 0 SELECT * FROM PERSON a,
+     * (0.1)     1 (SELECT * FROM EMAIL a,
+     * (0.2)       2 (SELECT * FROM ADDRESS a INNER JOIN EMAIL b USING (personId))) b,
+     * (1.0) 1 0 EMAIL c,
+     * (1.1)     1 (SELECT * FROM EMAIL a,
+     * (1.2)       2 (SELECT * FROM PERSON a INNER JOIN EMAIL b ON a.personId = b.personId)) d,
+     * (2.0) 0 ADDRESS e
+     */
     @Test
-    public void checkRelationsMap (){
+    public void checkRelationsMapTest (){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format(
                 "select * from %1$s a, " +
