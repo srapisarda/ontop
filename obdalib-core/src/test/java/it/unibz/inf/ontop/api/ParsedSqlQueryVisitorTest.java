@@ -2,19 +2,13 @@ package it.unibz.inf.ontop.api;
 
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DBMetadataExtractor;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.QuotedIDFactory;
+import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,6 +267,46 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(  p.getTables().size() == expected.length );
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+    }
+
+
+    @Test
+    public void checkRelationsMap (){
+        String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
+        String sql = String.format(
+                "select * from %1$s a, " +
+                        "(select * from %2$s a, " +
+                        "(select * from  %3$s a inner join %2$s b using(personId))) b, " +
+                        "%2$s c , " +
+                        "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.personId= b.personId) ) d, " +
+                        "%3$s e;", expected[0], expected[1], expected[2]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        p.getRelationsMap().entrySet().stream().sorted( (a1, a2 )-> {
+            Double k1 = Double.parseDouble(a1.getKey());
+            Double k2 = Double.parseDouble(a2.getKey());
+            if ( k1 == k2 ) return 0;
+            if ( k1 > k2) return 1;
+            else return -1;
+        }).forEach( (el ) -> {
+                logger.info("key: " + el.getKey() );
+
+
+            el.getValue().forEach( (alias, rel )-> {
+                logger.info(String.format( "%1$s --> %2$s"  , alias , rel.toString() ));
+            });
+            logger.info("");
+        });
+
+        assertTrue( p.getRelationsMap().get("0.0").size() == 1  );
+        assertTrue( p.getRelationsMap().get("0.1").size() == 1  );
+        assertTrue( p.getRelationsMap().get("0.2").size() == 2  );
+        assertTrue( p.getRelationsMap().get("1.0").size() == 1  );
+        assertTrue( p.getRelationsMap().get("1.1").size() == 1  );
+        assertTrue( p.getRelationsMap().get("1.2").size() == 2  );
+        assertTrue( p.getRelationsMap().get("2.0").size() == 1  );
+
+        assertEquals( p.getRelationsMap().get("0.2").get("a").getTableName().toUpperCase(), expected[2] );
+        assertEquals( p.getRelationsMap().get("2.0").get("e").getTableName().toUpperCase(), expected[2] );
     }
 
     @Test(expected = ParseException.class)

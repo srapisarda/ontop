@@ -31,28 +31,34 @@ import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A structure to store the parsed SQL query string. It returns the information
  * about the query using the visitor classes
  */
 public class ParsedSqlQueryVisitor  {
+    private  final Logger logger =  LoggerFactory.getLogger(getClass());
 
     // fromItemVisitor in inner class
 
     private final QuotedIDFactory idFac;
     private final DBMetadata metadata;
+    private final short startingIndex = 0;
+    private long relationScope = startingIndex;
+    private long relationLevel = startingIndex;
 
     private final Set<RelationID> tables;
-
     public Set<RelationID> getTables() {
         return tables;
     }
 
 
-    private  final Logger logger =  LoggerFactory.getLogger(getClass());
+
+    private  Map<String, Map<String, RelationID>> relationsMap;
+    public Map<String, Map<String, RelationID>>  getRelationsMap(){
+        return  relationsMap;
+    }
 
     /**
      *  This constructor get in input the instance of
@@ -65,6 +71,7 @@ public class ParsedSqlQueryVisitor  {
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
         this.tables = new HashSet<>();
+        this.relationsMap = new HashMap<>();
 
         // WITH operations are not supported
         if (selectQuery.getWithItemsList() != null && ! selectQuery.getWithItemsList().isEmpty())
@@ -92,7 +99,7 @@ public class ParsedSqlQueryVisitor  {
      *                  distinct: Distinct, 	# ns
      *                  having: Expression, 	# ns
      *                  groupByColumnReferences: Expression*, 	# ns
-     *                  orderByElements : OrderByElement*, 	# ns
+     *                  queryLevelByElements : OrderByElement*, 	# ns
      *                  limit: Limit, 		# ns
      *                  top: Top, 		# ns
      *                  oracleHierarchical: OracleHierarchicalExpression, 	# ns
@@ -122,14 +129,19 @@ public class ParsedSqlQueryVisitor  {
             if (plainSelect.getIntoTables() != null && ! plainSelect.getIntoTables().isEmpty()  )
                 throw new MappingQueryException("INTO TABLE IS NOT ALLOWED!!! FAIL!", plainSelect.getIntoTables() );
 
+            logger.info( String.format( "PlainSelect (relationLevel: %2$d):  %1$s",  plainSelect.toString(), relationLevel) );
+
             plainSelect.getFromItem().accept(fromItemVisitor);
             if (plainSelect.getJoins() != null) {
                 plainSelect.getJoins().forEach( join -> join.getRightItem().accept(fromItemVisitor) );
             }
-
+            checkRelationScope();
+            relationLevel(relationIndexOperations.reset);
 //        if (subSelBody.getWhere() != null)
 //            subSelBody.getWhere().accept(this);
         }
+
+
 
         /**
          * This is a not supported method. It throw a {@link ParseException}
@@ -152,6 +164,7 @@ public class ParsedSqlQueryVisitor  {
         }
     };
 
+
     /**
      * This class implement a {@link FromItemVisitor}
      */
@@ -172,21 +185,32 @@ public class ParsedSqlQueryVisitor  {
             if (table.getPivot() != null  )
                 throw new ParseException(table.getPivot() );
 
+
+
+            logger.info( String.format( "table (relationLevel: %2$d):  %1$s",  table.toString(), relationLevel) );
             RelationID name =  RelationID.createRelationIdFromDatabaseRecord ( idFac,  table.getSchemaName(),  table.getName() );
             if ( metadata.getRelation( name ) != null ) {
                 tables.add(name);
+                addRelationToMap(table.getAlias().toString(), name);
             }else
                 throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
             logger.info( "Table alias: " + table.getAlias() + " --> " + table.getName());
+
+
+
         }
+
+
 
         @Override
         public void visit(SubSelect subSelect) {
             logger.info("Visit SubSelect");
 
+            relationLevel(relationIndexOperations.add);
+
             if (subSelect.getPivot() != null )
                 throw new ParseException(subSelect.getPivot());
-            logger.info("subselect: " + subSelect.toString() );
+            logger.info( String.format( "select index: %3$s,  (relationLevel: %2$d):  %1$s",  subSelect.toString(), relationLevel , getSelectIndex() ) );
             /* if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
             throw new ParseException(subSelect);
             */
@@ -256,6 +280,46 @@ public class ParsedSqlQueryVisitor  {
 
     };
 
+    private String getSelectIndex(){
+        return relationScope + "."  + relationLevel;
+    }
+
+    private void checkRelationScope() {
+        if ( relationLevel > 0 ){
+            relationScope(relationIndexOperations.add);
+        }
+    }
+
+    private void relationLevel(relationIndexOperations op ){
+        switch ( op ) {
+            case reset:
+                relationLevel = startingIndex;
+                break;
+            case add:
+                relationLevel++;
+                break;
+        }
+    }
+    private void relationScope(relationIndexOperations op ){
+        switch ( op ) {
+            case reset:
+                relationScope = startingIndex;
+                break;
+            case add:
+                relationScope++;
+                break;
+        }
+    }
+    private enum relationIndexOperations { reset, add }
+
+    private void addRelationToMap(String alias,  RelationID name) {
+        String key =getSelectIndex();
+        if (!relationsMap.containsKey(key)){
+            relationsMap.put(key, new HashMap<>() );
+        }
+        relationsMap.get(key).put( alias==null ? name.getTableName() : alias.trim(), name);
+
+    }
 
 
 }
