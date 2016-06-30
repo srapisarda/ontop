@@ -11,6 +11,8 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -32,6 +34,15 @@ public class ParsedSqlQueryVisitorTest {
         createDatabaseRelationDefinition();
     }
 
+    @Before
+    public void beforeEach(){
+        logger.info("***************** Test *****************");
+    }
+
+    @After
+    public void afterEach(){
+        logger.info(" ");
+    }
 
     @Test
     public void CreateNewInstance(){
@@ -253,8 +264,10 @@ public class ParsedSqlQueryVisitorTest {
         String sql = String.format(
                 "select * from %1$s a, " +
                 "(select * from %2$s a, " +
-                        "(select * from  %3$s a inner join %2$s b using(personId))) b," +
-                "(select * from %2$s a) c", expected[0], expected[1], expected[2]);
+                        "(select * from  %3$s a inner join %2$s b using(personId))) b, " +
+                "%2$s c , " +
+                "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.personId= b.personId) ) d, " +
+                        "%3$s e;", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
