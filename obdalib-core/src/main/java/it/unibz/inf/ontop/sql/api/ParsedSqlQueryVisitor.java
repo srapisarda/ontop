@@ -191,7 +191,7 @@ public class ParsedSqlQueryVisitor  {
             RelationID name =  RelationID.createRelationIdFromDatabaseRecord ( idFac,  table.getSchemaName(),  table.getName() );
             if ( metadata.getRelation( name ) != null ) {
                 tables.add(name);
-                addRelationToMap(table.getAlias().toString(), name);
+                addRelationToMap( table.getAlias()!= null? table.getAlias().toString(): null, name);
             }else
                 throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
             logger.info( "Table alias: " + table.getAlias() + " --> " + table.getName());
