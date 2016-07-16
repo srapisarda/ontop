@@ -306,21 +306,21 @@ public class ParsedSqlQueryVisitorTest {
                         "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.idPerson= b.idPerson) g ) d, " +
                         "%3$s e;", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-        p.getRelationsMap().entrySet().stream().sorted( (a1, a2 )-> {
-            Double k1 = Double.parseDouble(a1.getKey());
-            Double k2 = Double.parseDouble(a2.getKey());
-            if ( k1 == k2 ) return 0;
-            if ( k1 > k2) return 1;
-            else return -1;
-        }).forEach( (el ) -> {
-                logger.info("key: " + el.getKey() );
-
-
-            el.getValue().forEach( (alias, rel )-> {
-                logger.info(String.format( "%1$s --> %2$s"  , alias , rel.toString() ));
-            });
-            logger.info("");
-        });
+//        p.getRelationsMap().entrySet().stream().sorted( (a1, a2 )-> {
+//            Double k1 = Double.parseDouble(a1.getKey());
+//            Double k2 = Double.parseDouble(a2.getKey());
+//            if ( k1 == k2 ) return 0;
+//            if ( k1 > k2) return 1;
+//            else return -1;
+//        }).forEach( (el ) -> {
+//                logger.info("key: " + el.getKey() );
+//
+//
+//            el.getValue().forEach( (alias, rel )-> {
+//                logger.info(String.format( "%1$s --> %2$s"  , alias , rel.toString() ));
+//            });
+//            logger.info("");
+//        });
 
 //        assertTrue( p.getRelationsMap().get("0.0").size() == 1  );
 //        assertTrue( p.getRelationsMap().get("0.1").size() == 1  );

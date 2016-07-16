@@ -22,6 +22,7 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
 import it.unibz.inf.ontop.sql.QuotedIDFactory;
 import it.unibz.inf.ontop.sql.RelationID;
 import net.sf.jsqlparser.schema.Table;
@@ -29,8 +30,7 @@ import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -39,8 +39,15 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private QuotedIDFactory idFac;
     private DBMetadata metadata;
-    private Set<RelationID> tables;
+    private Set<RelationID> tables = new HashSet<>();
     private SelectVisitor selectVisitor;
+    private Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex;
+
+    Map<List<RelationID>, DatabaseRelationDefinition> getRelationMapIndex() {
+        return relationMapIndex;
+    }
+
+
 //    private List<String> parent = new LinkedList<>();
 
      public Set<RelationID> getTables() {
@@ -48,12 +55,19 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     }
 
 
-    ParsedSQLFromItemVisitor(DBMetadata metadata, SelectVisitor selectVisitor){
+    ParsedSQLFromItemVisitor(DBMetadata metadata){
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
-        this.selectVisitor= selectVisitor;
-        this.tables = new HashSet<>();
+        this.selectVisitor=  new ParsedSQLSelectVisitor(metadata);
+        this.relationMapIndex = new HashMap<>();
     }
+
+//    ParsedSQLFromItemVisitor(DBMetadata metadata, Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex){
+//        this(metadata);
+//        this.relationMapIndex = new HashMap<>();
+//        this.relationMapIndex = relationMapIndex;
+//    }
+
 
     /**
      * Table ::-
@@ -75,14 +89,19 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         RelationID name = RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName());
         if (metadata.getRelation(name) != null) {
             tables.add(name);
+
             //TODO : look
 
             // addRelationToMap(table.getAlias() != null ? table.getAlias().toString() : null, name);
+//            String key = (table.getAlias() != null ? table.getAlias().toString() : table.getName()).trim();
 
-           // String key2 = (table.getAlias() != null ? table.getAlias().toString() : null).trim();
+
             //relationIndexScope.add(key2);
+            // relationMapIndex.add(key2);
             //relationAliasMap.put( new LinkedList<>( relationIndexScope ), metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
+            // In this case we are mapping alias to Database relations
+          //  relationMapIndex.put( RelationID.createRelationIdFromDatabaseRecord(idFac, null, key),  metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())) );
 
         } else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
@@ -110,8 +129,13 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         // only very simple subqueries are supported at the moment
             /*if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
                 throw new ParseException(subSelect);*/
-        subSelBody.accept(selectVisitor);
+       // List<String> relationalMapIndex = new LinkedList<>();
 
+        ParsedSQLSelectVisitor v = new ParsedSQLSelectVisitor(metadata);
+       //v.set( relationalMapIndex );
+        subSelBody.accept(v);
+        this.tables.addAll(v.getTables());
+       // v.getFromItemVisitor().getRelationMapIndex();
 /*
             if (subSelBody.getWhere() != null)
                 subSelBody.getWhere().accept(this);

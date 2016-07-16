@@ -30,9 +30,7 @@ import net.sf.jsqlparser.statement.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A structure to store the parsed SQL query string. It returns the information
@@ -41,23 +39,15 @@ import java.util.Set;
  * @author Salvatore Rapisarda
  */
 public class ParsedSqlQueryVisitor  {
-
+    ParsedSQLSelectVisitor selectVisitor;
     public Set<RelationID> getTables() {
-        return fromItemVisitor.getTables();
+        return  selectVisitor.getTables();
     }
 
-
-    private  Map<String, Map<String, RelationID>> relationsMap;
-    public Map<String, Map<String, RelationID>>  getRelationsMap(){
+    private  Map<List<RelationID>, Map<String, RelationID>> relationsMap;
+    public Map<List<RelationID>, Map<String, RelationID>>  getRelationsMap(){
         return  relationsMap;
     }
-
-//    public Map<List<String>, RelationDefinition> relationAliasMap =new HashMap<>();
-//    public Map<List<String>, RelationDefinition> getRelationAliasMap() {
-//        return relationAliasMap;
-//    }
-
-    private final ParsedSQLFromItemVisitor fromItemVisitor;
 
     /**
      *  This constructor get in input the instance of
@@ -69,15 +59,13 @@ public class ParsedSqlQueryVisitor  {
     public ParsedSqlQueryVisitor(Select selectQuery, DBMetadata metadata){
         Logger logger = LoggerFactory.getLogger(getClass());
         logger.info("Parsed select query: " + selectQuery);
-        this.relationsMap = new HashMap<>();
-//        this.relationAliasMap = new HashMap<>();
-        ParsedSQLSelectVisitor selectVisitor = new ParsedSQLSelectVisitor(metadata);
-
-        this.fromItemVisitor = (ParsedSQLFromItemVisitor) selectVisitor.getFromItemVisitor();
 
         // WITH operations are not supported
         if (selectQuery.getWithItemsList() != null && ! selectQuery.getWithItemsList().isEmpty())
             throw new ParseException(selectQuery.getWithItemsList());
+
+        this.relationsMap = new HashMap<>();
+        selectVisitor = new ParsedSQLSelectVisitor(metadata);
 
         selectQuery.getSelectBody().accept(selectVisitor);
     }

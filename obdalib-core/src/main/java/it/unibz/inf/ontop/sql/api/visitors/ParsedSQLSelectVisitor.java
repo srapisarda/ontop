@@ -22,23 +22,30 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
+import it.unibz.inf.ontop.sql.RelationDefinition;
+import it.unibz.inf.ontop.sql.RelationID;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
  */
 public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-  //  private DBMetadata metadata;
+    private final Set<RelationID> tables;
+    private final DBMetadata metadata;
 
-    public FromItemVisitor getFromItemVisitor() {
-        return fromItemVisitor;
+    // private List<String> relationMapIndex;
+    //  private DBMetadata metadata;
+
+    public Map<List<RelationID>, RelationDefinition> relationAliasMap =new HashMap<>();
+    public Map<List<RelationID>, RelationDefinition> getRelationAliasMap() {
+        return relationAliasMap;
     }
-
-    private final FromItemVisitor fromItemVisitor;
-
 
 //    public List<String> getParent() {
 //        return parent;
@@ -51,8 +58,14 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
    // List<String> parent = new LinkedList<>();
 
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
-        this.fromItemVisitor = new ParsedSQLFromItemVisitor(metadata, this);
+        this.metadata = metadata;
+        this.tables = new HashSet<>();
+        this.relationAliasMap = new HashMap<>();
     }
+
+//    public void setRelationMapIndex(List<String> relationMapIndex) {
+//        this.relationMapIndex = relationMapIndex;
+//    }
 
     /**
      * The only operation sported for this visitor is the PlainSelect
@@ -103,13 +116,23 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         if (plainSelect.getIntoTables() != null && !plainSelect.getIntoTables().isEmpty())
             throw new MappingQueryException("INTO TABLE IS NOT ALLOWED!!! FAIL!", plainSelect.getIntoTables());
 
+
         logger.info(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
-        plainSelect.getFromItem().accept(fromItemVisitor);
-        if (plainSelect.getJoins() != null) {
-            plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
-        }
+        ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(this.metadata);
 
+        plainSelect.getFromItem().accept(fromItemVisitor);
+
+        if (plainSelect.getJoins() != null)
+            plainSelect.getJoins().forEach(join -> {
+                join.getRightItem().accept(fromItemVisitor);
+            });
+    //    Map<List<RelationID>, DatabaseRelationDefinition> a =  fromItemVisitor.getRelationMapIndex();
+
+        this.tables.addAll(fromItemVisitor.getTables() );
+//         this.getFromItemVisitor().getRelationMapIndex()
+//        this.getRelationAliasMap().put(  )
+//         this.fromItemV   isitor.getRelationMapIndex()
 
 //        if (subSelBody.getWhere() != null)
 //            subSelBody.getWhere().accept(this);
@@ -138,4 +161,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         throw new ParseException(withItem);
     }
 
+    public Set<RelationID> getTables() {
+        return tables;
+    }
 }
