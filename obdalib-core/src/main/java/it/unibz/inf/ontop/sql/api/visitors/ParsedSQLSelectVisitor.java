@@ -22,14 +22,17 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.RelationDefinition;
 import it.unibz.inf.ontop.sql.RelationID;
-import net.sf.jsqlparser.statement.select.*;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectVisitor;
+import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.WithItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Set;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -42,10 +45,12 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     // private List<String> relationMapIndex;
     //  private DBMetadata metadata;
 
-    public Map<List<RelationID>, RelationDefinition> relationAliasMap =new HashMap<>();
-    public Map<List<RelationID>, RelationDefinition> getRelationAliasMap() {
+    public IdentityHashMap getRelationAliasMap() {
         return relationAliasMap;
     }
+
+    private IdentityHashMap relationAliasMap;
+
 
 //    public List<String> getParent() {
 //        return parent;
@@ -60,7 +65,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
         this.metadata = metadata;
         this.tables = new HashSet<>();
-        this.relationAliasMap = new HashMap<>();
+        this.relationAliasMap = new IdentityHashMap();
     }
 
 //    public void setRelationMapIndex(List<String> relationMapIndex) {
@@ -130,6 +135,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     //    Map<List<RelationID>, DatabaseRelationDefinition> a =  fromItemVisitor.getRelationMapIndex();
 
         this.tables.addAll(fromItemVisitor.getTables() );
+        this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
 //         this.getFromItemVisitor().getRelationMapIndex()
 //        this.getRelationAliasMap().put(  )
 //         this.fromItemV   isitor.getRelationMapIndex()
@@ -137,6 +143,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 //        if (subSelBody.getWhere() != null)
 //            subSelBody.getWhere().accept(this);
     }
+
 
 
     /**

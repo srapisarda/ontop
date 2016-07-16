@@ -52,6 +52,9 @@ public class ParsedSqlQueryVisitorTest {
         new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
     }
 
+
+
+
     @Test
     public void MetadataContaisExpectedTable(){
         String [] expected = {"PERSON"};
@@ -62,6 +65,23 @@ public class ParsedSqlQueryVisitorTest {
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
+
+    @Test
+    public void MetadataContainsExpectedAliasTable(){
+        String [] expected = {"PERSON"};
+        String [] expectedAlias = {"p"};
+        String sql = "select * from " + expected[0] + " p";
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+
+        assertFalse(  p.getRelationAliasMap().isEmpty()   );
+        p.getRelationAliasMap().forEach( (k, v) -> {
+            assertTrue( k.size() == 1);
+            assertEquals(expectedAlias[0], k.get(0).getTableName());
+            assertEquals(expected[0], v.getID().getTableName() );
+        });
+
+    }
+
 
     @Test
     public void MetadataContaisExpectedTwoTables(){
@@ -306,7 +326,7 @@ public class ParsedSqlQueryVisitorTest {
                         "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.idPerson= b.idPerson) g ) d, " +
                         "%3$s e;", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        p.getRelationsMap().entrySet().stream().sorted( (a1, a2 )-> {
+//        p.getRelationAliasMap().entrySet().stream().sorted( (a1, a2 )-> {
 //            Double k1 = Double.parseDouble(a1.getKey());
 //            Double k2 = Double.parseDouble(a2.getKey());
 //            if ( k1 == k2 ) return 0;
@@ -322,16 +342,16 @@ public class ParsedSqlQueryVisitorTest {
 //            logger.info("");
 //        });
 
-//        assertTrue( p.getRelationsMap().get("0.0").size() == 1  );
-//        assertTrue( p.getRelationsMap().get("0.1").size() == 1  );
-//        assertTrue( p.getRelationsMap().get("0.2").size() == 2  );
-//        assertTrue( p.getRelationsMap().get("1.0").size() == 1  );
-//        assertTrue( p.getRelationsMap().get("1.1").size() == 1  );
-//        assertTrue( p.getRelationsMap().get("1.2").size() == 2  );
-//        assertTrue( p.getRelationsMap().get("2.0").size() == 1  );
+//        assertTrue( p.getRelationAliasMap().get("0.0").size() == 1  );
+//        assertTrue( p.getRelationAliasMap().get("0.1").size() == 1  );
+//        assertTrue( p.getRelationAliasMap().get("0.2").size() == 2  );
+//        assertTrue( p.getRelationAliasMap().get("1.0").size() == 1  );
+//        assertTrue( p.getRelationAliasMap().get("1.1").size() == 1  );
+//        assertTrue( p.getRelationAliasMap().get("1.2").size() == 2  );
+//        assertTrue( p.getRelationAliasMap().get("2.0").size() == 1  );
 //
-//        assertEquals( p.getRelationsMap().get("0.2").get("a").getTableName().toUpperCase(), expected[2] );
-//        assertEquals( p.getRelationsMap().get("2.0").get("e").getTableName().toUpperCase(), expected[2] );
+//        assertEquals( p.getRelationAliasMap().get("0.2").get("a").getTableName().toUpperCase(), expected[2] );
+//        assertEquals( p.getRelationAliasMap().get("2.0").get("e").getTableName().toUpperCase(), expected[2] );
     }
 
     @Test(expected = ParseException.class)

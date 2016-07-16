@@ -23,6 +23,7 @@ package it.unibz.inf.ontop.sql.api;
 
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
 import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLFromItemVisitor;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
@@ -44,9 +45,8 @@ public class ParsedSqlQueryVisitor  {
         return  selectVisitor.getTables();
     }
 
-    private  Map<List<RelationID>, Map<String, RelationID>> relationsMap;
-    public Map<List<RelationID>, Map<String, RelationID>>  getRelationsMap(){
-        return  relationsMap;
+    public Map<List<RelationID>, DatabaseRelationDefinition> getRelationAliasMap(){
+        return  selectVisitor.getRelationAliasMap();
     }
 
     /**
@@ -64,10 +64,9 @@ public class ParsedSqlQueryVisitor  {
         if (selectQuery.getWithItemsList() != null && ! selectQuery.getWithItemsList().isEmpty())
             throw new ParseException(selectQuery.getWithItemsList());
 
-        this.relationsMap = new HashMap<>();
         selectVisitor = new ParsedSQLSelectVisitor(metadata);
-
         selectQuery.getSelectBody().accept(selectVisitor);
+        selectVisitor.getRelationAliasMap().putAll( selectVisitor.getRelationAliasMap() );
     }
 
 

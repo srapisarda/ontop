@@ -43,6 +43,12 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private SelectVisitor selectVisitor;
     private Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex;
 
+    public IdentityHashMap getRelationAliasMap() {
+        return relationAliasMap;
+    }
+
+    private IdentityHashMap relationAliasMap;
+
     Map<List<RelationID>, DatabaseRelationDefinition> getRelationMapIndex() {
         return relationMapIndex;
     }
@@ -60,6 +66,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         this.idFac = metadata.getQuotedIDFactory();
         this.selectVisitor=  new ParsedSQLSelectVisitor(metadata);
         this.relationMapIndex = new HashMap<>();
+        this.relationAliasMap = new IdentityHashMap();
     }
 
 //    ParsedSQLFromItemVisitor(DBMetadata metadata, Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex){
@@ -90,15 +97,11 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (metadata.getRelation(name) != null) {
             tables.add(name);
 
-            //TODO : look
 
-            // addRelationToMap(table.getAlias() != null ? table.getAlias().toString() : null, name);
-//            String key = (table.getAlias() != null ? table.getAlias().toString() : table.getName()).trim();
-
-
-            //relationIndexScope.add(key2);
-            // relationMapIndex.add(key2);
-            //relationAliasMap.put( new LinkedList<>( relationIndexScope ), metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
+            List<RelationID> aliasKey = new LinkedList<>();
+            String key = (table.getAlias() != null ? table.getAlias().toString() : table.getName()).trim();
+            aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key));
+            this.relationAliasMap.put( aliasKey, metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
             // In this case we are mapping alias to Database relations
           //  relationMapIndex.put( RelationID.createRelationIdFromDatabaseRecord(idFac, null, key),  metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())) );
