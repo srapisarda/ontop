@@ -13,6 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -70,10 +73,10 @@ public class ParsedSqlQueryVisitorTest {
     public void MetadataContainsExpectedAliasTable(){
         String [] expected = {"PERSON"};
         String [] expectedAlias = {"p"};
-        String sql = "select * from " + expected[0] + " p";
+        String sql = "select * from " + expected[0] + " " + expectedAlias[0];
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
 
-        assertFalse(  p.getRelationAliasMap().isEmpty()   );
+        assertFalse( p.getRelationAliasMap().isEmpty()   );
         p.getRelationAliasMap().forEach( (k, v) -> {
             assertTrue( k.size() == 1);
             assertEquals(expectedAlias[0], k.get(0).getTableName());
@@ -95,14 +98,54 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
+    public void MetadataContainsExpectedTwoAliasTables(){
+        String [] expected = { "PERSON", "EMAIL"};
+        String sql = "select * from " + String.join(",", (CharSequence[]) expected) ;
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue( p.getRelationAliasMap().size()== expected.length );
+        int index = 0;
+        Iterator<Map.Entry<List<RelationID>, DatabaseRelationDefinition>> i = p.getRelationAliasMap().entrySet().iterator();
+        while (i.hasNext()){
+            Map.Entry<List<RelationID>,DatabaseRelationDefinition> entry = i.next();
+            String table = expected[index];
+            assertTrue( entry.getKey().size() == 1);
+            assertEquals(table, entry.getKey().get(0).getTableName());
+            assertEquals(table, entry.getValue().getID().getTableName());
+            index++;
+        }
+    }
+
+
+
+    @Test
     public void MetadataContaisExpectedThreeTables(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = "select * from " + String.join(",", (CharSequence[]) expected) ;
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
-        assertTrue(  p.getTables().size() == expected.length );
-        for (final String table : expected)
-            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+        assertTrue(  p.getRelationAliasMap().size() == expected.length );
+        final int[] index = {0};
+        p.getRelationAliasMap().forEach( (k, v) -> {
+            String table = expected[index[0]];
+            assertTrue(k.size() == 1);
+            assertEquals(table, k.get(0).getTableName());
+            assertEquals(table, v.getID().getTableName());
+            index[0]++;
+
+        } );
+
+    }
+
+
+    @Test
+    public void MetadataContainsExpectedThreeAliasTables() {
+        String[] expected = {"PERSON", "EMAIL", "ADDRESS"};
+        String sql = "select * from " + String.join(",", (CharSequence[]) expected);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor((Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        logger.info(String.format("expected.length: %d, p.getTables().size(): %d ", expected.length, p.getTables().size()));
+        assertTrue(p.getTables().size() == expected.length);
+
+
     }
 
     @Test

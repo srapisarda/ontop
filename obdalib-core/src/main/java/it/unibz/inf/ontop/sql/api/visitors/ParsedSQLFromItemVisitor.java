@@ -40,18 +40,15 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private QuotedIDFactory idFac;
     private DBMetadata metadata;
     private Set<RelationID> tables = new HashSet<>();
-    private SelectVisitor selectVisitor;
-    private Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex;
 
-    public IdentityHashMap getRelationAliasMap() {
+
+    public Map<List<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return relationAliasMap;
     }
 
-    private IdentityHashMap relationAliasMap;
+    private Map<List<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
-    Map<List<RelationID>, DatabaseRelationDefinition> getRelationMapIndex() {
-        return relationMapIndex;
-    }
+
 
 
 //    private List<String> parent = new LinkedList<>();
@@ -64,9 +61,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     ParsedSQLFromItemVisitor(DBMetadata metadata){
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
-        this.selectVisitor=  new ParsedSQLSelectVisitor(metadata);
-        this.relationMapIndex = new HashMap<>();
-        this.relationAliasMap = new IdentityHashMap();
+        this.relationAliasMap = new LinkedHashMap<>();
     }
 
 //    ParsedSQLFromItemVisitor(DBMetadata metadata, Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex){
