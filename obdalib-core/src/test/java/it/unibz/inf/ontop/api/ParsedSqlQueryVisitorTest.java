@@ -15,8 +15,10 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -413,33 +415,26 @@ public class ParsedSqlQueryVisitorTest {
 
 
     /**
-     * (0.0) 0 0 SELECT * FROM PERSON a,
-     * (0.1)     1 (SELECT * FROM EMAIL a,
-     * (0.2)       2 (SELECT * FROM ADDRESS a INNER JOIN EMAIL b USING (personId)) g) b,
-     * (1.0) 1 0 EMAIL c,
-     * (1.1)     1 (SELECT * FROM EMAIL a,
-     * (1.2)       2 (SELECT * FROM PERSON a INNER JOIN EMAIL b ON a.personId = b.personId)) d,
-     * (2.0) 0 ADDRESS e
      *
-     *                                                                                               0 1 2
+     *  SELECT * FROM PERSON a,                                                                (a     -> PERSON)
+     *        (SELECT * FROM EMAIL a,                                                          (b,a   -> EMAIL)
+     *          (SELECT * FROM ADDRESS a INNER JOIN EMAIL b USING (personId)) g) b,            (b,g,a -> ADDRESS)
+     *                                                                                         (b,g,b -> EMAIL)
      *
-     * (0 0) SELECT * FROM PERSON a,                                                                (a     -> PERSON)  0
-     * (0.1)     1 (SELECT * FROM EMAIL a,                                                          (b,a   -> EMAIL)
-     * (0.2)       2 (SELECT * FROM ADDRESS a INNER JOIN EMAIL b USING (personId)) g) b,            (b,g,a -> ADDRESS)
-     *                                                                                              (b,g,b -> EMAIL)
+     *      EMAIL c,                                                                           (c     -> EMAIL)
      *
-     * (1.0) 1 0 EMAIL c,                                                                           (c     -> PERSON)  1
-
-     * (2.0) 0  d
-     * (2.1) 1 (SELECT * FROM EMAIL a,                                                              (d,a   -> EMAIL)
-     * (2.2)                                                                                        (d,g
-     * (2.2)       2 (SELECT * FROM PERSON a INNER JOIN EMAIL b ON a.personId = b.personId) g) d,   (d,a,a -> PERSON)
-     *                                                                                              (d,a,a -> EMAIL)
-     * (3.0) 0 ADDRESS e                                                                            (e     -> ADDRESS)
+     *    (SELECT * FROM EMAIL a,                                                              (d,a   -> EMAIL)
+     *         (SELECT * FROM PERSON a INNER JOIN EMAIL b ON a.personId = b.personId) g) d,    (d,g,a -> PERSON)
+     *                                                                                         (d,g,b -> EMAIL)
+     *    ADDRESS e                                                                            (e     -> ADDRESS)
      */
     @Test
     public void checkRelationsMapTest (){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
+
+
+
+
         String sql = String.format(
                 "select * from %1$s a, " +
                         "(select * from %2$s a, " +
@@ -448,32 +443,53 @@ public class ParsedSqlQueryVisitorTest {
                         "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.idPerson= b.idPerson) g ) d, " +
                         "%3$s e;", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        p.getRelationAliasMap().entrySet().stream().sorted( (a1, a2 )-> {
-//            Double k1 = Double.parseDouble(a1.getKey());
-//            Double k2 = Double.parseDouble(a2.getKey());
-//            if ( k1 == k2 ) return 0;
-//            if ( k1 > k2) return 1;
-//            else return -1;
-//        }).forEach( (el ) -> {
-//                logger.info("key: " + el.getKey() );
-//
-//
-//            el.getValue().forEach( (alias, rel )-> {
-//                logger.info(String.format( "%1$s --> %2$s"  , alias , rel.toString() ));
-//            });
-//            logger.info("");
-//        });
+        assertTrue( p.getRelationAliasMap().size() == 9);
 
-//        assertTrue( p.getRelationAliasMap().get("0.0").size() == 1  );
-//        assertTrue( p.getRelationAliasMap().get("0.1").size() == 1  );
-//        assertTrue( p.getRelationAliasMap().get("0.2").size() == 2  );
-//        assertTrue( p.getRelationAliasMap().get("1.0").size() == 1  );
-//        assertTrue( p.getRelationAliasMap().get("1.1").size() == 1  );
-//        assertTrue( p.getRelationAliasMap().get("1.2").size() == 2  );
-//        assertTrue( p.getRelationAliasMap().get("2.0").size() == 1  );
-//
-//        assertEquals( p.getRelationAliasMap().get("0.2").get("a").getTableName().toUpperCase(), expected[2] );
-//        assertEquals( p.getRelationAliasMap().get("2.0").get("e").getTableName().toUpperCase(), expected[2] );
+        //(a     -> PERSON)
+        List<RelationID> key = getKeyFromStringArray( new String[]{"a"});
+        assertEquals( expected[0]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
+
+        // (b,a   -> EMAIL)
+        key = getKeyFromStringArray( new String[]{"b","a"});
+        assertEquals( expected[1]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
+
+        // (b,g,a -> ADDRESS)
+        key = getKeyFromStringArray( new String[]{"b", "g", "a"});
+        assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[2]  );
+
+
+        // (b,g,b -> EMAIL)
+        key = getKeyFromStringArray( new String[]{"b", "g", "b"});
+        assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[1]  );
+
+
+        //(c     -> EMAIL)
+        key = getKeyFromStringArray( new String[]{"c"});
+        assertEquals( expected[1]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
+
+        // (d,a   -> EMAIL)
+        key = getKeyFromStringArray( new String[]{"d","a"});
+        assertEquals( expected[1]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
+
+        // (d,g,a -> PERSON)
+        key = getKeyFromStringArray( new String[]{"d", "g", "a"});
+        assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[0]  );
+
+        // (d,g,b -> EMAIL)
+        key = getKeyFromStringArray( new String[]{"d", "g", "b"});
+        assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[1]  );
+
+        //(e     -> ADDRESS)
+        key = getKeyFromStringArray( new String[]{"e"});
+        assertEquals( expected[2]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
+
+    }
+
+    private  List<RelationID> getKeyFromStringArray( String [] aliases ){
+        List<RelationID> key = new LinkedList<>();
+        for (  String alias :  aliases )
+            key.add(RelationID.createRelationIdFromDatabaseRecord(dbMetadata.getQuotedIDFactory(), null, alias));
+        return  key;
     }
 
     @Test(expected = ParseException.class)
