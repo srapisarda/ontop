@@ -81,7 +81,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
             tables.add(name);
             //
             List<RelationID> aliasKey = new LinkedList<>();
-            String key = (table.getAlias() != null ? table.getAlias().toString() : table.getName()).trim();
+            String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
             aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key));
             this.relationAliasMap.put( aliasKey, metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
@@ -99,6 +99,10 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
         if (subSelect.getPivot() != null)
             throw new ParseException(subSelect.getPivot());
+
+        if (subSelect.getAlias() == null ||  subSelect.getAlias().getName().isEmpty())
+            throw new MappingQueryException("A SUB_SELECT SHOULD BE IDENTIFIED BY AN ALIAS!!!", subSelect);
+
         // logger.info(String.format("select index: %3$s,  (relationLevel: %2$d):  %1$s", subSelect.toString(), relationLevel, getSelectIndex()));
             /*
             if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
@@ -114,10 +118,18 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
                 throw new ParseException(subSelect);*/
        // List<String> relationalMapIndex = new LinkedList<>();
 
-        ParsedSQLSelectVisitor v = new ParsedSQLSelectVisitor(metadata);
+        ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(metadata);
        //v.set( relationalMapIndex );
-        subSelBody.accept(v);
-        this.tables.addAll(v.getTables());
+        subSelBody.accept(visitor);
+        this.tables.addAll(visitor.getTables());
+
+        final String alias =  subSelect.getAlias().getName();
+        visitor.getRelationAliasMap().forEach(( k, v ) -> {
+            List<RelationID> aliasKey = new LinkedList<>();
+            aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
+            k.forEach( relationID ->  aliasKey.add(relationID)  );
+            this.relationAliasMap.put( aliasKey, v);
+        });
        // v.getFromItemVisitor().getRelationMapIndex();
 /*
             if (subSelBody.getWhere() != null)

@@ -2,6 +2,7 @@ package it.unibz.inf.ontop.api;
 
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
+import it.unibz.inf.ontop.ontology.Assertion;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
@@ -340,7 +341,7 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void MetadataContaisExpectedTwoTablesSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL"};
-        String sql = String.format( "select * from %1$s, (select * from %2$s ) ", expected[0], expected[1]);
+        String sql = String.format( "select * from %1$s, (select * from %2$s ) c ", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
@@ -348,10 +349,42 @@ public class ParsedSqlQueryVisitorTest {
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
+    @Test
+    public void MetadataContainsExpectedTwoAliasTablesSubSelectJoin(){
+        String [] expected = { "PERSON", "EMAIL"};
+        String [] expectedAlias = { "a", "b", "c" };
+
+        String sql = String.format( "select * from %1$s %2$s, (select * from %3$s %4$s ) %5$s ", expected[0], expectedAlias[0], expected[1], expectedAlias[1], expectedAlias[2] );
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
+        assertTrue(  p.getRelationAliasMap().size() == expected.length );
+
+        final int[] index = {0};
+        p.getRelationAliasMap().forEach( (k,v) -> {
+            logger.info( "alias: " + k.toString() );
+
+            if ( index[0] == 1 ) {
+                assertTrue(k.size() == 2);
+                assertEquals(expectedAlias[2], k.get(0).getTableName());
+                assertEquals(expectedAlias[2], k.get(1).getTableName());
+            }
+        });
+    }
+
+    @Test (expected = MappingQueryException.class)
+    public void AnySubqueryShouldContainsAnAlias(){
+        String [] expected = { "PERSON", "EMAIL"};
+        String [] expectedAlias = { "a", "b", "c" };
+
+        String sql = String.format( "select * from %1$s %2$s, (select * from %3$s %4$s )  ", expected[0], expectedAlias[0], expected[1], expectedAlias[1], expectedAlias[2] );
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+    }
+
+
     @Test // (expected = ParseException.class) // this need to be reviewed
     public void MetadataContaisExpectedThreeTablesSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
-        String sql = String.format( "select * from %1$s, (select * from %2$s, (select * from %3$s ) ) ", expected[0], expected[1], expected[2]);
+        String sql = String.format( "select * from %1$s, (select * from %2$s, (select * from %3$s ) a ) b ", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getTables().size() == expected.length );
@@ -365,9 +398,9 @@ public class ParsedSqlQueryVisitorTest {
         String sql = String.format(
                 "select * from %1$s a, " +
                 "(select * from %2$s a, " +
-                        "(select * from  %3$s a inner join %2$s b using(personId))) b, " +
+                        "(select * from  %3$s a inner join %2$s b using(personId) ) c ) b, " +
                 "%2$s c , " +
-                "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.personId= b.personId) ) d, " +
+                "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.personId= b.personId) f ) d, " +
                         "%3$s e;", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));

@@ -47,6 +47,10 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
     private Map<List<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
+    /**
+     * select visitor used by the ParsedSQLVisitor
+     * @param metadata db metadata object {@link DBMetadata}
+     */
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
         this.metadata = metadata;
         this.tables = new HashSet<>();
@@ -77,6 +81,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      * top: Top, 		# ns
      * oracleHierarchical: OracleHierarchicalExpression, 	# ns
      * intoTables: Table* 	# FAIL
+     *
+     * @param plainSelect {@link PlainSelect}
      */
     @Override
     public void visit(PlainSelect plainSelect) {
