@@ -366,9 +366,11 @@ public class ParsedSqlQueryVisitorTest {
             if ( index[0] == 1 ) {
                 assertTrue(k.size() == 2);
                 assertEquals(expectedAlias[2], k.get(0).getTableName());
-                assertEquals(expectedAlias[2], k.get(1).getTableName());
+                assertEquals(expectedAlias[1], k.get(1).getTableName());
             }
+            index[0]++;
         });
+
     }
 
     @Test (expected = MappingQueryException.class)
