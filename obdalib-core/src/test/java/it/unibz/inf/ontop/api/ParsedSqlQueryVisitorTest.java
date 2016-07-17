@@ -124,15 +124,9 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getRelationAliasMap().size() == expected.length );
-        final int[] index = {0};
-        p.getRelationAliasMap().forEach( (k, v) -> {
-            String table = expected[index[0]];
-            assertTrue(k.size() == 1);
-            assertEquals(table, k.get(0).getTableName());
-            assertEquals(table, v.getID().getTableName());
-            index[0]++;
-
-        } );
+        assertTrue(  p.getTables().size() == expected.length );
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
 
     }
 
@@ -143,9 +137,16 @@ public class ParsedSqlQueryVisitorTest {
         String sql = "select * from " + String.join(",", (CharSequence[]) expected);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor((Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format("expected.length: %d, p.getTables().size(): %d ", expected.length, p.getTables().size()));
-        assertTrue(p.getTables().size() == expected.length);
+        assertTrue(  p.getRelationAliasMap().size() == expected.length );
+        final int[] index = {0};
+        p.getRelationAliasMap().forEach( (k, v) -> {
+            String table = expected[index[0]];
+            assertTrue(k.size() == 1);
+            assertEquals(table, k.get(0).getTableName());
+            assertEquals(table, v.getID().getTableName());
+            index[0]++;
 
-
+        } );
     }
 
     @Test
@@ -158,6 +159,28 @@ public class ParsedSqlQueryVisitorTest {
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
+
+
+
+    @Test
+    public void MetadataContaisExpectedTwoAliaTablesInNaturalJoin(){
+        String [] expected = { "PERSON", "EMAIL"};
+        String [] expectedAlias = {"p", "e"};
+        String sql = String.format( "select * from %1$s %2$s natural join %3$s %4$s ", expected[0], expectedAlias[0], expected[1], expectedAlias[1]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
+        assertTrue(  p.getRelationAliasMap().size() == expected.length );
+        final int[] index = {0};
+        p.getRelationAliasMap().forEach( (k, v) -> {
+            String alias = expectedAlias[index[0]];
+            String table = expected[index[0]];
+            assertTrue(k.size() == 1);
+            assertEquals(alias, k.get(0).getTableName());
+            assertEquals(table, v.getID().getTableName());
+            index[0]++;
+        } );
+    }
+
 
     @Test
     public void MetadataContaisExpectedThreeTablesInNaturalJoin(){
@@ -257,6 +280,27 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(  p.getTables().size() == expected.length );
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+    }
+
+
+
+    @Test
+    public void MetadataContainsExpectedThreeAliasTablesInnerJoinUsing(){
+        String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
+        String [] expectedAlias = {"a", "b", "ADDRESS"};
+        String sql = String.format( "select * from %1$s %2$s inner join %3$s %4$s inner join %5$s using (idPerson) ", expected[0], expectedAlias[0], expected[1], expectedAlias[1], expected[2]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
+        assertTrue(  p.getRelationAliasMap().size() == expected.length );
+        final int[] index = {0};
+        p.getRelationAliasMap().entrySet().stream().forEach( entry-> {
+            String alias = expectedAlias[index[0]];
+            String table = expected[index[0]];
+            assertTrue( entry.getKey().size() == 1);
+            assertEquals(alias, entry.getKey().get(0).getTableName());
+            assertEquals(table, entry.getValue().getID().getTableName());
+            index[0]++;
+        } );
     }
 
     @Test(expected= MappingQueryException.class)

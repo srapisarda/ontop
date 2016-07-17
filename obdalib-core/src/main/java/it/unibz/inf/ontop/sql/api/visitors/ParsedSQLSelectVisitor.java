@@ -41,35 +41,17 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final Set<RelationID> tables;
     private final DBMetadata metadata;
 
-    // private List<String> relationMapIndex;
-    //  private DBMetadata metadata;
-
     public Map<List<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return relationAliasMap;
     }
 
     private Map<List<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
-
-//    public List<String> getParent() {
-//        return parent;
-//    }
-//
-//    public void setParent(List<String> parent) {
-//        this.parent = parent;
-//    }
-
-   // List<String> parent = new LinkedList<>();
-
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
         this.metadata = metadata;
         this.tables = new HashSet<>();
         this.relationAliasMap = new LinkedHashMap<>();
     }
-
-//    public void setRelationMapIndex(List<String> relationMapIndex) {
-//        this.relationMapIndex = relationMapIndex;
-//    }
 
     /**
      * The only operation sported for this visitor is the PlainSelect

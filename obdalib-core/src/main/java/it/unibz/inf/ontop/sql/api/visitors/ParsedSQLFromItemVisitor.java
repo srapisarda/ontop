@@ -48,12 +48,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
     private Map<List<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
-
-
-
-//    private List<String> parent = new LinkedList<>();
-
-     public Set<RelationID> getTables() {
+    public Set<RelationID> getTables() {
         return tables;
     }
 
@@ -63,12 +58,6 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         this.idFac = metadata.getQuotedIDFactory();
         this.relationAliasMap = new LinkedHashMap<>();
     }
-
-//    ParsedSQLFromItemVisitor(DBMetadata metadata, Map<List<RelationID>, DatabaseRelationDefinition> relationMapIndex){
-//        this(metadata);
-//        this.relationMapIndex = new HashMap<>();
-//        this.relationMapIndex = relationMapIndex;
-//    }
 
 
     /**
@@ -87,22 +76,18 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (table.getPivot() != null)
             throw new ParseException(table.getPivot());
 
-        // logger.info(String.format("table (relationLevel: %2$d):  %1$s", table.toString(), relationLevel));
         RelationID name = RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName());
         if (metadata.getRelation(name) != null) {
             tables.add(name);
-
-
+            //
             List<RelationID> aliasKey = new LinkedList<>();
             String key = (table.getAlias() != null ? table.getAlias().toString() : table.getName()).trim();
             aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key));
             this.relationAliasMap.put( aliasKey, metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
-            // In this case we are mapping alias to Database relations
-          //  relationMapIndex.put( RelationID.createRelationIdFromDatabaseRecord(idFac, null, key),  metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())) );
-
         } else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
+
         logger.info("Table alias: " + table.getAlias() + " --> " + table.getName());
 
     }
