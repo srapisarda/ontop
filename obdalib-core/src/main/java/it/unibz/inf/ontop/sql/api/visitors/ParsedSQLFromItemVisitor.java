@@ -127,8 +127,8 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         visitor.getRelationAliasMap().forEach(( k, v ) -> {
             List<RelationID> aliasKey = new LinkedList<>();
             aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-            k.forEach( relationID ->  aliasKey.add(relationID)  );
-            this.relationAliasMap.put( aliasKey, v);
+            k.forEach(aliasKey::add);
+            this.relationAliasMap.put(aliasKey, v);
         });
        // v.getFromItemVisitor().getRelationMapIndex();
 /*

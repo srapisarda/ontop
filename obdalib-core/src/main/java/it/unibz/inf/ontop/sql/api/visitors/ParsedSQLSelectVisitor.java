@@ -108,7 +108,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         if (plainSelect.getIntoTables() != null && !plainSelect.getIntoTables().isEmpty())
             throw new MappingQueryException("INTO TABLE IS NOT ALLOWED!!! FAIL!", plainSelect.getIntoTables());
 
-
         logger.info(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
         ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(this.metadata);
@@ -119,7 +118,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
             plainSelect.getJoins().forEach(join -> {
                 join.getRightItem().accept(fromItemVisitor);
             });
-    //    Map<List<RelationID>, DatabaseRelationDefinition> a =  fromItemVisitor.getRelationMapIndex();
 
         this.tables.addAll(fromItemVisitor.getTables() );
         this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
