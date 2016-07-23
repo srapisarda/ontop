@@ -19,12 +19,10 @@ package it.unibz.inf.ontop.sql.api.visitors;
  * #L%
  */
 
+import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.QuotedIDFactory;
-import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.*;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
@@ -40,13 +38,22 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private QuotedIDFactory idFac;
     private DBMetadata metadata;
     private Set<RelationID> tables = new HashSet<>();
+    private Map<ImmutableList<RelationID>,QuotedID> attributeAliasMap;
 
 
-    public Map<List<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
+    public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return relationAliasMap;
     }
 
-    private Map<List<RelationID>, DatabaseRelationDefinition> relationAliasMap;
+
+
+    private Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap;
+
+
+    public Map<ImmutableList<RelationID>,QuotedID> getAttributeAliasMap() {
+
+        return attributeAliasMap;
+    }
 
     public Set<RelationID> getTables() {
         return tables;
@@ -57,6 +64,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
         this.relationAliasMap = new LinkedHashMap<>();
+        this.attributeAliasMap = new LinkedHashMap<>();
     }
 
 
@@ -79,11 +87,9 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         RelationID name = RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName());
         if (metadata.getRelation(name) != null) {
             tables.add(name);
-            //
-            List<RelationID> aliasKey = new LinkedList<>();
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
-            aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key));
-            this.relationAliasMap.put( aliasKey, metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
+            ImmutableList aliasKey = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key)).build();
+            this.relationAliasMap.put( aliasKey , metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
         } else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
@@ -124,12 +130,23 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
         this.tables.addAll(visitor.getTables());
 
         final String alias =  subSelect.getAlias().getName();
+
+
+
         visitor.getRelationAliasMap().forEach(( k, v ) -> {
-            List<RelationID> aliasKey = new LinkedList<>();
-            aliasKey.add( RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-            k.forEach(aliasKey::add);
-            this.relationAliasMap.put(aliasKey, v);
+            final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
+            k.forEach(builder::add);
+            this.relationAliasMap.put(builder.build(), v);
         });
+
+        // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
+        visitor.getAttributeAliasMap().forEach( ( k, v ) -> {
+            final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
+            k.forEach(builder::add);
+            this.getAttributeAliasMap().put( builder.build(), v);
+        });
+
+
        // v.getFromItemVisitor().getRelationMapIndex();
 /*
             if (subSelBody.getWhere() != null)

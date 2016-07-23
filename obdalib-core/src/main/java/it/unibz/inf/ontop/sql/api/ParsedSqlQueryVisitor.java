@@ -21,10 +21,9 @@ package it.unibz.inf.ontop.sql.api;
  */
 
 
+import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLFromItemVisitor;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
 import net.sf.jsqlparser.statement.select.Select;
@@ -45,9 +44,7 @@ public class ParsedSqlQueryVisitor  {
         return  selectVisitor.getTables();
     }
 
-    public Map<List<RelationID>, DatabaseRelationDefinition> getRelationAliasMap(){
-        return  selectVisitor.getRelationAliasMap();
-    }
+
 
     /**
      *  This constructor get in input the instance of
@@ -69,6 +66,15 @@ public class ParsedSqlQueryVisitor  {
         selectVisitor.getRelationAliasMap().putAll( selectVisitor.getRelationAliasMap() );
     }
 
+    public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap(){
+        return  selectVisitor.getRelationAliasMap();
+    }
+
+
+    // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
+    public Map<ImmutableList<RelationID>, QuotedID> getAttributeAliasMap() {
+        return selectVisitor.getAttributeAliasMap();
+    }
 
 
 }

@@ -1,24 +1,45 @@
 package it.unibz.inf.ontop.api;
+/*
+ * #%L
+ * ontop-obdalib-core
+ * %%
+ * Copyright (C) 2009 - 2014 Free University of Bozen-Bolzano
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 
+
+import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.ontology.Assertion;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -62,7 +83,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedTable(){
+    public void MetadataContainsExpectedTable(){
         String [] expected = {"PERSON"};
         String sql = "select * from " + expected[0] + " p";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -71,6 +92,8 @@ public class ParsedSqlQueryVisitorTest {
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
+
+
 
     @Test
     public void MetadataContainsExpectedAliasTable(){
@@ -90,7 +113,26 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedTwoTables(){
+    public void MetadataContainsExpectedTupleAlias(){
+        String [] expected = {"name", "age"};
+        String sql = String.format("select %1$s, %2$s from PERSON ", expected[0], expected[1]) ;
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+
+        assertFalse( p.getRelationAliasMap().isEmpty()   );
+
+        assertTrue( p.getAttributeAliasMap().size()== expected.length);
+
+//        for ( final String val :  expected ) {
+//            assertTrue(  p.getAttributeAliasMap().entrySet()
+//                    .stream()
+//                    .anyMatch(listQuotedIDEntry -> listQuotedIDEntry.getKey().contains(val)));
+//        }
+
+    }
+
+
+    @Test
+    public void MetadataContainsExpectedTwoTables(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = "select * from " + String.join(",", (CharSequence[]) expected) ;
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -104,14 +146,13 @@ public class ParsedSqlQueryVisitorTest {
     public void MetadataContainsExpectedTwoAliasTables(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = "select * from " + String.join(",", (CharSequence[]) expected) ;
-        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        ParsedSqlQueryVisitor p;
+        p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         assertTrue( p.getRelationAliasMap().size()== expected.length );
         int index = 0;
-        Iterator<Map.Entry<List<RelationID>, DatabaseRelationDefinition>> i = p.getRelationAliasMap().entrySet().iterator();
-        while (i.hasNext()){
-            Map.Entry<List<RelationID>,DatabaseRelationDefinition> entry = i.next();
+        for (Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition> entry : p.getRelationAliasMap().entrySet()) {
             String table = expected[index];
-            assertTrue( entry.getKey().size() == 1);
+            assertTrue(entry.getKey().size() == 1);
             assertEquals(table, entry.getKey().get(0).getTableName());
             assertEquals(table, entry.getValue().getID().getTableName());
             index++;
@@ -121,7 +162,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedThreeTables(){
+    public void MetadataContainsExpectedThreeTables(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = "select * from " + String.join(",", (CharSequence[]) expected) ;
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -153,7 +194,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedTwoTablesInNaturalJoin(){
+    public void MetadataContainsExpectedTwoTablesInNaturalJoin(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s natural join %2$s", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -166,7 +207,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedTwoAliaTablesInNaturalJoin(){
+    public void MetadataContainsExpectedTwoAliaTablesInNaturalJoin(){
         String [] expected = { "PERSON", "EMAIL"};
         String [] expectedAlias = {"p", "e"};
         String sql = String.format( "select * from %1$s %2$s natural join %3$s %4$s ", expected[0], expectedAlias[0], expected[1], expectedAlias[1]);
@@ -186,7 +227,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedThreeTablesInNaturalJoin(){
+    public void MetadataContainsExpectedThreeTablesInNaturalJoin(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format( "select * from %1$s natural join %2$s natural join %3$s", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -197,7 +238,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedTwoTablesInJoinUsingWhere(){
+    public void MetadataContainsExpectedTwoTablesInJoinUsingWhere(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s a, %2$s b where a.idPerson=b.idPerson ", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -209,7 +250,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedTwoTablesInCrossJoin(){
+    public void MetadataContainsExpectedTwoTablesInCrossJoin(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s cross join %2$s", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -220,7 +261,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedThreeTablesInCrossJoin(){
+    public void MetadataContainsExpectedThreeTablesInCrossJoin(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format( "select * from %1$s cross join %2$s cross join %3$s", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -231,7 +272,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedTwoTablesInnerJoinON(){
+    public void MetadataContainsExpectedTwoTablesInnerJoinON(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s a inner join %2$s b on a.idPerson=b.idPerson ", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -242,7 +283,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedThreeTablesInnerJoinON(){
+    public void MetadataContainsExpectedThreeTablesInnerJoinON(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format( "select * from %1$s a inner join %2$s b on a.idPerson=b.idPerson inner join %3$s c on a.idPerson=c.idPerson", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -253,7 +294,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test(expected = MappingQueryException.class)
-    public void MetadataContaisExpectedThreeTablesInnerJoinONMiddleWrong(){
+    public void MetadataContainsExpectedThreeTablesInnerJoinONMiddleWrong(){
         String [] expected = { "PERSON", "EMAILSSXX", "ADDRESS"};
         String sql = String.format( "select * from %1$s a inner join %2$s b on a.idPerson=b.idPerson inner join %3$s c on a.idPerson=c.idPerson", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -264,7 +305,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedTwoTablesInnerJoinUsing(){
+    public void MetadataContainsExpectedTwoTablesInnerJoinUsing(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s a inner join %2$s b using (idPerson) ", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -275,7 +316,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedThreeTablesInnerJoinUsing(){
+    public void MetadataContainsExpectedThreeTablesInnerJoinUsing(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format( "select * from %1$s a inner join %2$s b inner join %3$s using (idPerson) ", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -296,18 +337,18 @@ public class ParsedSqlQueryVisitorTest {
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
         assertTrue(  p.getRelationAliasMap().size() == expected.length );
         final int[] index = {0};
-        p.getRelationAliasMap().entrySet().stream().forEach( entry-> {
+        p.getRelationAliasMap().entrySet().forEach(entry -> {
             String alias = expectedAlias[index[0]];
             String table = expected[index[0]];
-            assertTrue( entry.getKey().size() == 1);
+            assertTrue(entry.getKey().size() == 1);
             assertEquals(alias, entry.getKey().get(0).getTableName());
             assertEquals(table, entry.getValue().getID().getTableName());
             index[0]++;
-        } );
+        });
     }
 
     @Test(expected= MappingQueryException.class)
-    public void MetadataContaisExpectedThreeTablesInnerJoinUsingLastWrong(){
+    public void MetadataContainsExpectedThreeTablesInnerJoinUsingLastWrong(){
         String [] expected = { "PERSON", "EMAIL", "ADDRE"};
         String sql = String.format( "select * from %1$s a inner join %2$s b inner join %3$s using (idPerson) ", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -319,7 +360,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
-    public void MetadataContaisExpectedFourTablesInnerJoinUsing(){
+    public void MetadataContainsExpectedFourTablesInnerJoinUsing(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS", "POSTCODE"};
 
         String sql = String.format(
@@ -341,7 +382,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test
-    public void MetadataContaisExpectedTwoTablesSubSelectJoin(){
+    public void MetadataContainsExpectedTwoTablesSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s, (select * from %2$s ) c ", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -350,6 +391,21 @@ public class ParsedSqlQueryVisitorTest {
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
+
+
+    @Test
+    public void MetadataContainsExpectedAttributesAliasSubSelectJoin(){
+        String [] expectedT1 = { "name", "age"};
+        String [] expectedT2 = { "email", "active"};
+        String [] expectedTables = { "PERSON", "EMAIL"};
+        String sql = String.format( "select %1$s, %2$s from %3$s, " +
+                                    "(select %4$s, %5$s from %6$s ) c ",
+                expectedT1[0], expectedT1[1] , expectedTables[0],
+                expectedT2[0], expectedT2[1] , expectedTables[1]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue(p.getAttributeAliasMap() != null );
+    }
+
 
     @Test
     public void MetadataContainsExpectedTwoAliasTablesSubSelectJoin(){
@@ -380,13 +436,14 @@ public class ParsedSqlQueryVisitorTest {
         String [] expected = { "PERSON", "EMAIL"};
         String [] expectedAlias = { "a", "b", "c" };
 
-        String sql = String.format( "select * from %1$s %2$s, (select * from %3$s %4$s )  ", expected[0], expectedAlias[0], expected[1], expectedAlias[1], expectedAlias[2] );
-        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        String sql = String.format( "select * from %1$s %2$s, (select * from %3$s %4$s )  ", expected[0], expectedAlias[0], expected[1], expectedAlias[1]);
+        new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+
     }
 
 
     @Test // (expected = ParseException.class) // this need to be reviewed
-    public void MetadataContaisExpectedThreeTablesSubSelectJoin(){
+    public void MetadataContainsExpectedThreeTableSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format( "select * from %1$s, (select * from %2$s, (select * from %3$s ) a ) b ", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -397,7 +454,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
     @Test // (expected = ParseException.class) // this need to be reviewed
-    public void MetadataContaisExpectedFourTablesSubSelectJoin(){
+    public void MetadataContainsExpectedFourTablesSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format(
                 "select * from %1$s a, " +
@@ -431,9 +488,6 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void checkRelationsMapTest (){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
-
-
-
 
         String sql = String.format(
                 "select * from %1$s a, " +
@@ -603,6 +657,7 @@ public class ParsedSqlQueryVisitorTest {
         DatabaseRelationDefinition tdPerson = dbMetadata.createDatabaseRelation(quotedIDFactory.createRelationID(null, "PERSON"));
         tdPerson.addAttribute(quotedIDFactory.createAttributeID("idPerson"), Types.INTEGER, null, false);
         tdPerson.addAttribute(quotedIDFactory.createAttributeID("name"), Types.VARCHAR, null, false);
+        tdPerson.addAttribute(quotedIDFactory.createAttributeID("age"), Types.INTEGER, null, false);
 
         DatabaseRelationDefinition tdEmail = dbMetadata.createDatabaseRelation(quotedIDFactory.createRelationID(null, "EMAIL"));
         tdEmail.addAttribute(quotedIDFactory.createAttributeID("idEmail"), Types.INTEGER, null, false);
