@@ -1,7 +1,10 @@
 package it.unibz.inf.ontop.sql.api.visitors;
 
 import com.google.common.collect.ImmutableList;
-import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.QuotedIDFactoryIdentity;
+import it.unibz.inf.ontop.sql.RelationID;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -10,8 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 
@@ -46,7 +47,7 @@ public class ParsedSQLItemVisitor implements SelectItemVisitor {
         logger.info("visit selectExpressionItem");
         String  alias = selectExpressionItem.getAlias() != null ? selectExpressionItem.getAlias().getName() : selectExpressionItem.toString() ;
         ImmutableList<RelationID> key =  ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null,  selectExpressionItem.toString() )).build();
-        attributeAliasMap.put(ImmutableList.copyOf(key),
+        attributeAliasMap.put(key,
                 new QuotedIDFactoryIdentity(
                         selectExpressionItem.toString()).createAttributeID(alias) ) ;
     }

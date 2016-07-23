@@ -23,14 +23,17 @@ package it.unibz.inf.ontop.sql.api;
 
 import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.*;
-import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLFromItemVisitor;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
+import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
 import net.sf.jsqlparser.statement.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A structure to store the parsed SQL query string. It returns the information
@@ -39,7 +42,7 @@ import java.util.*;
  * @author Salvatore Rapisarda
  */
 public class ParsedSqlQueryVisitor  {
-    ParsedSQLSelectVisitor selectVisitor;
+    private ParsedSQLSelectVisitor selectVisitor;
     public Set<RelationID> getTables() {
         return  selectVisitor.getTables();
     }

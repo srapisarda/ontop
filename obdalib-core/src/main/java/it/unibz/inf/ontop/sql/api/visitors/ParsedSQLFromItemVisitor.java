@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
  */
-public class ParsedSQLFromItemVisitor implements FromItemVisitor {
+class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private QuotedIDFactory idFac;
     private DBMetadata metadata;
@@ -41,7 +41,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private Map<ImmutableList<RelationID>,QuotedID> attributeAliasMap;
 
 
-    public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
+    Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return relationAliasMap;
     }
 
@@ -50,7 +50,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
 
-    public Map<ImmutableList<RelationID>,QuotedID> getAttributeAliasMap() {
+    Map<ImmutableList<RelationID>,QuotedID> getAttributeAliasMap() {
 
         return attributeAliasMap;
     }
@@ -89,7 +89,7 @@ public class ParsedSQLFromItemVisitor implements FromItemVisitor {
             tables.add(name);
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
             ImmutableList aliasKey = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key)).build();
-            this.relationAliasMap.put( aliasKey , metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
+            this.relationAliasMap.put(aliasKey, metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
         } else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);

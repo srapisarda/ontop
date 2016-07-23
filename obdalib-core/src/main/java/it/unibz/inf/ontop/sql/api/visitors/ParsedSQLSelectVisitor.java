@@ -22,12 +22,21 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.*;
-import net.sf.jsqlparser.statement.select.*;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
+import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.RelationID;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectVisitor;
+import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.WithItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -123,9 +132,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
-            plainSelect.getJoins().forEach(join -> {
-                join.getRightItem().accept(fromItemVisitor);
-            });
+            plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
 
         this.tables.addAll(fromItemVisitor.getTables() );
         this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
