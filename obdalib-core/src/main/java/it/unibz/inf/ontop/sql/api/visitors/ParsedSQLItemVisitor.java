@@ -49,7 +49,7 @@ public class ParsedSQLItemVisitor implements SelectItemVisitor {
         logger.info("visit selectExpressionItem");
       //  String  alias = selectExpressionItem.getAlias() != null ? selectExpressionItem.getAlias().getName() : "" ;
 
-        ImmutableList<RelationID> key =
+        ImmutableList<RelationID> key = this.relationID == null ? null :
                 ImmutableList.<RelationID>builder()
                         .add(this.relationID)
                         .build();

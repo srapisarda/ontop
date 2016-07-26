@@ -121,7 +121,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
 
         plainSelect.getSelectItems().forEach(selectItem -> {
-            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null, ""));
+            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, null ); // RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null, ""));
             selectItem.accept(parsedSQLItemVisitor);
             this.getAttributeAliasMap().putAll( parsedSQLItemVisitor.getAttributeAliasMap()  );
         });
@@ -136,7 +136,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         this.tables.addAll(fromItemVisitor.getTables() );
         this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
-
         this.getAttributeAliasMap().putAll( fromItemVisitor.getAttributeAliasMap() );
 
 
