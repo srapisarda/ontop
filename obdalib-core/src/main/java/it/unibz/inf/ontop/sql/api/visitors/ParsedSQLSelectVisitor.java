@@ -20,12 +20,10 @@ package it.unibz.inf.ontop.sql.api.visitors;
  */
 
 import com.google.common.collect.ImmutableList;
+import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.*;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectVisitor;
 import net.sf.jsqlparser.statement.select.SetOperationList;
@@ -46,8 +44,10 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final Set<RelationID> tables;
     private final DBMetadata metadata;
 
-    // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
-    private final Map<ImmutableList<RelationID>,QuotedID> attributeAliasMap;
+    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
+    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
+        return attributeAliasMap;
+    }
 
     public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return  relationAliasMap ;
@@ -121,9 +121,9 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
 
         plainSelect.getSelectItems().forEach(selectItem -> {
-            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata);
+            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null, ""));
             selectItem.accept(parsedSQLItemVisitor);
-            this.getAttributeAliasMap().putAll( parsedSQLItemVisitor.getAttributeAliasMap() );
+            this.getAttributeAliasMap().putAll( parsedSQLItemVisitor.getAttributeAliasMap()  );
         });
 
 
@@ -136,13 +136,13 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         this.tables.addAll(fromItemVisitor.getTables() );
         this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
-        this.getAttributeAliasMap().putAll( fromItemVisitor.getAttributeAliasMap() );
 
+        this.getAttributeAliasMap().putAll( fromItemVisitor.getAttributeAliasMap() );
 
 
 //         this.getFromItemVisitor().getRelationMapIndex()
 //        this.getRelationAliasMap().put(  )
-//         this.fromItemV   isitor.getRelationMapIndex()
+//         this.fromItemVisitor.getRelationMapIndex()
 
 //        if (subSelBody.getWhere() != null)
 //            subSelBody.getWhere().accept(this);
@@ -176,8 +176,4 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         return tables;
     }
 
-    // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
-    public Map<ImmutableList<RelationID>,QuotedID> getAttributeAliasMap() {
-        return attributeAliasMap;
-    }
 }

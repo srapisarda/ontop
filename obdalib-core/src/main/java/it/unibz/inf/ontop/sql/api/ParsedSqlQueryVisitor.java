@@ -22,11 +22,9 @@ package it.unibz.inf.ontop.sql.api;
 
 
 import com.google.common.collect.ImmutableList;
+import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
 import net.sf.jsqlparser.statement.select.Select;
 import org.slf4j.Logger;
@@ -73,9 +71,7 @@ public class ParsedSqlQueryVisitor  {
         return  selectVisitor.getRelationAliasMap();
     }
 
-
-    // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
-    public Map<ImmutableList<RelationID>, QuotedID> getAttributeAliasMap() {
+    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap(){
         return selectVisitor.getAttributeAliasMap();
     }
 

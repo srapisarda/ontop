@@ -20,6 +20,7 @@ package it.unibz.inf.ontop.sql.api.visitors;
  */
 
 import com.google.common.collect.ImmutableList;
+import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
@@ -38,22 +39,19 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private QuotedIDFactory idFac;
     private DBMetadata metadata;
     private Set<RelationID> tables = new HashSet<>();
-    private Map<ImmutableList<RelationID>,QuotedID> attributeAliasMap;
-
 
     Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return relationAliasMap;
     }
 
 
-
     private Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
-
-    Map<ImmutableList<RelationID>,QuotedID> getAttributeAliasMap() {
-
+    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
+    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
         return attributeAliasMap;
     }
+
 
     public Set<RelationID> getTables() {
         return tables;
@@ -139,11 +137,11 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             this.relationAliasMap.put(builder.build(), v);
         });
 
-        // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
-        visitor.getAttributeAliasMap().forEach( ( k, v ) -> {
+
+        visitor.getAttributeAliasMap().forEach( (k, v ) -> {
             final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-            k.forEach(builder::add);
-            this.getAttributeAliasMap().put( builder.build(), v);
+            k.fst.forEach(builder::add);
+            this.getAttributeAliasMap().put( new Pair(builder.build(), k.snd ), v);
         });
 
 

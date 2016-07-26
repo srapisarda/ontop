@@ -117,17 +117,8 @@ public class ParsedSqlQueryVisitorTest {
         String [] expected = {"name", "age"};
         String sql = String.format("select %1$s, %2$s from PERSON ", expected[0], expected[1]) ;
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-
         assertFalse( p.getRelationAliasMap().isEmpty()   );
-
         assertTrue( p.getAttributeAliasMap().size()== expected.length);
-
-//        for ( final String val :  expected ) {
-//            assertTrue(  p.getAttributeAliasMap().entrySet()
-//                    .stream()
-//                    .anyMatch(listQuotedIDEntry -> listQuotedIDEntry.getKey().contains(val)));
-//        }
-
     }
 
 

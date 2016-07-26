@@ -1,10 +1,8 @@
 package it.unibz.inf.ontop.sql.api.visitors;
 
 import com.google.common.collect.ImmutableList;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.QuotedIDFactoryIdentity;
-import it.unibz.inf.ontop.sql.RelationID;
+import com.sun.tools.javac.util.Pair;
+import it.unibz.inf.ontop.sql.*;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -22,13 +20,17 @@ import java.util.Map;
 public class ParsedSQLItemVisitor implements SelectItemVisitor {
     private final DBMetadata metadata;
     Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final RelationID relationID;
+    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
+    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> getAttributeAliasMap() {
+        return attributeAliasMap;
+    }
 
-    // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
-    private final Map<ImmutableList<RelationID>, QuotedID> attributeAliasMap;
 
-    ParsedSQLItemVisitor(DBMetadata metadata){
+    ParsedSQLItemVisitor(DBMetadata metadata, RelationID relationID){
         attributeAliasMap =new LinkedHashMap<>();
         this.metadata = metadata;
+        this.relationID = relationID;
     }
 
     @Override
@@ -45,16 +47,18 @@ public class ParsedSQLItemVisitor implements SelectItemVisitor {
     @Override
     public void visit(SelectExpressionItem selectExpressionItem) {
         logger.info("visit selectExpressionItem");
-        String  alias = selectExpressionItem.getAlias() != null ? selectExpressionItem.getAlias().getName() : selectExpressionItem.toString() ;
-        ImmutableList<RelationID> key =  ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null,  selectExpressionItem.toString() )).build();
-        attributeAliasMap.put(key,
-                new QuotedIDFactoryIdentity(
-                        selectExpressionItem.toString()).createAttributeID(alias) ) ;
+      //  String  alias = selectExpressionItem.getAlias() != null ? selectExpressionItem.getAlias().getName() : "" ;
+
+        ImmutableList<RelationID> key =
+                ImmutableList.<RelationID>builder()
+                        .add(this.relationID)
+                        .build();
+        QuotedID quotedID = QuotedID.createIdFromDatabaseRecord ( metadata.getQuotedIDFactory(), selectExpressionItem.toString());
+        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair =
+                new Pair(key, new QualifiedAttributeID( relationID, quotedID));
+        attributeAliasMap.put( pair, quotedID );
     }
+    //javafx.util.Pair
 
 
-    // TODO: This is not correct stucture should be change to  Map<Pair<ImmutableList<RelationID>,QualifiedAttributeID>>, Attribute>
-    public Map<ImmutableList<RelationID>,QuotedID> getAttributeAliasMap() {
-        return attributeAliasMap;
-    }
 }
