@@ -140,7 +140,8 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
         visitor.getAttributeAliasMap().forEach( (k, v ) -> {
             final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-            k.fst.forEach(builder::add);
+            if ( k.fst != null )
+                k.fst.forEach(builder::add);
             this.getAttributeAliasMap().put( new Pair(builder.build(), k.snd ), v);
         });
 
