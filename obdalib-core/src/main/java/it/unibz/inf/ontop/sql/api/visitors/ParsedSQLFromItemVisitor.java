@@ -30,6 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -142,6 +145,18 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
             if ( k.fst != null )
                 k.fst.forEach(builder::add);
+
+            //Find the relation given an alias. This relation must contain the attribute otherwise an exception is throw
+            final ImmutableList<RelationID> immutableListRelations =
+                    this.relationAliasMap.keySet().stream()
+                            .filter(p ->
+                                    p.stream().anyMatch(q -> q.hasSchema() && q.getSchemaName().equals(alias))).findAny().get() ;
+            if ( immutableListRelations != null && immutableListRelations.size() > 0 ){
+
+            }else
+                throw new MappingQueryException("the relationAliasMap does not contains any alias ",relationAliasMap ); // cannot append
+
+
             this.getAttributeAliasMap().put( new Pair(builder.build(), k.snd ), v);
         });
 

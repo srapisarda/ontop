@@ -21,6 +21,7 @@ package it.unibz.inf.ontop.api;
 
 
 import com.google.common.collect.ImmutableList;
+import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
@@ -29,10 +30,7 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -389,12 +387,33 @@ public class ParsedSqlQueryVisitorTest {
         String [] expectedT1 = { "name", "age"};
         String [] expectedT2 = { "email", "active"};
         String [] expectedTables = { "PERSON", "EMAIL"};
+        String expectedAliasTable= "c";
         String sql = String.format( "select %1$s, %2$s from %3$s, " +
-                                    "(select %4$s, %5$s from %6$s ) c ",
+                                    "(select %4$s, %5$s from %6$s ) %7$s",
                 expectedT1[0], expectedT1[1] , expectedTables[0],
-                expectedT2[0], expectedT2[1] , expectedTables[1]);
+                expectedT2[0], expectedT2[1] , expectedTables[1],
+                expectedAliasTable);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         assertTrue(p.getAttributeAliasMap() != null );
+
+        assertEquals( p.getAttributeAliasMap().size() , expectedT1.length + expectedT2.length ) ;
+        // null, name -> name // TODO: it should be [PERSON], name -> name
+        assertTrue( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .anyMatch( key-> key.snd.getAttribute().getName().equals(expectedT1[0])));
+        // null, age -> age
+        assertTrue( p.getAttributeAliasMap().keySet().contains(
+                new Pair(null, new  QualifiedAttributeID(null, QuotedID.createIdFromDatabaseRecord(dbMetadata.getQuotedIDFactory(), expectedT1[1])) )));
+        // [c],  email -> email TODO: it should be ([c,EMAIL], name ) -> name
+        // TODO this is wrong because
+        assertTrue( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .anyMatch( key->  key.fst != null &&  key.fst.size() == 1
+                        && key.fst.stream().findFirst().get().getTableName().equals(expectedAliasTable)
+                        && key.snd.getAttribute().getName().equals(expectedT2[0])));
+
     }
 
 
