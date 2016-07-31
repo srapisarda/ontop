@@ -31,10 +31,8 @@ import net.sf.jsqlparser.statement.select.WithItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -119,17 +117,11 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         logger.info(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
-
-        plainSelect.getSelectItems().forEach(selectItem -> {
-            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, null ); // RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null, ""));
-            selectItem.accept(parsedSQLItemVisitor);
-            this.getAttributeAliasMap().putAll( parsedSQLItemVisitor.getAttributeAliasMap()  );
-        });
-
-
         ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(this.metadata);
 
         plainSelect.getFromItem().accept(fromItemVisitor);
+
+
 
         if (plainSelect.getJoins() != null)
             plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
@@ -137,6 +129,38 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         this.tables.addAll(fromItemVisitor.getTables() );
         this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
         this.getAttributeAliasMap().putAll( fromItemVisitor.getAttributeAliasMap() );
+
+        plainSelect.getSelectItems().forEach(selectItem -> {
+            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, null );
+            selectItem.accept(parsedSQLItemVisitor);
+            List<Map.Entry<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID>> entryList =
+                    parsedSQLItemVisitor.getAttributeAliasMap()
+                            .entrySet()
+                            .stream()
+                            .filter(es ->
+                                    es.getKey().fst == null || es.getKey().fst.isEmpty()).collect(Collectors.toList());
+
+            if( ! entryList.isEmpty() ) {
+                entryList.forEach( entry -> {
+                      final Optional<Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition>> first = fromItemVisitor.getRelationAliasMap().entrySet().stream()
+                            .filter(p -> p.getValue().getAttributes().stream()
+                                    .anyMatch(q ->
+                                            q.getID().getName().toLowerCase().equals(entry.getKey().snd.getAttribute().getName().toLowerCase()))).findFirst();
+                    // .collect(Collectors.toList());
+
+                            if (first.isPresent()) {
+                                Pair<ImmutableList<RelationID>, QualifiedAttributeID> n =
+                                        new Pair<>(ImmutableList.<RelationID>builder().add( first.get().getValue().getID()).build(),  entry.getKey().snd);
+                                this.getAttributeAliasMap().put(n, entry.getValue()  );
+                            }
+                        });
+            }
+        });
+
+
+
+      //  this.getRelationAliasMap().entrySet().stream().
+
 
 
 //         this.getFromItemVisitor().getRelationMapIndex()

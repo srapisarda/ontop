@@ -30,9 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -51,7 +48,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
     private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
-    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
+    Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
         return attributeAliasMap;
     }
 
@@ -89,8 +86,9 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (metadata.getRelation(name) != null) {
             tables.add(name);
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
-            ImmutableList aliasKey = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key)).build();
-            this.relationAliasMap.put(aliasKey, metadata.createDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
+            this.relationAliasMap.put(
+                    ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key)).build(),
+                    metadata.getDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
 
         } else
             throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
@@ -142,22 +140,21 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
 
         visitor.getAttributeAliasMap().forEach( (k, v ) -> {
-            final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-            if ( k.fst != null )
-                k.fst.forEach(builder::add);
+            final Optional<ImmutableList<RelationID>> relationIDsOptional = this.relationAliasMap.keySet().stream()
+                    .filter(p ->
+                            p.stream().anyMatch(q ->
+                                    q.getTableName() != null &&
+                                            q.getTableName().equals(alias))).findAny();
 
-            //Find the relation given an alias. This relation must contain the attribute otherwise an exception is throw
-            final ImmutableList<RelationID> immutableListRelations =
-                    this.relationAliasMap.keySet().stream()
-                            .filter(p ->
-                                    p.stream().anyMatch(q -> q.hasSchema() && q.getSchemaName().equals(alias))).findAny().get() ;
-            if ( immutableListRelations != null && immutableListRelations.size() > 0 ){
 
+            if ( relationIDsOptional.isPresent()){
+                final ImmutableList<RelationID> immutableListRelations = relationIDsOptional.get();
+                final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();//.add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
+                builder.addAll( immutableListRelations);
+                this.getAttributeAliasMap().put( new Pair<>(builder.build(), k.snd ), v);
             }else
                 throw new MappingQueryException("the relationAliasMap does not contains any alias ",relationAliasMap ); // cannot append
 
-
-            this.getAttributeAliasMap().put( new Pair(builder.build(), k.snd ), v);
         });
 
 

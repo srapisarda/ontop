@@ -17,12 +17,13 @@ import java.util.Map;
 /**
  * @author Salvatore Rapisarda on 20/07/2016.
  */
-public class ParsedSQLItemVisitor implements SelectItemVisitor {
+class ParsedSQLItemVisitor implements SelectItemVisitor {
     private final DBMetadata metadata;
-    Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
     private final RelationID relationID;
     private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
-    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> getAttributeAliasMap() {
+
+    Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> getAttributeAliasMap() {
         return attributeAliasMap;
     }
 
@@ -54,11 +55,10 @@ public class ParsedSQLItemVisitor implements SelectItemVisitor {
                         .add(this.relationID)
                         .build();
         QuotedID quotedID = QuotedID.createIdFromDatabaseRecord ( metadata.getQuotedIDFactory(), selectExpressionItem.toString());
-        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair =
-                new Pair(key, new QualifiedAttributeID( relationID, quotedID));
+        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(key, new QualifiedAttributeID( relationID, quotedID));
         attributeAliasMap.put( pair, quotedID );
     }
-    //javafx.util.Pair
+
 
 
 }

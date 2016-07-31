@@ -45,8 +45,6 @@ public class ParsedSqlQueryVisitor  {
         return  selectVisitor.getTables();
     }
 
-
-
     /**
      *  This constructor get in input the instance of
      *  {@link Select} and  {@link DBMetadata} object
