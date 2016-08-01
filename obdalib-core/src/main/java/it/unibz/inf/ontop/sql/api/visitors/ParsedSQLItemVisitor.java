@@ -48,14 +48,22 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
     @Override
     public void visit(SelectExpressionItem selectExpressionItem) {
         logger.info("visit selectExpressionItem");
-      //  String  alias = selectExpressionItem.getAlias() != null ? selectExpressionItem.getAlias().getName() : "" ;
 
-        ImmutableList<RelationID> key = this.relationID == null ? null :
-                ImmutableList.<RelationID>builder()
-                        .add(this.relationID)
-                        .build();
-        QuotedID quotedID = QuotedID.createIdFromDatabaseRecord ( metadata.getQuotedIDFactory(), selectExpressionItem.toString());
-        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(key, new QualifiedAttributeID( relationID, quotedID));
+        // TODO:  should support complex expressions
+
+        ImmutableList.Builder<RelationID> b =  ImmutableList.builder();
+
+       // ImmutableList<RelationID> key = this.relationID == null ? null : ImmutableList.of(this.relationID);
+        if (this.relationID == null )
+            b.add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory() , null,  "" ));
+        else
+            b.add( this.relationID);
+
+        if ( selectExpressionItem.getAlias() != null )
+            b.add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory() , null,  selectExpressionItem.getAlias().getName().toString() ));
+
+        QuotedID quotedID = metadata.getQuotedIDFactory().createAttributeID(selectExpressionItem.getExpression().toString() );
+        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(b.build(), new QualifiedAttributeID( relationID, quotedID));
         attributeAliasMap.put( pair, quotedID );
     }
 

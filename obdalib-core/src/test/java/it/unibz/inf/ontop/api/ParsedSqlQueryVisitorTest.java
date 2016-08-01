@@ -386,6 +386,45 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
+    public void MetadataContainsExpectedTwoAliasAsAttribute(){
+        String [] expectedTable = { "PERSON c"};
+        String [] expectedAttributes = { "NAME a", "AGE b"};
+        String [] expectedT1 = { "NAME", "AGE"};
+
+        String sql = String.format( "select %1$s, %2$s from %3$s ", expectedAttributes[0], expectedAttributes[1], expectedTable[0] );
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue(p.getAttributeAliasMap() != null);
+
+       //  [["PERSON", "a"], "NAME"] --> "NAME"
+
+        ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().equals("NAME")).collect(Collectors.toList()));
+
+        assertTrue( pairStream2.size() == 1);
+        assertTrue( pairStream2.get(0).fst.size()==2 );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("PERSON") );
+        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("a"));
+
+        //  [["PERSON", "b"], "AGE"] --> "AGE"
+
+        ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().equals("AGE")).collect(Collectors.toList()));
+
+        assertTrue( pairStream.size() == 1);
+        assertTrue( pairStream.get(0).fst.size()==2 );
+        assertTrue( pairStream.get(0).fst.get(0).getTableName().equals("PERSON") );
+        assertTrue( pairStream.get(0).fst.get(1).getTableName().equals("b"));
+
+
+
+    }
+
+
+    @Test
     public void MetadataContainsExpectedAttributesAliasSubSelectJoin(){
         String [] expectedT1 = { "NAME", "AGE"};
         String [] expectedT2 = { "EMAIL", "ACTIVE"};

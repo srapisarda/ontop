@@ -138,7 +138,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                             .entrySet()
                             .stream()
                             .filter(es ->
-                                    es.getKey().fst == null || es.getKey().fst.isEmpty()).collect(Collectors.toList());
+                                     es.getKey().fst != null && ! es.getKey().fst.isEmpty() &&  es.getKey().fst.get(0).getTableName().isEmpty()
+                                               ).collect(Collectors.toList());
 
             if( ! entryList.isEmpty() ) {
                 entryList.forEach( entry -> {
@@ -149,8 +150,12 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                     // .collect(Collectors.toList());
 
                             if (first.isPresent()) {
+
+                                ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
+                                builder.add(first.get().getValue().getID());
+                                entry.getKey().fst.stream().skip(1).forEach( builder::add );
                                 Pair<ImmutableList<RelationID>, QualifiedAttributeID> n =
-                                        new Pair<>(ImmutableList.<RelationID>builder().add( first.get().getValue().getID()).build(),  entry.getKey().snd);
+                                        new Pair<>(builder.build(),  entry.getKey().snd);
                                 this.getAttributeAliasMap().put(n, entry.getValue()  );
                             }
                         });
