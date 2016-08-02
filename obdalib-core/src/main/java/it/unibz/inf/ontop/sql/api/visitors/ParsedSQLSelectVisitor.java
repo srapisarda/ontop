@@ -152,7 +152,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                             if (first.isPresent()) {
 
                                 ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
-                                builder.add(first.get().getValue().getID());
+                                builder.addAll(first.get().getKey());
                                 entry.getKey().fst.stream().skip(1).forEach( builder::add );
                                 Pair<ImmutableList<RelationID>, QualifiedAttributeID> n =
                                         new Pair<>(builder.build(),  entry.getKey().snd);

@@ -395,7 +395,7 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         assertTrue(p.getAttributeAliasMap() != null);
 
-       //  [["PERSON"], "a"] --> "NAME"
+       //  [["c"], "a"] --> "NAME"
 
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
@@ -404,10 +404,17 @@ public class ParsedSqlQueryVisitorTest {
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==1 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("PERSON") );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("c") );
         assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("a"));
 
-        //  [["PERSON"], "b"] --> "AGE"
+        // ["c"] -> PERSON ************************
+        DatabaseRelationDefinition r =  p.getRelationAliasMap().get(pairStream2.get(0).fst);
+        assertEquals("Expected table PERSON.", "PERSON",  r.getID().getTableName());
+
+
+
+
+        //  [["c"], "b"] --> "AGE"
 
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
@@ -416,8 +423,11 @@ public class ParsedSqlQueryVisitorTest {
 
         assertTrue( pairStream.size() == 1);
         assertTrue( pairStream.get(0).fst.size()==1 );
-        assertTrue( pairStream.get(0).fst.get(0).getTableName().equals("PERSON") );
+        assertTrue( pairStream.get(0).fst.get(0).getTableName().equals("c") );
         assertTrue( pairStream.get(0).snd.getAttribute().getName().toLowerCase().equals("b"));
+
+
+
 
     }
 
@@ -440,14 +450,62 @@ public class ParsedSqlQueryVisitorTest {
         // select NAME a, AGE b from PERSON c, (select EMAIL d, ACTIVE e from EMAIL f ) g
 
 
-        // [["c", "PERSON"], "a"] -> NAME
+        // [["c"], "a"] -> NAME
+        ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("a")).collect(Collectors.toList()));
 
+        assertTrue( pairStream2.size() == 1);
+        assertTrue( pairStream2.get(0).fst.size()==1 );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("c") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("a"));
 
-        // [["c", "PERSON"], "b"] -> AGE
+        // ["c"] -> PERSON ************************
+        DatabaseRelationDefinition r =  p.getRelationAliasMap().get(pairStream2.get(0).fst);
+        assertEquals("Expected table PERSON.", expectedTables[0],  r.getID().getTableName());
+
+        // [["c"], "b"] -> AGE
+        pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("b")).collect(Collectors.toList()));
+
+        assertTrue( pairStream2.size() == 1);
+        assertTrue( pairStream2.get(0).fst.size()==1 );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("c") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("b"));
+        // key relation already tested
 
         // [["g", "f"], "d"] -> EMAIL
+        pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("d")).collect(Collectors.toList()));
 
-        // [["g", "f"], "g"] -> ACTIVE
+        assertTrue( pairStream2.size() == 1);
+        assertTrue( pairStream2.get(0).fst.size()==2 );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("g") );
+        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("f") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("d"));
+
+        // ["g", "f"] -> EMAIL (relation) **************************
+        r =  p.getRelationAliasMap().get(pairStream2.get(0).fst);
+        assertEquals("Expected table EMAIL.",expectedTables[1],  r.getID().getTableName());
+
+
+
+        // [["g", "f"], "e"] -> ACTIVE
+        pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("e")).collect(Collectors.toList()));
+
+        assertTrue( pairStream2.size() == 1);
+        assertTrue( pairStream2.get(0).fst.size()==2 );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("g") );
+        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("f") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("e"));
 
     }
 
