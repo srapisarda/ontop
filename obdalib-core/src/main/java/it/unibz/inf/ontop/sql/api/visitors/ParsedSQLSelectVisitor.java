@@ -146,7 +146,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                       final Optional<Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition>> first = fromItemVisitor.getRelationAliasMap().entrySet().stream()
                             .filter(p -> p.getValue().getAttributes().stream()
                                     .anyMatch(q ->
-                                            q.getID().getName().toLowerCase().equals(entry.getKey().snd.getAttribute().getName().toLowerCase()))).findFirst();
+                                            q.getID().getName().toLowerCase().equals(entry.getValue().getName().toLowerCase()))).findFirst();
                     // .collect(Collectors.toList());
 
                             if (first.isPresent()) {

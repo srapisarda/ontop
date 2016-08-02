@@ -132,8 +132,9 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
 
 
+        final RelationID relationID = RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias);
         visitor.getRelationAliasMap().forEach(( k, v ) -> {
-            final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
+            final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(relationID);
             k.forEach(builder::add);
             this.relationAliasMap.put(builder.build(), v);
         });
@@ -153,7 +154,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
                 builder.addAll( immutableListRelations);
                 this.getAttributeAliasMap().put( new Pair<>(builder.build(), k.snd ), v);
             }else
-                throw new MappingQueryException("the relationAliasMap does not contains any alias ",relationAliasMap ); // cannot append
+              throw new MappingQueryException("the relationAliasMap does not contains any alias ",relationAliasMap ); // cannot append
 
         });
 

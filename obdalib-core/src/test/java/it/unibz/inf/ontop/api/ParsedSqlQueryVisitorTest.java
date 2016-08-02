@@ -395,36 +395,64 @@ public class ParsedSqlQueryVisitorTest {
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         assertTrue(p.getAttributeAliasMap() != null);
 
-       //  [["PERSON", "a"], "NAME"] --> "NAME"
+       //  [["PERSON"], "a"] --> "NAME"
 
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().equals("NAME")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("a")).collect(Collectors.toList()));
 
         assertTrue( pairStream2.size() == 1);
-        assertTrue( pairStream2.get(0).fst.size()==2 );
+        assertTrue( pairStream2.get(0).fst.size()==1 );
         assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("PERSON") );
-        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("a"));
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("a"));
 
-        //  [["PERSON", "b"], "AGE"] --> "AGE"
+        //  [["PERSON"], "b"] --> "AGE"
 
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().equals("AGE")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("b")).collect(Collectors.toList()));
 
         assertTrue( pairStream.size() == 1);
-        assertTrue( pairStream.get(0).fst.size()==2 );
+        assertTrue( pairStream.get(0).fst.size()==1 );
         assertTrue( pairStream.get(0).fst.get(0).getTableName().equals("PERSON") );
-        assertTrue( pairStream.get(0).fst.get(1).getTableName().equals("b"));
-
-
+        assertTrue( pairStream.get(0).snd.getAttribute().getName().toLowerCase().equals("b"));
 
     }
 
 
     @Test
+    public void MetadataContainsExpectedAttributesAndAliasOnTheSubSelect() {
+        String[] expectedT1 = {"NAME", "AGE"};
+        String[] expectedT2 = {"EMAIL", "ACTIVE"};
+        String[] expectedTables = {"PERSON", "EMAIL"};
+        String [] expectedAlias = {"a", "b", "c", "d", "e", "f", "g"};
+        String sql = String.format("select %1$s %2$s, %3$s %4$s from %5$s %6$s, " +
+                        "(select %7$s %8$s, %9$s %10$s from %11$s %12$s ) %13$s",
+                expectedT1[0], expectedAlias[0], expectedT1[1], expectedAlias[1], expectedTables[0], expectedAlias[2],
+                expectedT2[0], expectedAlias[3], expectedT2[1], expectedAlias[4], expectedTables[1], expectedAlias[5], expectedAlias[6] );
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor((Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue(p.getAttributeAliasMap() != null);
+
+        assertEquals(expectedT1.length + expectedT2.length, p.getAttributeAliasMap().size() );
+
+        // select NAME a, AGE b from PERSON c, (select EMAIL d, ACTIVE e from EMAIL f ) g
+
+
+        // [["c", "PERSON"], "a"] -> NAME
+
+
+        // [["c", "PERSON"], "b"] -> AGE
+
+        // [["g", "f"], "d"] -> EMAIL
+
+        // [["g", "f"], "g"] -> ACTIVE
+
+    }
+
+
+        @Test
     public void MetadataContainsExpectedAttributesAliasSubSelectJoin(){
         String [] expectedT1 = { "NAME", "AGE"};
         String [] expectedT2 = { "EMAIL", "ACTIVE"};
@@ -439,6 +467,8 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(p.getAttributeAliasMap() != null );
 
         assertEquals( p.getAttributeAliasMap().size() , expectedT1.length + expectedT2.length ) ;
+
+            // select NAME, AGE from PERSON, (select EMAIL, ACTIVE from EMAIL ) c
 
         // CHECKING KEYS
         assertTrue( p.getAttributeAliasMap()
@@ -483,7 +513,7 @@ public class ParsedSqlQueryVisitorTest {
                 .filter(co -> co.getKey().snd.getAttribute().getName().equals(expectedT2[1])).findFirst().get().getValue().getName());
 
 
-        // Pair[["PERSON"], "NAME"]
+        // Pair[["PERSON"], "NAME"] -> NAME
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream3 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
@@ -501,7 +531,7 @@ public class ParsedSqlQueryVisitorTest {
 
 
 
-        // Pair[["PERSON"], "AGE"]
+        // Pair[["PERSON"], "AGE" ] -> AGE
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream4 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()

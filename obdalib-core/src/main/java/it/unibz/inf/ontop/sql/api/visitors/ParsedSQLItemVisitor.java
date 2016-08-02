@@ -59,11 +59,15 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
         else
             b.add( this.relationID);
 
-        if ( selectExpressionItem.getAlias() != null )
-            b.add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory() , null,  selectExpressionItem.getAlias().getName().toString() ));
+//        if ( selectExpressionItem.getAlias() != null )
+//            b.add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory() , null,  selectExpressionItem.getAlias().getName().toString() ));
 
         QuotedID quotedID = metadata.getQuotedIDFactory().createAttributeID(selectExpressionItem.getExpression().toString() );
-        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(b.build(), new QualifiedAttributeID( relationID, quotedID));
+        QuotedID quotedIdAlias  =  selectExpressionItem.getAlias() == null?
+                quotedID:
+                metadata.getQuotedIDFactory().createAttributeID(selectExpressionItem.getAlias().getName().toString() );
+
+        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(b.build(), new QualifiedAttributeID( relationID, quotedIdAlias));
         attributeAliasMap.put( pair, quotedID );
     }
 
