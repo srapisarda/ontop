@@ -133,6 +133,10 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         plainSelect.getSelectItems().forEach(selectItem -> {
             ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, null );
             selectItem.accept(parsedSQLItemVisitor);
+
+            this.attributeAliasMap.putAll( parsedSQLItemVisitor.getAttributeAliasMap() ) ;
+
+
             List<Map.Entry<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID>> entryList =
                     parsedSQLItemVisitor.getAttributeAliasMap()
                             .entrySet()
@@ -143,7 +147,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
             if( ! entryList.isEmpty() ) {
                 entryList.forEach( entry -> {
-                      final Optional<Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition>> first = fromItemVisitor.getRelationAliasMap().entrySet().stream()
+                    this.attributeAliasMap.remove(entry.getKey());
+                    final Optional<Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition>> first = fromItemVisitor.getRelationAliasMap().entrySet().stream()
                             .filter(p -> p.getValue().getAttributes().stream()
                                     .anyMatch(q ->
                                             q.getID().getName().toLowerCase().equals(entry.getValue().getName().toLowerCase()))).findFirst();

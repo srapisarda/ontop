@@ -371,6 +371,18 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(  p.getTables().size() == expected.length );
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+
+
+
+        ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
+                .keySet()
+                .stream()
+                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("fname")).collect(Collectors.toList()));
+
+        assertTrue( pairStream2.size() == 1);
+        assertTrue( pairStream2.get(0).fst.size()==1 );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("a") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("fname"));
     }
 
     @Test
@@ -510,7 +522,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
-        @Test
+    @Test
     public void MetadataContainsExpectedAttributesAliasSubSelectJoin(){
         String [] expectedT1 = { "NAME", "AGE"};
         String [] expectedT2 = { "EMAIL", "ACTIVE"};
