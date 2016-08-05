@@ -354,7 +354,7 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void MetadataContainsExpectedFourTablesInnerJoinUsing(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS", "POSTCODE"};
-
+        // select a.name as fname, b.email as emailAddress, c.address as personAddress, d.postcode as postc from PERSON a inner join EMAIL b on a.personId = b.personId inner join ADDRESS c on a.personId = c.personId inner join POSTCODE d on d.idPostcode = c.idPostcode;
         String sql = String.format(
                 "select a.name as fname, " +
                         "b.email as emailAddress, " +
@@ -383,6 +383,17 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue( pairStream2.get(0).fst.size()==1 );
         assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("a") );
         assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("fname"));
+
+        // "Pair[["d"],"d".POSTC]" -> "POSTCODE"
+        List<Map.Entry<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID>> postc =
+                p.getAttributeAliasMap().entrySet().stream().filter(pairQuotedIDEntry ->
+                        pairQuotedIDEntry.getKey().snd.getAttribute().getName().toLowerCase().equals("postc")).collect(Collectors.toList());
+        assertTrue( postc.size() == 1);
+        assertTrue( postc.get(0).getValue().getName().toLowerCase().equals("postcode"));
+        assertTrue( postc.get(0).getKey().snd.getRelation().getTableName().equals("d"));
+        assertTrue( postc.get(0).getKey().fst.get(0).getTableName().equals("d"));
+        // ["d"] -> POSTCODE
+        assertTrue( p.getRelationAliasMap().get(postc.get(0).getKey().fst).getID().getTableName().equals("POSTCODE"));
     }
 
     @Test
