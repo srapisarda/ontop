@@ -19,10 +19,13 @@ import java.util.Map;
  * @author Salvatore Rapisarda on 20/07/2016.
  */
 class ParsedSQLItemVisitor implements SelectItemVisitor {
-    private final DBMetadata metadata;
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private final DBMetadata metadata;
+    private final QuotedIDFactory idFac;
+
     private final RelationID relationID;
-    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
+    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap = new LinkedHashMap<>();;
 
     Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> getAttributeAliasMap() {
         return attributeAliasMap;
@@ -30,8 +33,8 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
 
 
     ParsedSQLItemVisitor(DBMetadata metadata, RelationID relationID){
-        attributeAliasMap =new LinkedHashMap<>();
         this.metadata = metadata;
+        this.idFac = metadata.getQuotedIDFactory();
         this.relationID = relationID;
     }
 
@@ -55,11 +58,10 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
         selectExpressionItem.getExpression().accept(parsedSQLExpressionVisitor);
         parsedSQLExpressionVisitor
                 .getColumns()
-                .forEach( column -> addAttributeAliasMap( column.getColumnName(),
-                                            selectExpressionItem.getAlias() == null? column.getColumnName() : selectExpressionItem.getAlias().getName().toString(),
-                                            RelationID.createRelationIdFromDatabaseRecord(
-                                                    metadata.getQuotedIDFactory() , null,
-                                                    column.getTable().getAlias() != null ? column.getTable().getAlias().getName() : column.getTable().getName())));
+                .forEach(column -> addAttributeAliasMap(column.getColumnName(),
+                        selectExpressionItem.getAlias() == null? column.getColumnName() : selectExpressionItem.getAlias().getName().toString(),
+                        idFac.createRelationID(null,
+                                column.getTable().getAlias() != null ? column.getTable().getAlias().getName() : column.getTable().getName())));
 
 //        addAttributeAliasMap(
 //                selectExpressionItem.getExpression().toString(),
@@ -71,24 +73,21 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
     }
 
 
-    private void addAttributeAliasMap( String attributeId , String alias, RelationID relationID ){
+    private void addAttributeAliasMap(String attributeId, String alias, RelationID relationID) {
         ImmutableList.Builder<RelationID> b =  ImmutableList.builder();
 
-        if (relationID == null || relationID.getTableName() == null  ) {
-            b.add(RelationID.createRelationIdFromDatabaseRecord(metadata.getQuotedIDFactory(), null, ""));
-        }else
+        // R: why not ImmutableList.of ?!!
+        if (relationID == null || relationID.getTableName() == null)
+            b.add(idFac.createRelationID(null, "")); // ?????!
+        else
             b.add(relationID);
 
-        QuotedID quotedID = metadata.getQuotedIDFactory().createAttributeID(attributeId);
-        QuotedID quotedIdAlias  =  alias == null?
-                quotedID:
-                metadata.getQuotedIDFactory().createAttributeID(alias);
+        QuotedID quotedID = idFac.createAttributeID(attributeId);
+        QuotedID quotedIdAlias  =  alias == null ?
+                quotedID : idFac.createAttributeID(alias);
 
-        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(b.build(), new QualifiedAttributeID( relationID, quotedIdAlias));
+        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(b.build(), new QualifiedAttributeID(relationID, quotedIdAlias));
 
-        attributeAliasMap.put( pair, quotedID );
-
+        attributeAliasMap.put(pair, quotedID);
     }
-
-
 }
