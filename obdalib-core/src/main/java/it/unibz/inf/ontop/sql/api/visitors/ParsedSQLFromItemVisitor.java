@@ -36,33 +36,31 @@ import java.util.*;
  */
 class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private QuotedIDFactory idFac;
-    private DBMetadata metadata;
-    private Set<RelationID> tables = new HashSet<>();
+
+    private final QuotedIDFactory idFac;
+    private final DBMetadata metadata;
+
+    private final Set<RelationID> tables = new HashSet<>();
+
+    private final Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap = new LinkedHashMap<>();
 
     Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return relationAliasMap;
     }
 
+    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap = new LinkedHashMap<>();
 
-    private Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap;
-
-    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
     Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
         return attributeAliasMap;
     }
-
 
     public Set<RelationID> getTables() {
         return tables;
     }
 
-
     ParsedSQLFromItemVisitor(DBMetadata metadata){
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
-        this.relationAliasMap = new LinkedHashMap<>();
-        this.attributeAliasMap = new LinkedHashMap<>();
     }
 
 
@@ -82,19 +80,18 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (table.getPivot() != null)
             throw new ParseException(table.getPivot());
 
-        RelationID name = RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName());
+        RelationID name = idFac.createRelationID(table.getSchemaName(), table.getName());
         if (metadata.getRelation(name) != null) {
             tables.add(name);
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
             this.relationAliasMap.put(
-                    ImmutableList.of(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, key)),
-                    metadata.getDatabaseRelation(RelationID.createRelationIdFromDatabaseRecord(idFac, table.getSchemaName(), table.getName())));
+                    ImmutableList.of(idFac.createRelationID(null, key)),
+                    metadata.getDatabaseRelation(idFac.createRelationID(table.getSchemaName(), table.getName())));
 
         } else
-            throw new MappingQueryException("the table " + table.getFullyQualifiedName() + " does not exist.", table);
+            throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
 
         logger.info("Table alias: " + table.getAlias() + " --> " + table.getName());
-
     }
 
 
@@ -106,7 +103,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             throw new ParseException(subSelect.getPivot());
 
         if (subSelect.getAlias() == null ||  subSelect.getAlias().getName().isEmpty())
-            throw new MappingQueryException("A SUB_SELECT SHOULD BE IDENTIFIED BY AN ALIAS!!!", subSelect);
+            throw new MappingQueryException("A SUB_SELECT SHOULD BE IDENTIFIED BY AN ALIAS", subSelect);
 
         // logger.info(String.format("select index: %3$s,  (relationLevel: %2$d):  %1$s", subSelect.toString(), relationLevel, getSelectIndex()));
             /*
@@ -126,22 +123,20 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(metadata);
        //v.set( relationalMapIndex );
         subSelBody.accept(visitor);
-        this.tables.addAll(visitor.getTables());
+        tables.addAll(visitor.getTables());
 
         final String alias =  subSelect.getAlias().getName();
 
-
-
-        final RelationID relationID = RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias);
+        final RelationID relationID = idFac.createRelationID(null, alias);
         visitor.getRelationAliasMap().forEach(( k, v ) -> {
-            final ImmutableList.Builder<RelationID> builder = ImmutableList.<RelationID>builder().add(relationID);
-            k.forEach(builder::add);
-            this.relationAliasMap.put(builder.build(), v);
+            final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
+            builder.add(relationID).addAll(k);
+            relationAliasMap.put(builder.build(), v);
         });
 
 
         visitor.getAttributeAliasMap().forEach( (k, v ) -> {
-            final Optional<ImmutableList<RelationID>> relationIDsOptional = this.relationAliasMap.keySet().stream()
+            final Optional<ImmutableList<RelationID>> relationIDsOptional = relationAliasMap.keySet().stream()
                     .filter(p ->
                             p.stream().anyMatch(q ->
                                     q.getTableName() != null &&
@@ -151,8 +146,8 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             if ( relationIDsOptional.isPresent()){
                 final ImmutableList<RelationID> immutableListRelations = relationIDsOptional.get();
                 final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();//.add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-                builder.addAll( immutableListRelations);
-                this.getAttributeAliasMap().put( new Pair<>(builder.build(), k.snd ), v);
+                builder.addAll(immutableListRelations);
+                attributeAliasMap.put(new Pair<>(builder.build(), k.snd ), v);
             }else
               throw new MappingQueryException("the relationAliasMap does not contains any alias ",relationAliasMap ); // cannot append
 

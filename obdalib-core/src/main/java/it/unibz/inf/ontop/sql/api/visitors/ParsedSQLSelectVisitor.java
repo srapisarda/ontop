@@ -39,19 +39,22 @@ import java.util.stream.Collectors;
  */
 public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Set<RelationID> tables;
     private final DBMetadata metadata;
 
-    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
+    private final Set<RelationID> tables = new HashSet<>();
+
+    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap = new LinkedHashMap<>();
+
     public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
         return attributeAliasMap;
     }
+
+    private final Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap = new LinkedHashMap<>();
 
     public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
         return  relationAliasMap ;
     }
 
-    private Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap;
 
     /**
      * select visitor used by the ParsedSQLVisitor
@@ -59,9 +62,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      */
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
         this.metadata = metadata;
-        this.tables = new HashSet<>();
-        this.relationAliasMap = new LinkedHashMap<>();
-        this.attributeAliasMap = new LinkedHashMap<>();
     }
 
     /**
@@ -95,7 +95,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     public void visit(PlainSelect plainSelect) {
         logger.info("Visit PlainSelect");
 
-
         if (plainSelect.getDistinct() != null)
             throw new ParseException(plainSelect.getDistinct());
         if (plainSelect.getHaving() != null)
@@ -106,14 +105,12 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
             throw new ParseException(plainSelect.getOrderByElements());
         if (plainSelect.getLimit() != null)
             throw new ParseException(plainSelect.getLimit());
-        if (plainSelect.getLimit() != null)
-            throw new ParseException(plainSelect.getLimit());
         if (plainSelect.getTop() != null)
             throw new ParseException(plainSelect.getTop());
         if (plainSelect.getOracleHierarchical() != null)
             throw new ParseException(plainSelect.getOracleHierarchical());
         if (plainSelect.getIntoTables() != null && !plainSelect.getIntoTables().isEmpty())
-            throw new MappingQueryException("INTO TABLE IS NOT ALLOWED!!! FAIL!", plainSelect.getIntoTables());
+            throw new MappingQueryException("Only SELECT queries are allowed", plainSelect.getIntoTables());
 
         logger.info(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
@@ -121,21 +118,18 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         plainSelect.getFromItem().accept(fromItemVisitor);
 
-
-
         if (plainSelect.getJoins() != null)
             plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
 
-        this.tables.addAll(fromItemVisitor.getTables() );
-        this.getRelationAliasMap().putAll( fromItemVisitor.getRelationAliasMap() );
-        this.getAttributeAliasMap().putAll( fromItemVisitor.getAttributeAliasMap() );
+        tables.addAll(fromItemVisitor.getTables());
+        relationAliasMap.putAll(fromItemVisitor.getRelationAliasMap() );
+        attributeAliasMap.putAll(fromItemVisitor.getAttributeAliasMap() );
 
         plainSelect.getSelectItems().forEach(selectItem -> {
-            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, null );
+            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(metadata, null);
             selectItem.accept(parsedSQLItemVisitor);
 
-            this.attributeAliasMap.putAll( parsedSQLItemVisitor.getAttributeAliasMap() ) ;
-
+            attributeAliasMap.putAll(parsedSQLItemVisitor.getAttributeAliasMap());
 
             List<Map.Entry<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID>> entryList =
                     parsedSQLItemVisitor.getAttributeAliasMap()
@@ -146,8 +140,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                                                ).collect(Collectors.toList());
 
             if( ! entryList.isEmpty() ) {
-                entryList.forEach( entry -> {
-                    this.attributeAliasMap.remove(entry.getKey());
+                entryList.forEach(entry -> {
+                    attributeAliasMap.remove(entry.getKey());
                     final Optional<Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition>> first = fromItemVisitor.getRelationAliasMap().entrySet().stream()
                             .filter(p -> p.getValue().getAttributes().stream()
                                     .anyMatch(q ->
@@ -190,7 +184,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      */
     @Override
     public void visit(SetOperationList setOpList) {
-        logger.info("Visit SetOperationList");
         throw new ParseException(setOpList);
     }
 
@@ -201,7 +194,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      */
     @Override
     public void visit(WithItem withItem) {
-        logger.info("Visit WithItem");
         throw new ParseException(withItem);
     }
 
