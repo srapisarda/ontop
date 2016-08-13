@@ -99,7 +99,7 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void MetadataContainsExpectedAliasTable(){
         String [] expected = {"PERSON"};
-        String [] expectedAlias = {"p"};
+        String [] expectedAlias = {"P"};
         String sql = "select * from " + expected[0] + " " + expectedAlias[0];
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
 
@@ -199,9 +199,22 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
+    public void MetadataContainsAttributeInJoinTablesInNaturalJoin(){
+        String [] expected = { "PERSON", "EMAIL"};
+        // select a.name, a.age, b.email from PERSON as a natural join EMAIL as b
+        String sql = String.format( "select a.name, a.age, b.email from %1$s as a natural join %2$s as b", expected[0], expected[1]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
+        assertTrue(  p.getTables().size() == expected.length );
+        for (final String table : expected)
+            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+    }
+
+
+    @Test
     public void MetadataContainsExpectedTwoAliaTablesInNaturalJoin(){
         String [] expected = { "PERSON", "EMAIL"};
-        String [] expectedAlias = {"p", "e"};
+        String [] expectedAlias = {"P", "E"};
         String sql = String.format( "select * from %1$s %2$s natural join %3$s %4$s ", expected[0], expectedAlias[0], expected[1], expectedAlias[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
@@ -323,7 +336,7 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void MetadataContainsExpectedThreeAliasTablesInnerJoinUsing(){
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
-        String [] expectedAlias = {"a", "b", "ADDRESS"};
+        String [] expectedAlias = {"A", "B", "ADDRESS"};
         String sql = String.format( "select * from %1$s %2$s inner join %3$s %4$s inner join %5$s using (idPerson) ", expected[0], expectedAlias[0], expected[1], expectedAlias[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
@@ -381,7 +394,7 @@ public class ParsedSqlQueryVisitorTest {
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==1 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("a") );
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("A") );
         assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("fname"));
 
         // "Pair[["d"],"d".POSTC]" -> "POSTCODE"
@@ -390,8 +403,8 @@ public class ParsedSqlQueryVisitorTest {
                         pairQuotedIDEntry.getKey().snd.getAttribute().getName().toLowerCase().equals("postc")).collect(Collectors.toList());
         assertTrue( postc.size() == 1);
         assertTrue( postc.get(0).getValue().getName().toLowerCase().equals("postcode"));
-        assertTrue( postc.get(0).getKey().snd.getRelation().getTableName().equals("d"));
-        assertTrue( postc.get(0).getKey().fst.get(0).getTableName().equals("d"));
+        assertTrue( postc.get(0).getKey().snd.getRelation().getTableName().equals("D"));
+        assertTrue( postc.get(0).getKey().fst.get(0).getTableName().equals("D"));
         // ["d"] -> POSTCODE
         assertTrue( p.getRelationAliasMap().get(postc.get(0).getKey().fst).getID().getTableName().equals("POSTCODE"));
     }
@@ -423,18 +436,16 @@ public class ParsedSqlQueryVisitorTest {
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("a")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().equals("A")).collect(Collectors.toList()));
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==1 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("c") );
-        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("a"));
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("C") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().equals("A"));
 
         // ["c"] -> PERSON ************************
         DatabaseRelationDefinition r =  p.getRelationAliasMap().get(pairStream2.get(0).fst);
         assertEquals("Expected table PERSON.", "PERSON",  r.getID().getTableName());
-
-
 
 
         //  [["c"], "b"] --> "AGE"
@@ -442,15 +453,12 @@ public class ParsedSqlQueryVisitorTest {
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("b")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().equals("B")).collect(Collectors.toList()));
 
         assertTrue( pairStream.size() == 1);
         assertTrue( pairStream.get(0).fst.size()==1 );
-        assertTrue( pairStream.get(0).fst.get(0).getTableName().equals("c") );
-        assertTrue( pairStream.get(0).snd.getAttribute().getName().toLowerCase().equals("b"));
-
-
-
+        assertTrue( pairStream.get(0).fst.get(0).getTableName().equals("C") );
+        assertTrue( pairStream.get(0).snd.getAttribute().getName().equals("B"));
 
     }
 
@@ -460,7 +468,7 @@ public class ParsedSqlQueryVisitorTest {
         String[] expectedT1 = {"NAME", "AGE"};
         String[] expectedT2 = {"EMAIL", "ACTIVE"};
         String[] expectedTables = {"PERSON", "EMAIL"};
-        String [] expectedAlias = {"a", "b", "c", "d", "e", "f", "g"};
+        String [] expectedAlias = {"A", "B", "C", "D", "E", "F", "G"};
         String sql = String.format("select %1$s %2$s, %3$s %4$s from %5$s %6$s, " +
                         "(select %7$s %8$s, %9$s %10$s from %11$s %12$s ) %13$s",
                 expectedT1[0], expectedAlias[0], expectedT1[1], expectedAlias[1], expectedTables[0], expectedAlias[2],
@@ -477,12 +485,12 @@ public class ParsedSqlQueryVisitorTest {
         ImmutableList<Pair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("a")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().equals("A")).collect(Collectors.toList()));
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==1 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("c") );
-        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("a"));
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("C") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().equals("A"));
 
         // ["c"] -> PERSON ************************
         DatabaseRelationDefinition r =  p.getRelationAliasMap().get(pairStream2.get(0).fst);
@@ -492,25 +500,25 @@ public class ParsedSqlQueryVisitorTest {
         pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("b")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().equals("B")).collect(Collectors.toList()));
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==1 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("c") );
-        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("b"));
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("C") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().equals("B"));
         // key relation already tested
 
         // [["g", "f"], "d"] -> EMAIL
         pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("d")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().equals("D")).collect(Collectors.toList()));
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==2 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("g") );
-        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("f") );
-        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("d"));
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("G") );
+        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("F") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().equals("D"));
 
         // ["g", "f"] -> EMAIL (relation) **************************
         r =  p.getRelationAliasMap().get(pairStream2.get(0).fst);
@@ -522,13 +530,13 @@ public class ParsedSqlQueryVisitorTest {
         pairStream2 = ImmutableList.copyOf( p.getAttributeAliasMap()
                 .keySet()
                 .stream()
-                .filter(co -> co.snd.getAttribute().getName().toLowerCase().equals("e")).collect(Collectors.toList()));
+                .filter(co -> co.snd.getAttribute().getName().equals("E")).collect(Collectors.toList()));
 
         assertTrue( pairStream2.size() == 1);
         assertTrue( pairStream2.get(0).fst.size()==2 );
-        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("g") );
-        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("f") );
-        assertTrue( pairStream2.get(0).snd.getAttribute().getName().toLowerCase().equals("e"));
+        assertTrue( pairStream2.get(0).fst.get(0).getTableName().equals("G") );
+        assertTrue( pairStream2.get(0).fst.get(1).getTableName().equals("F") );
+        assertTrue( pairStream2.get(0).snd.getAttribute().getName().equals("E"));
 
     }
 
@@ -538,7 +546,7 @@ public class ParsedSqlQueryVisitorTest {
         String [] expectedT1 = { "NAME", "AGE"};
         String [] expectedT2 = { "EMAIL", "ACTIVE"};
         String [] expectedTables = { "PERSON", "EMAIL"};
-        String expectedAliasTable= "c";
+        String expectedAliasTable= "C";
         String sql = String.format( "select %1$s, %2$s from %3$s, " +
                                     "(select %4$s, %5$s from %6$s ) %7$s",
                 expectedT1[0], expectedT1[1] , expectedTables[0],
@@ -636,7 +644,7 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void MetadataContainsExpectedTwoAliasTablesSubSelectJoin(){
         String [] expected = { "PERSON", "EMAIL"};
-        String [] expectedAlias = { "a", "b", "c" };
+        String [] expectedAlias = { "A", "B", "C" };
 
         String sql = String.format( "select * from %1$s %2$s, (select * from %3$s %4$s ) %5$s ", expected[0], expectedAlias[0], expected[1], expectedAlias[1], expectedAlias[2] );
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
@@ -726,41 +734,41 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue( p.getRelationAliasMap().size() == 9);
 
         //(a     -> PERSON)
-        List<RelationID> key = getKeyFromStringArray( new String[]{"a"});
+        List<RelationID> key = getKeyFromStringArray( new String[]{"A"});
         assertEquals( expected[0]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
 
         // (b,a   -> EMAIL)
-        key = getKeyFromStringArray( new String[]{"b","a"});
+        key = getKeyFromStringArray( new String[]{"B","A"});
         assertEquals( expected[1]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
 
         // (b,g,a -> ADDRESS)
-        key = getKeyFromStringArray( new String[]{"b", "g", "a"});
+        key = getKeyFromStringArray( new String[]{"B", "G", "A"});
         assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[2]  );
 
 
         // (b,g,b -> EMAIL)
-        key = getKeyFromStringArray( new String[]{"b", "g", "b"});
+        key = getKeyFromStringArray( new String[]{"B", "G", "B"});
         assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[1]  );
 
 
         //(c     -> EMAIL)
-        key = getKeyFromStringArray( new String[]{"c"});
+        key = getKeyFromStringArray( new String[]{"C"});
         assertEquals( expected[1]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
 
         // (d,a   -> EMAIL)
-        key = getKeyFromStringArray( new String[]{"d","a"});
+        key = getKeyFromStringArray( new String[]{"D","A"});
         assertEquals( expected[1]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
 
         // (d,g,a -> PERSON)
-        key = getKeyFromStringArray( new String[]{"d", "g", "a"});
+        key = getKeyFromStringArray( new String[]{"D", "G", "A"});
         assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[0]  );
 
         // (d,g,b -> EMAIL)
-        key = getKeyFromStringArray( new String[]{"d", "g", "b"});
+        key = getKeyFromStringArray( new String[]{"D", "G", "B"});
         assertEquals( p.getRelationAliasMap().get(key).getID().getTableName() , expected[1]  );
 
         //(e     -> ADDRESS)
-        key = getKeyFromStringArray( new String[]{"e"});
+        key = getKeyFromStringArray( new String[]{"E"});
         assertEquals( expected[2]  , p.getRelationAliasMap().get(key).getID().getTableName()  );
 
     }

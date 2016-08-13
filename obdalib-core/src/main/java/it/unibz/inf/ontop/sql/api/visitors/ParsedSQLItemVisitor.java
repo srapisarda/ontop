@@ -3,7 +3,6 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import com.google.common.collect.ImmutableList;
 import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.sql.*;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -63,30 +62,17 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
                         idFac.createRelationID(null,
                                 column.getTable().getAlias() != null ? column.getTable().getAlias().getName() : column.getTable().getName())));
 
-//        addAttributeAliasMap(
-//                selectExpressionItem.getExpression().toString(),
-//                selectExpressionItem.getAlias() == null?null: selectExpressionItem.getAlias().getName().toString(),
-//                this.relationID);
-
-
-
     }
 
 
     private void addAttributeAliasMap(String attributeId, String alias, RelationID relationID) {
-        ImmutableList.Builder<RelationID> b =  ImmutableList.builder();
-
-        // R: why not ImmutableList.of ?!!
-        if (relationID == null || relationID.getTableName() == null)
-            b.add(idFac.createRelationID(null, "")); // ?????!
-        else
-            b.add(relationID);
-
         QuotedID quotedID = idFac.createAttributeID(attributeId);
         QuotedID quotedIdAlias  =  alias == null ?
                 quotedID : idFac.createAttributeID(alias);
 
-        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(b.build(), new QualifiedAttributeID(relationID, quotedIdAlias));
+        Pair<ImmutableList<RelationID>,QualifiedAttributeID> pair = new Pair<>(
+                ImmutableList.of ((relationID == null || relationID.getTableName() == null) ? idFac.createRelationID(null, ""): relationID ),
+                new QualifiedAttributeID(relationID, quotedIdAlias));
 
         attributeAliasMap.put(pair, quotedID);
     }
