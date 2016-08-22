@@ -84,9 +84,14 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (metadata.getRelation(name) != null) {
             tables.add(name);
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
-            this.relationAliasMap.put(
-                    ImmutableList.of(idFac.createRelationID(null, key)),
-                    metadata.getDatabaseRelation(idFac.createRelationID(table.getSchemaName(), table.getName())));
+            //
+            DatabaseRelationDefinition databaseRelationDefinition = metadata.getDatabaseRelation(idFac.createRelationID(table.getSchemaName(), table.getName()));
+            this.relationAliasMap.put(ImmutableList.of(idFac.createRelationID(null, key)),databaseRelationDefinition);
+            // Mapping table attribute
+            databaseRelationDefinition.getAttributes().forEach( attribute -> {
+                attributeAliasMap.put(
+                        new Pair<>(ImmutableList.of(databaseRelationDefinition.getID()), new QualifiedAttributeID( databaseRelationDefinition.getID(), attribute.getID())), attribute.getID());
+            });
 
         } else
             throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
