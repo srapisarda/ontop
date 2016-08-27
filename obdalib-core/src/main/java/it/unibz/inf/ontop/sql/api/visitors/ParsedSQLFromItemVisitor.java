@@ -20,10 +20,11 @@ package it.unibz.inf.ontop.sql.api.visitors;
  */
 
 import com.google.common.collect.ImmutableList;
-import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
+import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
@@ -37,30 +38,17 @@ import java.util.*;
 class ParsedSQLFromItemVisitor implements FromItemVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final QuotedIDFactory idFac;
-    private final DBMetadata metadata;
-
-    private final Set<RelationID> tables = new HashSet<>();
-
-    private final Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap = new LinkedHashMap<>();
-
-    Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap() {
-        return relationAliasMap;
+    /**
+     *
+     * @return  an instance of {@link ParsedSqlContext}
+     */
+    public ParsedSqlContext getContext() {
+        return context;
     }
-
-    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap = new LinkedHashMap<>();
-
-    Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap() {
-        return attributeAliasMap;
-    }
-
-    public Set<RelationID> getTables() {
-        return tables;
-    }
+    private final ParsedSqlContext context;
 
     ParsedSQLFromItemVisitor(DBMetadata metadata){
-        this.metadata = metadata;
-        this.idFac = metadata.getQuotedIDFactory();
+        this.context = new ParsedSqlContext(metadata);
     }
 
 
@@ -76,33 +64,33 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
      */
     @Override
     public void visit(Table table) {
-        logger.info("Visit Table");
+        logger.debug("Visit Table");
         if (table.getPivot() != null)
             throw new ParseException(table.getPivot());
 
-        RelationID name = idFac.createRelationID(table.getSchemaName(), table.getName());
-        if (metadata.getRelation(name) != null) {
-            tables.add(name);
+        RelationID name = context.getIdFac().createRelationID(table.getSchemaName(), table.getName());
+        if (context.getMetadata().getRelation(name) != null) {
+            context.getTables().add(name);
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
             //
-            DatabaseRelationDefinition databaseRelationDefinition = metadata.getDatabaseRelation(idFac.createRelationID(table.getSchemaName(), table.getName()));
-            this.relationAliasMap.put(ImmutableList.of(idFac.createRelationID(null, key)),databaseRelationDefinition);
+            DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
+            context.getRelationAliasMap().put(ImmutableList.of(context.getIdFac().createRelationID(null, key)),databaseRelationDefinition);
             // Mapping table attribute
-            databaseRelationDefinition.getAttributes().forEach( attribute -> {
-                attributeAliasMap.put(
-                        new Pair<>(ImmutableList.of(databaseRelationDefinition.getID()), new QualifiedAttributeID( databaseRelationDefinition.getID(), attribute.getID())), attribute.getID());
-            });
+            databaseRelationDefinition.getAttributes().forEach( attribute ->
+                context.getRelationAttributesMap().put(
+                        new ParsedSqlPair<>(ImmutableList.of(databaseRelationDefinition.getID()), new QualifiedAttributeID( databaseRelationDefinition.getID(), attribute.getID())), attribute.getID())
+            );
 
         } else
             throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
 
-        logger.info("Table alias: " + table.getAlias() + " --> " + table.getName());
+        logger.debug("Table alias: " + table.getAlias() + " --> " + table.getName());
     }
 
 
     @Override
     public void visit(SubSelect subSelect) {
-        logger.info(String.format("Visit SubSelect, alias -->  %1$s", subSelect.getAlias() == null ? "" : subSelect.getAlias()));
+        logger.debug(String.format("Visit SubSelect, alias -->  %1$s", subSelect.getAlias() == null ? "" : subSelect.getAlias()));
 
         if (subSelect.getPivot() != null)
             throw new ParseException(subSelect.getPivot());
@@ -110,7 +98,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (subSelect.getAlias() == null ||  subSelect.getAlias().getName().isEmpty())
             throw new MappingQueryException("A SUB_SELECT SHOULD BE IDENTIFIED BY AN ALIAS", subSelect);
 
-        // logger.info(String.format("select index: %3$s,  (relationLevel: %2$d):  %1$s", subSelect.toString(), relationLevel, getSelectIndex()));
+        // logger.debug(String.format("select index: %3$s,  (relationLevel: %2$d):  %1$s", subSelect.toString(), relationLevel, getSelectIndex()));
             /*
             if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
             throw new ParseException(subSelect);
@@ -125,23 +113,23 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
                 throw new ParseException(subSelect);*/
        // List<String> relationalMapIndex = new LinkedList<>();
 
-        ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(metadata);
+        ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(context.getMetadata());
        //v.set( relationalMapIndex );
         subSelBody.accept(visitor);
-        tables.addAll(visitor.getTables());
+        context.getTables().addAll(visitor.getTables());
 
         final String alias =  subSelect.getAlias().getName();
 
-        final RelationID relationID = idFac.createRelationID(null, alias);
-        visitor.getRelationAliasMap().forEach(( k, v ) -> {
+        final RelationID relationID = context.getIdFac().createRelationID(null, alias);
+        visitor.getContext().getRelationAliasMap().forEach(( k, v ) -> {
             final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
             builder.add(relationID).addAll(k);
-            relationAliasMap.put(builder.build(), v);
+            context.getRelationAliasMap().put(builder.build(), v);
         });
 
 
-        visitor.getAttributeAliasMap().forEach( (k, v ) -> {
-            final Optional<ImmutableList<RelationID>> relationIDsOptional = relationAliasMap.keySet().stream()
+        visitor.getContext().getAttributeAliasMap().forEach( (k, v ) -> {
+            final Optional<ImmutableList<RelationID>> relationIDsOptional = context.getRelationAliasMap().keySet().stream()
                     .filter(p ->
                             p.stream().anyMatch(q ->
                                     q.getTableName() != null &&
@@ -152,9 +140,9 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
                 final ImmutableList<RelationID> immutableListRelations = relationIDsOptional.get();
                 final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();//.add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
                 builder.addAll(immutableListRelations);
-                attributeAliasMap.put(new Pair<>(builder.build(), k.snd ), v);
+                context.getAttributeAliasMap().put(new ParsedSqlPair<>(builder.build(), k.getSnd()), v);
             }else
-              throw new MappingQueryException("the relationAliasMap does not contains any alias ",relationAliasMap ); // cannot append
+              throw new MappingQueryException("the relationAliasMap does not contains any alias ", context.getRelationAliasMap() ); // cannot append
 
         });
 
@@ -180,7 +168,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
      */
     @Override
     public void visit(SubJoin subjoin) {
-        logger.info("Visit SubJoin");
+        logger.debug("Visit SubJoin");
         if (subjoin.getPivot() != null)
             throw new ParseException(subjoin.getPivot());
         // TODO: implement logic
@@ -198,7 +186,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
      */
     @Override
     public void visit(LateralSubSelect lateralSubSelect) {
-        logger.info("Visit LateralSubSelect");
+        logger.debug("Visit LateralSubSelect");
         throw new ParseException(lateralSubSelect);
     }
 
@@ -213,9 +201,9 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
      */
     @Override
     public void visit(ValuesList valuesList) {
-        logger.info("Visit ValuesList");
+        logger.debug("Visit ValuesList");
 
-        logger.info("ValuesList instance of " + valuesList.getClass().getName());
+        logger.debug("ValuesList instance of " + valuesList.getClass().getName());
         // TODO:  implement logic ...  get alias
     }
 

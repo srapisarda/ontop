@@ -22,7 +22,6 @@ package it.unibz.inf.ontop.sql.api;
 
 
 import com.google.common.collect.ImmutableList;
-import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
@@ -62,15 +61,15 @@ public class ParsedSqlQueryVisitor  {
 
         selectVisitor = new ParsedSQLSelectVisitor(metadata);
         selectQuery.getSelectBody().accept(selectVisitor);
-        selectVisitor.getRelationAliasMap().putAll( selectVisitor.getRelationAliasMap() );
+        selectVisitor.getContext().getRelationAliasMap().putAll( selectVisitor.getContext().getRelationAliasMap() );
     }
 
     public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap(){
-        return  selectVisitor.getRelationAliasMap();
+        return  selectVisitor.getContext().getRelationAliasMap();
     }
 
-    public Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap(){
-        return selectVisitor.getAttributeAliasMap();
+    public Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getAttributeAliasMap(){
+        return selectVisitor.getContext().getAttributeAliasMap();
     }
 
 }

@@ -1,10 +1,10 @@
 package it.unibz.inf.ontop.sql.api.visitors;
 
 import com.google.common.collect.ImmutableList;
-import com.sun.tools.javac.util.Pair;
 import it.unibz.inf.ontop.sql.QualifiedAttributeID;
 import it.unibz.inf.ontop.sql.QuotedID;
 import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -19,12 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by salvo on 04/08/2016.
+ * Created by Salvatore Rapisarda
+ * on 04/08/2016.
  */
 
 class ParsedSQLExpressionVisitor implements ExpressionVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Map<Pair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
+    private final Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
     private final ImmutableList.Builder<Column> columnsListBuilder;
 
     ParsedSQLExpressionVisitor() {
@@ -38,148 +39,148 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
 
     @Override
     public void visit(NullValue nullValue) {
-        logger.info("Visit NullValue");
+        logger.debug("Visit NullValue");
 
     }
 
     @Override
     public void visit(Function function) {
-        logger.info("Visit Function");
+        logger.debug("Visit Function");
     }
 
     @Override
     public void visit(SignedExpression signedExpression) {
-        logger.info("Visit signedExpression");
+        logger.debug("Visit signedExpression");
     }
 
     @Override
     public void visit(JdbcParameter jdbcParameter) {
-        logger.info("Visit jdbcParameter");
+        logger.debug("Visit jdbcParameter");
     }
 
     @Override
     public void visit(JdbcNamedParameter jdbcNamedParameter) {
-        logger.info("Visit jdbcNamedParameter");
+        logger.debug("Visit jdbcNamedParameter");
     }
 
     @Override
     public void visit(DoubleValue doubleValue) {
-        logger.info("Visit doubleValue");
+        logger.debug("Visit doubleValue");
     }
 
     @Override
     public void visit(LongValue longValue) {
-        logger.info("Visit longValue");
+        logger.debug("Visit longValue");
     }
 
     @Override
     public void visit(DateValue dateValue) {
-        logger.info("Visit dateValue");
+        logger.debug("Visit dateValue");
     }
 
     @Override
     public void visit(TimeValue timeValue) {
-        logger.info("Visit timeValue");
+        logger.debug("Visit timeValue");
     }
 
     @Override
     public void visit(TimestampValue timestampValue) {
-        logger.info("Visit timestampValue");
+        logger.debug("Visit timestampValue");
     }
 
     @Override
     public void visit(Parenthesis parenthesis) {
-        logger.info("Visit parenthesis");
+        logger.debug("Visit parenthesis");
     }
 
     @Override
     public void visit(StringValue stringValue) {
-        logger.info("Visit stringValue");
+        logger.debug("Visit stringValue");
     }
 
     @Override
     public void visit(Addition addition) {
-        logger.info("Visit addition");
+        logger.debug("Visit addition");
     }
 
     @Override
     public void visit(Division division) {
-        logger.info("Visit division");
+        logger.debug("Visit division");
     }
 
     @Override
     public void visit(Multiplication multiplication) {
-        logger.info("Visit multiplication");
+        logger.debug("Visit multiplication");
     }
 
     @Override
     public void visit(Subtraction subtraction) {
-        logger.info("Visit subtraction");
+        logger.debug("Visit subtraction");
     }
 
     @Override
     public void visit(AndExpression andExpression) {
-        logger.info("Visit andExpression");
+        logger.debug("Visit andExpression");
     }
 
     @Override
     public void visit(OrExpression orExpression) {
-        logger.info("Visit orExpression");
+        logger.debug("Visit orExpression");
     }
 
     @Override
     public void visit(Between between) {
-        logger.info("Visit Between");
+        logger.debug("Visit Between");
     }
 
     @Override
     public void visit(EqualsTo equalsTo) {
-        logger.info("Visit EqualsTo");
+        logger.debug("Visit EqualsTo");
     }
 
     @Override
     public void visit(GreaterThan greaterThan) {
-        logger.info("Visit GreaterThan");
+        logger.debug("Visit GreaterThan");
     }
 
     @Override
     public void visit(GreaterThanEquals greaterThanEquals) {
-        logger.info("Visit GreaterThanEquals");
+        logger.debug("Visit GreaterThanEquals");
     }
 
     @Override
     public void visit(InExpression inExpression) {
-        logger.info("Visit InExpression");
+        logger.debug("Visit InExpression");
     }
 
     @Override
     public void visit(IsNullExpression isNullExpression) {
-        logger.info("Visit IsNullExpression");
+        logger.debug("Visit IsNullExpression");
     }
 
     @Override
     public void visit(LikeExpression likeExpression) {
-        logger.info("Visit LikeExpression");
+        logger.debug("Visit LikeExpression");
     }
 
     @Override
     public void visit(MinorThan minorThan) {
-        logger.info("Visit MinorThan");
+        logger.debug("Visit MinorThan");
     }
 
     @Override
     public void visit(MinorThanEquals minorThanEquals) {
-        logger.info("Visit MinorThanEquals");
+        logger.debug("Visit MinorThanEquals");
     }
 
     @Override
     public void visit(NotEqualsTo notEqualsTo) {
-        logger.info("Visit NotEqualsTo");
+        logger.debug("Visit NotEqualsTo");
     }
 
     @Override
     public void visit(Column tableColumn) {
-        logger.info("Visit Column ", tableColumn);
+        logger.debug("Visit Column ", tableColumn);
         columnsListBuilder.add(tableColumn);
         //tableColumn.accept(this);
 
@@ -189,101 +190,101 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
 
     @Override
     public void visit(SubSelect subSelect) {
-        logger.info("Visit SubSelect");
+        logger.debug("Visit SubSelect");
     }
 
     @Override
     public void visit(CaseExpression caseExpression) {
-        logger.info("Visit CaseExpression");
+        logger.debug("Visit CaseExpression");
     }
 
     @Override
     public void visit(WhenClause whenClause) {
-        logger.info("Visit WhenClause");
+        logger.debug("Visit WhenClause");
     }
 
     @Override
     public void visit(ExistsExpression existsExpression) {
-        logger.info("Visit ExistsExpression");
+        logger.debug("Visit ExistsExpression");
     }
 
     @Override
     public void visit(AllComparisonExpression allComparisonExpression) {
-        logger.info("Visit AllComparisonExpression");
+        logger.debug("Visit AllComparisonExpression");
     }
 
     @Override
     public void visit(AnyComparisonExpression anyComparisonExpression) {
-        logger.info("Visit AnyComparisonExpression");
+        logger.debug("Visit AnyComparisonExpression");
     }
 
     @Override
     public void visit(Concat concat) {
-        logger.info("Visit Concat");
+        logger.debug("Visit Concat");
     }
 
     @Override
     public void visit(Matches matches) {
-        logger.info("Visit Matches");
+        logger.debug("Visit Matches");
     }
 
     @Override
     public void visit(BitwiseAnd bitwiseAnd) {
-        logger.info("Visit BitwiseAnd");
+        logger.debug("Visit BitwiseAnd");
     }
 
     @Override
     public void visit(BitwiseOr bitwiseOr) {
-        logger.info("Visit BitwiseOr");
+        logger.debug("Visit BitwiseOr");
     }
 
     @Override
     public void visit(BitwiseXor bitwiseXor) {
-        logger.info("Visit BitwiseXor");
+        logger.debug("Visit BitwiseXor");
     }
 
     @Override
     public void visit(CastExpression cast) {
-        logger.info("Visit CastExpression");
+        logger.debug("Visit CastExpression");
     }
 
     @Override
     public void visit(Modulo modulo) {
-        logger.info("Visit Modulo");
+        logger.debug("Visit Modulo");
     }
 
     @Override
     public void visit(AnalyticExpression aexpr) {
-        logger.info("Visit AnalyticExpression");
+        logger.debug("Visit AnalyticExpression");
     }
 
     @Override
     public void visit(ExtractExpression eexpr) {
-        logger.info("Visit ExtractExpression");
+        logger.debug("Visit ExtractExpression");
     }
 
     @Override
     public void visit(IntervalExpression iexpr) {
-        logger.info("Visit IntervalExpression");
+        logger.debug("Visit IntervalExpression");
     }
 
     @Override
     public void visit(OracleHierarchicalExpression oexpr) {
-        logger.info("Visit OracleHierarchicalExpression");
+        logger.debug("Visit OracleHierarchicalExpression");
     }
 
     @Override
     public void visit(RegExpMatchOperator rexpr) {
-        logger.info("Visit RegExpMatchOperator");
+        logger.debug("Visit RegExpMatchOperator");
     }
 
     @Override
     public void visit(JsonExpression jsonExpr) {
-        logger.info("Visit JsonExpression");
+        logger.debug("Visit JsonExpression");
     }
 
     @Override
     public void visit(RegExpMySQLOperator regExpMySQLOperator) {
-        logger.info("Visit RegExpMySQLOperator");
+        logger.debug("Visit RegExpMySQLOperator");
     }
 }
