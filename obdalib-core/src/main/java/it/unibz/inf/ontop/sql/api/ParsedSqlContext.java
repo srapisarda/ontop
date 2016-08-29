@@ -23,11 +23,15 @@ public class ParsedSqlContext {
     private final DBMetadata metadata;
     private final QuotedIDFactory idFac;
 
-    public List<ParsedSqlContext> getChildContext() {
+    public Map<QuotedID, ParsedSqlContext> getChildContext() {
         return childContext;
     }
 
-    List<ParsedSqlContext> childContext;
+    public void setChildContext(Map<QuotedID, ParsedSqlContext> childContext) {
+        this.childContext = childContext;
+    }
+
+    private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
 
 
     private final Map<ImmutableList<RelationID>, DatabaseRelationDefinition> relationAliasMap = new LinkedHashMap<>();
@@ -56,5 +60,14 @@ public class ParsedSqlContext {
         this.idFac = metadata.getQuotedIDFactory();
     }
 
+    public QuotedID getAlias() {
+        return alias;
+    }
+
+    public void setAlias(QuotedID alias) {
+        this.alias = alias;
+    }
+
+    QuotedID alias;
 
 }

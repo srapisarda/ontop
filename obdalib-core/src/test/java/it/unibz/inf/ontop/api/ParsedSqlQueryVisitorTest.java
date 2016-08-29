@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
@@ -111,7 +112,7 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
-    @Test   // TODO : FIX THIS
+    @Test
     public void MetadataContainsExpectedTupleAlias(){
         String [] expected = {"name", "age"};
         String sql = String.format("select %1$s, %2$s from PERSON ", expected[0], expected[1]) ;
@@ -685,7 +686,35 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(  p.getTables().size() == expected.length );
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+
+
+
     }
+
+
+    @Test
+    public void ExpectedThreeLevelContextSubSelectInJoin(){
+        /**
+         * context:
+         *      |root-> select * from PERSON, (select * from EMAIL, (select * from ADDRESS ) a ) b
+         *          |b ->  select * from EMAIL, (select * from ADDRESS ) a
+         *             |a ->  select * from ADDRESS
+         */
+
+        String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
+        String sql = String.format( "select * from PERSON, (select * from EMAIL, (select * from ADDRESS ) a ) b ", expected[0], expected[1], expected[2]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        logger.info(String.format( "expected.length: %d, p.getTables().size(): %d ",  expected.length, p.getTables().size() ));
+        assertTrue(  p.getTables().size() == expected.length );
+
+        assertTrue( p.getContext().getChildContext().size() == 1 );
+        ParsedSqlContext contextA = p.getContext().getChildContext().get(dbMetadata.getQuotedIDFactory().createAttributeID("b") );
+        assertTrue( contextA.getChildContext().size() == 1  );
+        assertNotNull( contextA.getChildContext().get(dbMetadata.getQuotedIDFactory().createAttributeID("a") ) );
+
+    }
+
+
 
     @Test  // TODO: to FIX
     // (expected = ParseException.class) // this need to be reviewed
@@ -703,6 +732,10 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(  p.getTables().size() == expected.length );
         for (final String table : expected)
             assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+
+
+
+
     }
 
 

@@ -52,6 +52,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final ParsedSqlContext context;
 
 
+
     /**
      * select visitor used by the ParsedSQLVisitor
      * @param metadata db metadata object {@link DBMetadata}
@@ -116,7 +117,9 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
-            plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
+            plainSelect.getJoins().forEach(join ->{
+                join.getRightItem().accept(fromItemVisitor);
+            });
 
         context.getTables().addAll(fromItemVisitor.getContext().getTables());
         context.getRelationAliasMap().putAll(fromItemVisitor.getContext().getRelationAliasMap() );
@@ -158,7 +161,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
             }
         });
 
-
+        if ( !(fromItemVisitor.getContext().getChildContext() == null  ||  fromItemVisitor.getContext().getChildContext().isEmpty()))
+            context.setChildContext(fromItemVisitor.getContext().getChildContext());
 
       //  this.getRelationAliasMap().entrySet().stream().
 

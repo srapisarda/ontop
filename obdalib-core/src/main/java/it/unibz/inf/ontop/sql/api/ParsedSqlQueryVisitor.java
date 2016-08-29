@@ -64,6 +64,10 @@ public class ParsedSqlQueryVisitor  {
         selectVisitor.getContext().getRelationAliasMap().putAll( selectVisitor.getContext().getRelationAliasMap() );
     }
 
+    public ParsedSqlContext getContext () {
+        return selectVisitor.getContext();
+    }
+
     public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getRelationAliasMap(){
         return  selectVisitor.getContext().getRelationAliasMap();
     }

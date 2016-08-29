@@ -121,6 +121,11 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         final String alias =  subSelect.getAlias().getName();
 
         final RelationID relationID = context.getIdFac().createRelationID(null, alias);
+
+        //todo: add in child context BEGIN
+        visitor.getContext().setAlias( context.getIdFac().createAttributeID( alias ));
+        context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
+
         visitor.getContext().getRelationAliasMap().forEach(( k, v ) -> {
             final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
             builder.add(relationID).addAll(k);
@@ -145,7 +150,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
               throw new MappingQueryException("the relationAliasMap does not contains any alias ", context.getRelationAliasMap() ); // cannot append
 
         });
-
+        //todo: add in child context END
 
        // v.getFromItemVisitor().getRelationMapIndex();
 /*

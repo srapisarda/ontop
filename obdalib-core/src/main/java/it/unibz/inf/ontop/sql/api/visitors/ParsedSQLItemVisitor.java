@@ -1,7 +1,10 @@
 package it.unibz.inf.ontop.sql.api.visitors;
 
 import com.google.common.collect.ImmutableList;
-import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.QualifiedAttributeID;
+import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.statement.select.AllColumns;
@@ -10,9 +13,6 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItemVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 
 /**
