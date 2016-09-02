@@ -125,6 +125,11 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         context.getRelationAliasMap().putAll(fromItemVisitor.getContext().getRelationAliasMap() );
         context.getAttributeAliasMap().putAll(fromItemVisitor.getContext().getAttributeAliasMap() );
 
+        context.getRelations().putAll( fromItemVisitor.getContext().getRelations() );
+        context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes() );
+
+
+
         plainSelect.getSelectItems().forEach(selectItem -> {
             ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context.getMetadata(), null);
             selectItem.accept(parsedSQLItemVisitor);
@@ -161,8 +166,10 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
             }
         });
 
-        if ( !(fromItemVisitor.getContext().getChildContext() == null  ||  fromItemVisitor.getContext().getChildContext().isEmpty()))
+        if ( !(fromItemVisitor.getContext().getChildContext() == null  ||  fromItemVisitor.getContext().getChildContext().isEmpty())) {
             context.setChildContext(fromItemVisitor.getContext().getChildContext());
+        }
+
 
       //  this.getRelationAliasMap().entrySet().stream().
 
