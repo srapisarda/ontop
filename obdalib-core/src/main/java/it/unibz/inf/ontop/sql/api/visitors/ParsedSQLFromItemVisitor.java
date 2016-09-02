@@ -76,11 +76,10 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
             context.getRelationAliasMap().put(ImmutableList.of(context.getIdFac().createRelationID(null, key)),databaseRelationDefinition);
             // Mapping table attribute
-            databaseRelationDefinition.getAttributes().forEach( attribute ->
-                context.getRelationAttributesMap().put(
-                        new ParsedSqlPair<>(ImmutableList.of(databaseRelationDefinition.getID()), new QualifiedAttributeID( databaseRelationDefinition.getID(), attribute.getID())), attribute.getID())
-            );
-
+            databaseRelationDefinition.getAttributes().forEach( attribute -> {
+                final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID());
+                context.getAttributes().put(new ParsedSqlPair<>(databaseRelationDefinition.getID(), qualifiedAttributeID ), attribute.getID());
+            });
         } else
             throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
 
