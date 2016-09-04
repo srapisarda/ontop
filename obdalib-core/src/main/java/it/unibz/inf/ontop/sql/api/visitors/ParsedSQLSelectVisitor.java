@@ -19,21 +19,16 @@ package it.unibz.inf.ontop.sql.api.visitors;
  * #L%
  */
 
-import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
-import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.SelectVisitor;
-import net.sf.jsqlparser.statement.select.SetOperationList;
-import net.sf.jsqlparser.statement.select.WithItem;
+import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -121,62 +116,38 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                 join.getRightItem().accept(fromItemVisitor);
             });
 
-        context.getTables().addAll(fromItemVisitor.getContext().getTables());
-        context.getRelationAliasMap().putAll(fromItemVisitor.getContext().getRelationAliasMap() );
-        context.getAttributeAliasMap().putAll(fromItemVisitor.getContext().getAttributeAliasMap() );
+        context.getGlobalTables().addAll(fromItemVisitor.getContext().getGlobalTables());
+        context.getGlobalRelations().putAll(fromItemVisitor.getContext().getGlobalRelations() );
+        context.getGlobalProjectedAttributes().putAll(fromItemVisitor.getContext().getGlobalProjectedAttributes() );
 
         context.getRelations().putAll( fromItemVisitor.getContext().getRelations() );
         context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes() );
-
-
+       // context.getProjectedAttributes().putAll( fromItemVisitor.getContext().getProjectedAttributes());
 
         plainSelect.getSelectItems().forEach(selectItem -> {
-            ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context.getMetadata(), null);
-            selectItem.accept(parsedSQLItemVisitor);
+            if ( selectItem instanceof AllColumns){
+              context.getProjectedAttributes().putAll( context.getAttributes() );
+            }else{
+                ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context.getMetadata(), context.getRelations());
+                selectItem.accept(parsedSQLItemVisitor);
 
-            context.getAttributeAliasMap().putAll(parsedSQLItemVisitor.getContext().getAttributeAliasMap());
-
-            List<Map.Entry<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID>> entryList =
-                    parsedSQLItemVisitor.getContext().getAttributeAliasMap()
-                            .entrySet()
-                            .stream()
-                            .filter(es ->
-                                     es.getKey().getFst() != null && ! es.getKey().getFst().isEmpty() &&  es.getKey().getFst().get(0).getTableName().isEmpty()
-                                               ).collect(Collectors.toList());
-
-            if( ! entryList.isEmpty() ) {
-                entryList.forEach(entry -> {
-                    context.getAttributeAliasMap().remove(entry.getKey());
-                    final Optional<Map.Entry<ImmutableList<RelationID>, DatabaseRelationDefinition>> first = fromItemVisitor.getContext().getRelationAliasMap().entrySet().stream()
-                            .filter(p -> p.getValue().getAttributes().stream()
-                                    .anyMatch(q ->
-                                            q.getID().getName().toLowerCase().equals(entry.getValue().getName().toLowerCase()))).findFirst();
-                    // .collect(Collectors.toList());
-
-                            if (first.isPresent()) {
-
-                                ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
-                                builder.addAll(first.get().getKey());
-                                entry.getKey().getFst().stream().skip(1).forEach( builder::add );
-                                ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID> n =
-                                        new ParsedSqlPair<>(builder.build(),  entry.getKey().getSnd());
-                                context.getAttributeAliasMap().put(n, entry.getValue()  );
-                            }
-                        });
+                context.getGlobalProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getGlobalProjectedAttributes());
+                context.getProjectedAttributes().putAll( parsedSQLItemVisitor.getContext().getProjectedAttributes() );
             }
         });
+
 
         if ( !(fromItemVisitor.getContext().getChildContext() == null  ||  fromItemVisitor.getContext().getChildContext().isEmpty())) {
             context.setChildContext(fromItemVisitor.getContext().getChildContext());
         }
 
 
-      //  this.getRelationAliasMap().entrySet().stream().
+      //  this.getGlobalRelations().entrySet().stream().
 
 
 
 //         this.getFromItemVisitor().getRelationMapIndex()
-//        this.getRelationAliasMap().put(  )
+//        this.getGlobalRelations().put(  )
 //         this.fromItemVisitor.getRelationMapIndex()
 
 //        if (subSelBody.getWhere() != null)
@@ -204,7 +175,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     }
 
     public Set<RelationID> getTables() {
-        return context.getTables();
+        return context.getGlobalTables();
     }
 
 }

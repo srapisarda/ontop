@@ -70,19 +70,22 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
         RelationID name = context.getIdFac().createRelationID(table.getSchemaName(), table.getName());
         if (context.getMetadata().getRelation(name) != null) {
-            context.getTables().add(name);
+            context.getGlobalTables().add(name);
             String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
             //
             DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
 
-            context.getRelationAliasMap().put(ImmutableList.of(context.getIdFac().createRelationID(table.getSchemaName(), key)),databaseRelationDefinition);
+            context.getGlobalRelations().put(ImmutableList.of(context.getIdFac().createRelationID(table.getSchemaName(), key)),databaseRelationDefinition);
 
             context.getRelations().put( context.getIdFac().createRelationID(table.getSchemaName() , key), databaseRelationDefinition);
 
             // Mapping table attribute
             databaseRelationDefinition.getAttributes().forEach( attribute -> {
-                final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID());
-                context.getAttributes().put(new ParsedSqlPair<>(databaseRelationDefinition.getID(), qualifiedAttributeID ), attribute.getID());
+                context.getAttributes().put(
+                        new ParsedSqlPair<>(
+                                databaseRelationDefinition.getID(),
+                                new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID()) ),
+                        attribute.getID());
             });
         } else
             throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
@@ -119,7 +122,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(context.getMetadata());
        //v.set( relationalMapIndex );
         subSelBody.accept(visitor);
-        context.getTables().addAll(visitor.getTables());
+        context.getGlobalTables().addAll(visitor.getTables());
 
         final String alias =  subSelect.getAlias().getName();
 
@@ -129,15 +132,15 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         visitor.getContext().setAlias( context.getIdFac().createAttributeID( alias ));
         context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
 
-        visitor.getContext().getRelationAliasMap().forEach(( k, v ) -> {
+        visitor.getContext().getGlobalRelations().forEach((k, v ) -> {
             final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
             builder.add(relationID).addAll(k);
-            context.getRelationAliasMap().put(builder.build(), v);
+            context.getGlobalRelations().put(builder.build(), v);
         });
 
 
-        visitor.getContext().getAttributeAliasMap().forEach( (k, v ) -> {
-            final Optional<ImmutableList<RelationID>> relationIDsOptional = context.getRelationAliasMap().keySet().stream()
+        visitor.getContext().getGlobalProjectedAttributes().forEach( (k, v ) -> {
+            final Optional<ImmutableList<RelationID>> relationIDsOptional = context.getGlobalRelations().keySet().stream()
                     .filter(p ->
                             p.stream().anyMatch(q ->
                                     q.getTableName() != null &&
@@ -148,9 +151,9 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
                 final ImmutableList<RelationID> immutableListRelations = relationIDsOptional.get();
                 final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();//.add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
                 builder.addAll(immutableListRelations);
-                context.getAttributeAliasMap().put(new ParsedSqlPair<>(builder.build(), k.getSnd()), v);
+                context.getGlobalProjectedAttributes().put(new ParsedSqlPair<>(builder.build(), k.getSnd()), v);
             }else
-              throw new MappingQueryException("the relationAliasMap does not contains any alias ", context.getRelationAliasMap() ); // cannot append
+              throw new MappingQueryException("the relationAliasMap does not contains any alias ", context.getGlobalRelations() ); // cannot append
 
         });
         //todo: add in child context END

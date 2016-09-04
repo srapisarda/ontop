@@ -50,7 +50,7 @@ public class MappingParser {
 	 * Called by Quest when fetching non-full metadata
 	 * Only metadata for the tables in this list is extracted by Quest
 	 * 
-	 * @return The tables (same as getTables)
+	 * @return The tables (same as getGlobalTables)
 	 * @throws JSQLParserException 
 	 */
 	public static Set<RelationID> getRealTables(QuotedIDFactory idfac, Collection<OBDAMappingAxiom> mappings) throws JSQLParserException{
@@ -80,7 +80,7 @@ public class MappingParser {
 		}
 		return tables;
 		
-//		Set<RelationID> realTables = getTables();
+//		Set<RelationID> realTables = getGlobalTables();
 //			List<RelationJSQL> removeThese = new ArrayList<>();
 //			for(ViewDefinition vd : sqlQueryParser.getViewDefinitions()){
 //				for(RelationJSQL rel : realTables){
