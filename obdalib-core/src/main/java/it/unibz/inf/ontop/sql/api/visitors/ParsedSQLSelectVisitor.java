@@ -112,9 +112,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
-            plainSelect.getJoins().forEach(join ->{
-                join.getRightItem().accept(fromItemVisitor);
-            });
+            plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
 
         context.getGlobalTables().addAll(fromItemVisitor.getContext().getGlobalTables());
         context.getGlobalRelations().putAll(fromItemVisitor.getContext().getGlobalRelations() );

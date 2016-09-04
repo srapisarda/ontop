@@ -88,7 +88,7 @@ public class ParsedSqlContext {
         this.alias = alias;
     }
 
-    QuotedID alias;
+    private QuotedID alias;
 
     //region predicates atoms scope
 
@@ -105,13 +105,13 @@ public class ParsedSqlContext {
     }
 
     // scope  relations
-    public final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
+    private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
 
     // scope attribute projected
-    public final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > projectedAttributes = new HashMap<>();
+    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > projectedAttributes = new HashMap<>();
 
     // scope all attribute
-    public final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > attributes = new HashMap<>();
+    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > attributes = new HashMap<>();
 
     //endregion
 

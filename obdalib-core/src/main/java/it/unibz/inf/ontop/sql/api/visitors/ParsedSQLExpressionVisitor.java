@@ -22,10 +22,6 @@ package it.unibz.inf.ontop.sql.api.visitors;
 
 
 import com.google.common.collect.ImmutableList;
-import it.unibz.inf.ontop.sql.QualifiedAttributeID;
-import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.RelationID;
-import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -36,9 +32,6 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Created by Salvatore Rapisarda
  * on 04/08/2016.
@@ -46,11 +39,9 @@ import java.util.Map;
 
 class ParsedSQLExpressionVisitor implements ExpressionVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> attributeAliasMap;
     private final ImmutableList.Builder<Column> columnsListBuilder;
 
     ParsedSQLExpressionVisitor() {
-        this.attributeAliasMap = new HashMap<>();
         this.columnsListBuilder = new ImmutableList.Builder<>();
     }
 

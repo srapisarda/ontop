@@ -37,8 +37,8 @@ public class ParsedSqlPair<A, B> {
         return snd;
     }
 
-    final A fst;
-    final B snd;
+    private final A fst;
+    private final B snd;
 
     public ParsedSqlPair(A var1, B var2) {
         this.fst = var1;
@@ -50,7 +50,7 @@ public class ParsedSqlPair<A, B> {
     }
 
     public boolean equals(Object var1) {
-        return var1 instanceof ParsedSqlPair && Objects.equals(this.fst, ((ParsedSqlPair)var1).fst) && Objects.equals(this.snd, ((ParsedSqlPair)var1).snd);
+        return (var1 instanceof ParsedSqlPair) && Objects.equals(this.fst, ((ParsedSqlPair) var1).fst) && Objects.equals(this.snd, ((ParsedSqlPair) var1).snd);
     }
 
     public int hashCode() {
