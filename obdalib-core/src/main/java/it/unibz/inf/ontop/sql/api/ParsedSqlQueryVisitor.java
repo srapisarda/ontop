@@ -61,19 +61,10 @@ public class ParsedSqlQueryVisitor  {
 
         selectVisitor = new ParsedSQLSelectVisitor(metadata);
         selectQuery.getSelectBody().accept(selectVisitor);
-        selectVisitor.getContext().getGlobalRelations().putAll( selectVisitor.getContext().getGlobalRelations() );
     }
 
     public ParsedSqlContext getContext () {
         return selectVisitor.getContext();
-    }
-
-    public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getGlobalRelations(){
-        return  selectVisitor.getContext().getGlobalRelations();
-    }
-
-    public Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getGlobalProjectedAttributes(){
-        return selectVisitor.getContext().getGlobalProjectedAttributes();
     }
 
 }

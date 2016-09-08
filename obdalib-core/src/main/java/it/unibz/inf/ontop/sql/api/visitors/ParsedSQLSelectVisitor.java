@@ -115,12 +115,9 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
             plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
 
         context.getGlobalTables().addAll(fromItemVisitor.getContext().getGlobalTables());
-        context.getGlobalRelations().putAll(fromItemVisitor.getContext().getGlobalRelations() );
-        context.getGlobalProjectedAttributes().putAll(fromItemVisitor.getContext().getGlobalProjectedAttributes() );
 
         context.getRelations().putAll( fromItemVisitor.getContext().getRelations() );
         context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes() );
-       // context.getProjectedAttributes().putAll( fromItemVisitor.getContext().getProjectedAttributes());
 
         plainSelect.getSelectItems().forEach(selectItem -> {
             if ( selectItem instanceof AllColumns){
@@ -128,8 +125,6 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
             }else{
                 ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context.getMetadata(), context.getRelations());
                 selectItem.accept(parsedSQLItemVisitor);
-
-                context.getGlobalProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getGlobalProjectedAttributes());
                 context.getProjectedAttributes().putAll( parsedSQLItemVisitor.getContext().getProjectedAttributes() );
             }
         });

@@ -112,7 +112,6 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
         ParsedSqlPair<ImmutableList<RelationID>,QualifiedAttributeID> listPair =
                 new ParsedSqlPair<>( ImmutableList.of (relationID), qualifiedAttributeID );
 
-        context.getGlobalProjectedAttributes().put(listPair, quotedID);
         context.getProjectedAttributes().put(  new ParsedSqlPair<>( relationID, qualifiedAttributeID ), quotedID);
 
     }

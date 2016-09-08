@@ -75,9 +75,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             //
             DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
 
-            context.getGlobalRelations().put(ImmutableList.of(context.getIdFac().createRelationID(table.getSchemaName(), key)),databaseRelationDefinition);
-
-            context.getRelations().put( context.getIdFac().createRelationID(table.getSchemaName() , key), databaseRelationDefinition);
+           context.getRelations().put( context.getIdFac().createRelationID(table.getSchemaName() , key), databaseRelationDefinition);
 
             // Mapping table attribute
             databaseRelationDefinition.getAttributes().forEach( attribute ->
@@ -132,31 +130,6 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         visitor.getContext().setAlias( context.getIdFac().createAttributeID( alias ));
         context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
 
-        visitor.getContext().getGlobalRelations().forEach((k, v ) -> {
-            final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();
-            builder.add(relationID).addAll(k);
-            context.getGlobalRelations().put(builder.build(), v);
-        });
-
-
-        visitor.getContext().getGlobalProjectedAttributes().forEach( (k, v ) -> {
-            final Optional<ImmutableList<RelationID>> relationIDsOptional = context.getGlobalRelations().keySet().stream()
-                    .filter(p ->
-                            p.stream().anyMatch(q ->
-                                    q.getTableName() != null &&
-                                            q.getTableName().equals(alias))).findAny();
-
-
-            if ( relationIDsOptional.isPresent()){
-                final ImmutableList<RelationID> immutableListRelations = relationIDsOptional.get();
-                final ImmutableList.Builder<RelationID> builder = ImmutableList.builder();//.add(RelationID.createRelationIdFromDatabaseRecord(this.idFac, null, alias));
-                builder.addAll(immutableListRelations);
-                context.getGlobalProjectedAttributes().put(new ParsedSqlPair<>(builder.build(), k.getSnd()), v);
-            }else
-              throw new MappingQueryException("the relationAliasMap does not contains any alias ", context.getGlobalRelations() ); // cannot append
-
-        });
-        //todo: add in child context END
 
        // v.getFromItemVisitor().getRelationMapIndex();
 /*

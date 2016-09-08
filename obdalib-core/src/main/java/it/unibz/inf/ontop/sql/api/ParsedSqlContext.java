@@ -20,7 +20,6 @@ package it.unibz.inf.ontop.sql.api;
  * #L%
  */
 
-import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.sql.*;
 
 import java.util.*;
@@ -32,6 +31,21 @@ import java.util.*;
  */
 public class ParsedSqlContext {
 
+    private final DBMetadata metadata;
+    private final QuotedIDFactory idFac;
+    private final Set<RelationID> globalTables = new HashSet<>();
+    private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
+    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > projectedAttributes = new HashMap<>();
+    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > attributes = new HashMap<>();
+    private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
+    private QuotedID alias;
+
+    public ParsedSqlContext(DBMetadata metadata){
+        this.metadata = metadata;
+        this.idFac = metadata.getQuotedIDFactory();
+    }
+
+    //region properties
     public DBMetadata getMetadata() {
         return metadata;
     }
@@ -39,9 +53,6 @@ public class ParsedSqlContext {
     public QuotedIDFactory getIdFac() {
         return idFac;
     }
-
-    private final DBMetadata metadata;
-    private final QuotedIDFactory idFac;
 
     public Map<QuotedID, ParsedSqlContext> getChildContext() {
         return childContext;
@@ -51,33 +62,8 @@ public class ParsedSqlContext {
         this.childContext = childContext;
     }
 
-    private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
-
-
-    private final Map<ImmutableList<RelationID>, DatabaseRelationDefinition> globalRelations = new LinkedHashMap<>();
-
-    public Map<ImmutableList<RelationID>, DatabaseRelationDefinition> getGlobalRelations() {
-        return globalRelations;
-    }
-
-//    private final Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> relationAttributesMap = new LinkedHashMap<>();
-//    public Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getRelationAttributesMap() {
-//        return relationAttributesMap;
-//    }
-
-    private final Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID >, QuotedID> globalProjectedAttributes = new LinkedHashMap<>();
-
-    public Map<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID> getGlobalProjectedAttributes() {
-        return globalProjectedAttributes;
-    }
-    private final Set<RelationID> globalTables = new HashSet<>();
     public Set<RelationID> getGlobalTables() {
         return globalTables;
-    }
-
-    public ParsedSqlContext(DBMetadata metadata){
-        this.metadata = metadata;
-        this.idFac = metadata.getQuotedIDFactory();
     }
 
     public QuotedID getAlias() {
@@ -87,10 +73,6 @@ public class ParsedSqlContext {
     public void setAlias(QuotedID alias) {
         this.alias = alias;
     }
-
-    private QuotedID alias;
-
-    //region predicates atoms scope
 
     public Map<RelationID, DatabaseRelationDefinition> getRelations() {
         return relations;
@@ -103,16 +85,6 @@ public class ParsedSqlContext {
     public Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID> getAttributes() {
         return attributes;
     }
-
-    // scope  relations
-    private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
-
-    // scope attribute projected
-    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > projectedAttributes = new HashMap<>();
-
-    // scope all attribute
-    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > attributes = new HashMap<>();
-
     //endregion
 
 }
