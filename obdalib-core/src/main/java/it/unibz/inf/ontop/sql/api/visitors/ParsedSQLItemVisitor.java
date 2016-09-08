@@ -20,7 +20,6 @@ package it.unibz.inf.ontop.sql.api.visitors;
  * #L%
  */
 
-import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
@@ -41,8 +40,6 @@ import java.util.Optional;
  */
 class ParsedSQLItemVisitor implements SelectItemVisitor {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-
 
     private final Map<RelationID, DatabaseRelationDefinition> relations;
 
@@ -83,7 +80,7 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
                 .getColumns()
                 .forEach(column -> addAttributeAliasMap(
                         column.getColumnName(),
-                        selectExpressionItem.getAlias() == null? column.getColumnName() : selectExpressionItem.getAlias().getName().toString(),
+                        selectExpressionItem.getAlias() == null? column.getColumnName() : selectExpressionItem.getAlias().getName(),
                         context.getIdFac().createRelationID(null, column.getTable().getAlias() != null ? column.getTable().getAlias().getName() : column.getTable().getName())));
 
     }
@@ -107,11 +104,7 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
                 throw new MappingQueryException( "the attribute is not present in any relation.", attributeId  );
 
         }
-
         final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(relationID, quotedIdAlias);
-        ParsedSqlPair<ImmutableList<RelationID>,QualifiedAttributeID> listPair =
-                new ParsedSqlPair<>( ImmutableList.of (relationID), qualifiedAttributeID );
-
         context.getProjectedAttributes().put(  new ParsedSqlPair<>( relationID, qualifiedAttributeID ), quotedID);
 
     }

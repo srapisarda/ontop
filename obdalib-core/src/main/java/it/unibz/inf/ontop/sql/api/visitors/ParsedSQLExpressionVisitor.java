@@ -195,9 +195,6 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
         logger.debug("Visit Column ", tableColumn);
         columnsListBuilder.add(tableColumn);
         //tableColumn.accept(this);
-
-
-
     }
 
     @Override

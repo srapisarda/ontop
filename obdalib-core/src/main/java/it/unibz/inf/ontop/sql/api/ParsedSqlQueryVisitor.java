@@ -21,15 +21,14 @@ package it.unibz.inf.ontop.sql.api;
  */
 
 
-import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
 import net.sf.jsqlparser.statement.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Set;
 
 /**

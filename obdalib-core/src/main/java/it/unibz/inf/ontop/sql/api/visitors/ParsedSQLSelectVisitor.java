@@ -31,14 +31,13 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 
 /**
- * @author  Salvatore Rapisarda on 10/07/2016.
+ * @author Salvatore Rapisarda on 10/07/2016.
  */
 public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     *
-     * @return  an instance of {@link ParsedSqlContext}
+     * @return an instance of {@link ParsedSqlContext}
      */
     public ParsedSqlContext getContext() {
         return context;
@@ -47,9 +46,9 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final ParsedSqlContext context;
 
 
-
     /**
      * select visitor used by the ParsedSQLVisitor
+     *
      * @param metadata db metadata object {@link DBMetadata}
      */
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
@@ -108,35 +107,30 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         logger.debug(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
         ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(context.getMetadata());
-
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
             plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
 
         context.getGlobalTables().addAll(fromItemVisitor.getContext().getGlobalTables());
-
-        context.getRelations().putAll( fromItemVisitor.getContext().getRelations() );
-        context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes() );
+        context.getRelations().putAll(fromItemVisitor.getContext().getRelations());
+        context.getAttributes().putAll(fromItemVisitor.getContext().getAttributes());
 
         plainSelect.getSelectItems().forEach(selectItem -> {
-            if ( selectItem instanceof AllColumns){
-              context.getProjectedAttributes().putAll( context.getAttributes() );
-            }else{
+            if (selectItem instanceof AllColumns) {
+                context.getProjectedAttributes().putAll(context.getAttributes());
+            } else {
                 ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context.getMetadata(), context.getRelations());
                 selectItem.accept(parsedSQLItemVisitor);
-                context.getProjectedAttributes().putAll( parsedSQLItemVisitor.getContext().getProjectedAttributes() );
+                context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
             }
         });
 
-
-        if ( !(fromItemVisitor.getContext().getChildContext() == null  ||  fromItemVisitor.getContext().getChildContext().isEmpty())) {
+        if (!(fromItemVisitor.getContext().getChildContext() == null || fromItemVisitor.getContext().getChildContext().isEmpty()))
             context.setChildContext(fromItemVisitor.getContext().getChildContext());
-        }
 
 
-      //  this.getGlobalRelations().entrySet().stream().
-
+        //  this.getGlobalRelations().entrySet().stream().
 
 
 //         this.getFromItemVisitor().getRelationMapIndex()

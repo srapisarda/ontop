@@ -19,18 +19,18 @@ package it.unibz.inf.ontop.sql.api.visitors;
  * #L%
  */
 
-import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
+import it.unibz.inf.ontop.sql.QualifiedAttributeID;
+import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -124,9 +124,6 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
         final String alias =  subSelect.getAlias().getName();
 
-        final RelationID relationID = context.getIdFac().createRelationID(null, alias);
-
-        //todo: add in child context BEGIN
         visitor.getContext().setAlias( context.getIdFac().createAttributeID( alias ));
         context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
 
