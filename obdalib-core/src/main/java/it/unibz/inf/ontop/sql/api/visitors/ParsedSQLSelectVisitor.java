@@ -116,18 +116,20 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         context.getRelations().putAll(fromItemVisitor.getContext().getRelations());
         context.getAttributes().putAll(fromItemVisitor.getContext().getAttributes());
 
+        if (!(fromItemVisitor.getContext().getChildContext() == null || fromItemVisitor.getContext().getChildContext().isEmpty()))
+            context.setChildContext(fromItemVisitor.getContext().getChildContext());
+
         plainSelect.getSelectItems().forEach(selectItem -> {
             if (selectItem instanceof AllColumns) {
                 context.getProjectedAttributes().putAll(context.getAttributes());
             } else {
-                ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context.getMetadata(), context.getRelations());
+                ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context);
                 selectItem.accept(parsedSQLItemVisitor);
                 context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
             }
         });
 
-        if (!(fromItemVisitor.getContext().getChildContext() == null || fromItemVisitor.getContext().getChildContext().isEmpty()))
-            context.setChildContext(fromItemVisitor.getContext().getChildContext());
+
 
 
         //  this.getGlobalRelations().entrySet().stream().

@@ -20,12 +20,10 @@ package it.unibz.inf.ontop.api;
  */
 
 
-import com.google.common.collect.ImmutableList;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
-import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -38,8 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Types;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -537,96 +533,27 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
-    @Test  // TODO: to FIX
-    public void MetadataContainsExpectedAttributesAliasSubSelectJoin(){
-        String [] expectedT1 = { "NAME", "AGE"};
-        String [] expectedT2 = { "EMAIL", "ACTIVE"};
-        String [] expectedTables = { "PERSON", "EMAIL"};
-        String expectedAliasTable= "C";
-        String sql = "select NAME, AGE from PERSON, (select EMAIL, ACTIVE from EMAIL ) C";
-//        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        assertTrue(p.getGlobalProjectedAttributes() != null );
-//
-//        // assertEquals( p.getGlobalProjectedAttributes().size() , expectedT1.length + expectedT2.length ) ;
-//
-//            // select NAME, AGE from PERSON, (select EMAIL, ACTIVE from EMAIL ) c
-//
-//        // CHECKING KEYS
-//        assertTrue( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .anyMatch( key-> key.getSnd().getAttribute().getName().equals(expectedT1[0])));
-//
-//        // ParsedSqlParsedSqlPair[["c", "EMAIL"], "EMAIL"] --> "EMAIL"
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().equals(expectedT2[0])).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream.size() == 1);
-//        assertTrue( pairStream.get(0).getFst().size()==2 );
-//        assertTrue( pairStream.get(0).getFst().get(0).getTableName().equals(expectedAliasTable) );
-//        assertTrue( pairStream.get(0).getFst().get(1).getTableName().equals(expectedTables[1]));
-//        assertTrue( pairStream.get(0).getSnd().getAttribute().getName().equals(expectedT2[0]));
-//
-//        Assert.assertEquals(expectedT2[0],  p.getGlobalProjectedAttributes()
-//                .entrySet()
-//                .stream()
-//                .filter(co -> co.getKey().getSnd().getAttribute().getName().equals(expectedT2[0])).findFirst().get().getValue().getName());
-//
-//
-//
-//        // ParsedSqlParsedSqlPair[["c", "EMAIL"], "ACTIVE"] --> "ACTIVE"
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().equals(expectedT2[1])).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream2.size() == 1);
-//        assertTrue( pairStream2.get(0).getFst().size()==2 );
-//        assertTrue( pairStream2.get(0).getFst().get(0).getTableName().equals(expectedAliasTable) );
-//        assertTrue( pairStream2.get(0).getFst().get(1).getTableName().equals(expectedTables[1]));
-//        assertTrue( pairStream2.get(0).getSnd().getAttribute().getName().equals(expectedT2[1]));
-//
-//        Assert.assertEquals(expectedT2[1],  p.getGlobalProjectedAttributes()
-//                .entrySet()
-//                .stream()
-//                .filter(co -> co.getKey().getSnd().getAttribute().getName().equals(expectedT2[1])).findFirst().get().getValue().getName());
-//
-//
-//        // ParsedSqlParsedSqlPair[["PERSON"], "NAME"] -> NAME
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream3 = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().equals(expectedT1[0])).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream3.size() == 1);
-//        assertTrue( pairStream3.get(0).getFst().size()==1 );
-//        assertTrue( pairStream3.get(0).getFst().get(0).getTableName().equals(expectedTables[0]));
-//        assertTrue( pairStream3.get(0).getSnd().getAttribute().getName().equals(expectedT1[0]));
-//
-//        assertEquals(expectedT1[0],  p.getGlobalProjectedAttributes()
-//                .entrySet()
-//                .stream()
-//                .filter(co -> co.getKey().getSnd().getAttribute().getName().equals(expectedT1[0])).findFirst().get().getValue().getName());
-//
-//
-//
-//        // ParsedSqlParsedSqlPair[["PERSON"], "AGE" ] -> AGE
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream4 = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().equals(expectedT1[1])).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream4.size() == 1);
-//        assertTrue( pairStream4.get(0).getFst().size()==1 );
-//        assertTrue( pairStream4.get(0).getFst().get(0).getTableName().equals(expectedTables[0]));
-//        assertTrue( pairStream4.get(0).getSnd().getAttribute().getName().equals(expectedT1[1]));
-//
-//        assertEquals(expectedT1[1],  p.getGlobalProjectedAttributes()
-//                .entrySet()
-//                .stream()
-//                .filter(co -> co.getKey().getSnd().getAttribute().getName().equals(expectedT1[1])).findFirst().get().getValue().getName());
+    @Test
+    public void expectedAttributesAliasSubSelectJoin(){
+        String sql = "select NAME, AGE, ACTIVE, EMAIL from PERSON, (select EMAIL, ACTIVE from EMAIL ) C";
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+
+        assertTrue(p.getContext().getProjectedAttributes().size() == 4 );
+
+        String expectedAliasTable= "person";
+        final QualifiedAttributeID name = p.getContext().getAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("name"));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedAliasTable), name.getRelation());
+        final QualifiedAttributeID age = p.getContext().getAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("age"));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedAliasTable), age.getRelation());
+
+
+        expectedAliasTable= "c";
+        final QualifiedAttributeID active = p.getContext().getProjectedAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("active"));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedAliasTable), active.getRelation());
+        final QualifiedAttributeID email = p.getContext().getProjectedAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("email"));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedAliasTable), active.getRelation());
+
+        assertTrue( p.getContext().getChildContext().size() == 1);
 
         // Check that the db-metadata has not been modified.
         assertEquals( 4, dbMetadata.getDatabaseRelations().size()  );

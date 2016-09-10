@@ -23,7 +23,6 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
-import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -40,9 +39,6 @@ import java.util.Optional;
  */
 class ParsedSQLItemVisitor implements SelectItemVisitor {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    private final Map<RelationID, DatabaseRelationDefinition> relations;
-
     /**
      *
      * @return  an instance of {@link ParsedSqlContext}
@@ -51,10 +47,10 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
         return context;
     }
     private final ParsedSqlContext context;
-
-    ParsedSQLItemVisitor(DBMetadata metadata, Map<RelationID, DatabaseRelationDefinition> relations){
-        context= new ParsedSqlContext(metadata);
-        this.relations = relations;
+    private final ParsedSqlContext callerContext;
+    ParsedSQLItemVisitor( ParsedSqlContext parentContext){
+        context= new ParsedSqlContext(parentContext.getMetadata());
+        this.callerContext = parentContext;
     }
 
     @Override
@@ -93,20 +89,42 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
 
         if( relationID.getTableName() == null   ) {
             final Optional<Map.Entry<RelationID, DatabaseRelationDefinition>> first =
-                    relations.entrySet()
+                     this.callerContext.getRelations().entrySet()
                             .stream()
                             .filter(p -> p.getValue().getAttributes().stream()
                                     .anyMatch(q ->
                                             q.getID().getName().toLowerCase().equals(quotedID.getName().toLowerCase()))).findFirst();
             if (first.isPresent() )
                 relationID =  first.get().getKey();
+            else if (!callerContext.getChildContext().isEmpty() ){
+                QuotedID subRelationAlias = hasAttributeID( quotedID, callerContext.getChildContext() );
+                if ( subRelationAlias == null )
+                    throw new MappingQueryException( "the attribute is not present in any relation.", attributeId  );
+                else
+                    relationID = callerContext.getIdFac().createRelationID(null, subRelationAlias.getName());
+            }
             else
                 throw new MappingQueryException( "the attribute is not present in any relation.", attributeId  );
 
         }
         final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(relationID, quotedIdAlias);
-        context.getProjectedAttributes().put(  new ParsedSqlPair<>( relationID, qualifiedAttributeID ), quotedID);
+        context.getProjectedAttributes().put( quotedID, qualifiedAttributeID );
 
+    }
+
+    private QuotedID  hasAttributeID(QuotedID quotedID, Map<QuotedID, ParsedSqlContext> context ){
+
+        final Optional<Map.Entry<QuotedID, ParsedSqlContext>> first =
+                context.entrySet().stream().filter(
+                        quotedIDParsedSqlContextEntry ->
+                                quotedIDParsedSqlContextEntry.getValue().getProjectedAttributes().get(quotedID) != null ||
+                                        hasAttributeID(quotedID, quotedIDParsedSqlContextEntry.getValue().getChildContext() ) != null
+                ).findFirst();
+
+        if (first.isPresent())
+            return first.get().getKey();
+        else
+            return null;
     }
 
 }

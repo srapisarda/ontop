@@ -35,8 +35,8 @@ public class ParsedSqlContext {
     private final QuotedIDFactory idFac;
     private final Set<RelationID> globalTables = new HashSet<>();
     private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
-    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > projectedAttributes = new HashMap<>();
-    private final Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID > attributes = new HashMap<>();
+    private final Map<QuotedID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
+    private final Map<QuotedID, QualifiedAttributeID> attributes = new HashMap<>();
     private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
 
@@ -78,11 +78,11 @@ public class ParsedSqlContext {
         return relations;
     }
 
-    public Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID> getProjectedAttributes() {
+    public Map<QuotedID, QualifiedAttributeID> getProjectedAttributes() {
         return projectedAttributes;
     }
 
-    public Map<ParsedSqlPair<RelationID, QualifiedAttributeID>, QuotedID> getAttributes() {
+    public Map<QuotedID, QualifiedAttributeID> getAttributes() {
         return attributes;
     }
     //endregion

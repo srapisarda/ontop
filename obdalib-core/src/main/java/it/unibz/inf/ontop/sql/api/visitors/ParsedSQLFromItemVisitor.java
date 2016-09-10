@@ -26,7 +26,6 @@ import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
 import it.unibz.inf.ontop.sql.QualifiedAttributeID;
 import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
-import it.unibz.inf.ontop.sql.api.ParsedSqlPair;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
@@ -79,12 +78,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
             // Mapping table attribute
             databaseRelationDefinition.getAttributes().forEach( attribute ->
-                context.getAttributes().put(
-                        new ParsedSqlPair<>(
-                                databaseRelationDefinition.getID(),
-                                new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID()) ),
-                        attribute.getID())
-            );
+                context.getAttributes().put(attribute.getID(), new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID()) ));
         } else
             throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
 
