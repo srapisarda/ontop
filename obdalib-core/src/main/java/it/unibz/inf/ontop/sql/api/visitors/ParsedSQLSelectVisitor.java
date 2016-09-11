@@ -22,6 +22,7 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
+import it.unibz.inf.ontop.sql.QuotedID;
 import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import net.sf.jsqlparser.statement.select.*;
@@ -35,6 +36,7 @@ import java.util.Set;
  */
 public class ParsedSQLSelectVisitor implements SelectVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
 
     /**
      * @return an instance of {@link ParsedSqlContext}
@@ -53,6 +55,17 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      */
     public ParsedSQLSelectVisitor(DBMetadata metadata) {
         context = new ParsedSqlContext(metadata);
+
+    }
+
+    /**
+     * select visitor used by the ParsedSQLVisitor
+     *
+     * @param metadata db metadata object {@link DBMetadata}
+     * @param contextAlias is a {@link QuotedID} that  identify the context
+     */
+    ParsedSQLSelectVisitor(DBMetadata metadata, QuotedID contextAlias) {
+        context = new ParsedSqlContext(metadata, contextAlias);
 
     }
 
@@ -114,17 +127,18 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         context.getGlobalTables().addAll(fromItemVisitor.getContext().getGlobalTables());
         context.getRelations().putAll(fromItemVisitor.getContext().getRelations());
-        context.getAttributes().putAll(fromItemVisitor.getContext().getAttributes());
-
+        context.getTableAttributes().putAll(fromItemVisitor.getContext().getTableAttributes());
+        context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes() );
         if (!(fromItemVisitor.getContext().getChildContext() == null || fromItemVisitor.getContext().getChildContext().isEmpty()))
             context.setChildContext(fromItemVisitor.getContext().getChildContext());
 
         plainSelect.getSelectItems().forEach(selectItem -> {
             if (selectItem instanceof AllColumns) {
-                context.getProjectedAttributes().putAll(context.getAttributes());
+                context.getProjectedAttributes().putAll(context.getTableAttributes());
             } else {
                 ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context);
                 selectItem.accept(parsedSQLItemVisitor);
+
                 context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
             }
         });

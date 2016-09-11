@@ -19,17 +19,16 @@ package it.unibz.inf.ontop.sql.api.visitors;
  * #L%
  */
 
+
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
-import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.DatabaseRelationDefinition;
-import it.unibz.inf.ontop.sql.QualifiedAttributeID;
-import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
@@ -70,15 +69,21 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         RelationID name = context.getIdFac().createRelationID(table.getSchemaName(), table.getName());
         if (context.getMetadata().getRelation(name) != null) {
             context.getGlobalTables().add(name);
-            String key = (table.getAlias() != null ? table.getAlias().getName() : table.getName());
-            //
             DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
-
-           context.getRelations().put( context.getIdFac().createRelationID(table.getSchemaName() , key), databaseRelationDefinition);
-
+            String key = table.getName();
+            context.getRelations().put(context.getIdFac().createRelationID(table.getSchemaName(), key), databaseRelationDefinition);
             // Mapping table attribute
-            databaseRelationDefinition.getAttributes().forEach( attribute ->
-                context.getAttributes().put(attribute.getID(), new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID()) ));
+            databaseRelationDefinition.getAttributes().forEach(attribute ->
+                    context.getTableAttributes().put(attribute.getID(), new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID())));
+
+            context.getAttributes().putAll(context.getTableAttributes());
+            if ( table.getAlias() != null && table.getAlias().getName() != null ) {
+                final String aliasName = table.getAlias().getName();
+                databaseRelationDefinition.getAttributes().forEach(attribute -> {
+                    final QuotedID quotedID = context.getIdFac().createAttributeID(aliasName + "." + attribute.getID().getName());
+                    context.getAttributes().put(quotedID, new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID()));
+                });
+            }
         } else
             throw new MappingQueryException("table " + table.getFullyQualifiedName() + " does not exist.", table);
 
@@ -96,6 +101,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         if (subSelect.getAlias() == null ||  subSelect.getAlias().getName().isEmpty())
             throw new MappingQueryException("A SUB_SELECT SHOULD BE IDENTIFIED BY AN ALIAS", subSelect);
 
+
         // logger.debug(String.format("select index: %3$s,  (relationLevel: %2$d):  %1$s", subSelect.toString(), relationLevel, getSelectIndex()));
             /*
             if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
@@ -110,17 +116,20 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             /*if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
                 throw new ParseException(subSelect);*/
        // List<String> relationalMapIndex = new LinkedList<>();
-
-        ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(context.getMetadata());
+        final QuotedID contextAlias =  context.getIdFac().createAttributeID( subSelect.getAlias().getName() ) ;
+        ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(context.getMetadata(),  contextAlias );
        //v.set( relationalMapIndex );
         subSelBody.accept(visitor);
         context.getGlobalTables().addAll(visitor.getTables());
-
-        final String alias =  subSelect.getAlias().getName();
-
-        visitor.getContext().setAlias( context.getIdFac().createAttributeID( alias ));
+        //context.getAttributes().putAll(visitor.getContext().getAttributes());
         context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
 
+        context.getAttributes().putAll(visitor.getContext().getTableAttributes());
+        final String aliasName = subSelect.getAlias().getName();
+        visitor.getContext().getTableAttributes().entrySet().forEach (attribute -> {
+            final QuotedID quotedID = context.getIdFac().createAttributeID(aliasName + "." + attribute.getKey());
+            context.getAttributes().put(quotedID,  attribute.getValue());
+        });
 
        // v.getFromItemVisitor().getRelationMapIndex();
 /*

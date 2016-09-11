@@ -36,6 +36,7 @@ public class ParsedSqlContext {
     private final Set<RelationID> globalTables = new HashSet<>();
     private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
     private final Map<QuotedID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
+    private final Map<QuotedID, QualifiedAttributeID> tableAttributes = new HashMap<>();
     private final Map<QuotedID, QualifiedAttributeID> attributes = new HashMap<>();
     private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
@@ -43,6 +44,11 @@ public class ParsedSqlContext {
     public ParsedSqlContext(DBMetadata metadata){
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
+    }
+
+    public ParsedSqlContext(DBMetadata metadata, QuotedID contextAlias) {
+        this(metadata);
+        this.alias = contextAlias;
     }
 
     //region properties
@@ -70,18 +76,16 @@ public class ParsedSqlContext {
         return alias;
     }
 
-    public void setAlias(QuotedID alias) {
-        this.alias = alias;
-    }
-
     public Map<RelationID, DatabaseRelationDefinition> getRelations() {
         return relations;
     }
-
     public Map<QuotedID, QualifiedAttributeID> getProjectedAttributes() {
         return projectedAttributes;
     }
 
+    public Map<QuotedID, QualifiedAttributeID> getTableAttributes() {
+        return tableAttributes;
+    }
     public Map<QuotedID, QualifiedAttributeID> getAttributes() {
         return attributes;
     }

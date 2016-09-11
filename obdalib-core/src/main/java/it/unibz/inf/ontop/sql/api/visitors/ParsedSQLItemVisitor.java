@@ -30,9 +30,6 @@ import net.sf.jsqlparser.statement.select.SelectItemVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Optional;
-
 
 /**
  * @author Salvatore Rapisarda on 20/07/2016.
@@ -74,57 +71,19 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
 
         parsedSQLExpressionVisitor
                 .getColumns()
-                .forEach(column -> addAttributeAliasMap(
-                        column.getColumnName(),
-                        selectExpressionItem.getAlias() == null? column.getColumnName() : selectExpressionItem.getAlias().getName(),
-                        context.getIdFac().createRelationID(null, column.getTable().getAlias() != null ? column.getTable().getAlias().getName() : column.getTable().getName())));
+                .forEach(column -> {
 
-    }
+                    String sId = column.getTable() == null || column.getTable().getName() == null  ?
+                             column.getColumnName() :
+                            column.getTable().getName() + "." + column.getColumnName() ;
 
-
-    private void addAttributeAliasMap(String attributeId, String alias, RelationID relationID) {
-        QuotedID quotedID = context.getIdFac().createAttributeID(attributeId);
-        QuotedID quotedIdAlias  =  alias == null ?
-                quotedID : context.getIdFac().createAttributeID(alias);
-
-        if( relationID.getTableName() == null   ) {
-            final Optional<Map.Entry<RelationID, DatabaseRelationDefinition>> first =
-                     this.callerContext.getRelations().entrySet()
-                            .stream()
-                            .filter(p -> p.getValue().getAttributes().stream()
-                                    .anyMatch(q ->
-                                            q.getID().getName().toLowerCase().equals(quotedID.getName().toLowerCase()))).findFirst();
-            if (first.isPresent() )
-                relationID =  first.get().getKey();
-            else if (!callerContext.getChildContext().isEmpty() ){
-                QuotedID subRelationAlias = hasAttributeID( quotedID, callerContext.getChildContext() );
-                if ( subRelationAlias == null )
-                    throw new MappingQueryException( "the attribute is not present in any relation.", attributeId  );
-                else
-                    relationID = callerContext.getIdFac().createRelationID(null, subRelationAlias.getName());
-            }
-            else
-                throw new MappingQueryException( "the attribute is not present in any relation.", attributeId  );
-
-        }
-        final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(relationID, quotedIdAlias);
-        context.getProjectedAttributes().put( quotedID, qualifiedAttributeID );
-
-    }
-
-    private QuotedID  hasAttributeID(QuotedID quotedID, Map<QuotedID, ParsedSqlContext> context ){
-
-        final Optional<Map.Entry<QuotedID, ParsedSqlContext>> first =
-                context.entrySet().stream().filter(
-                        quotedIDParsedSqlContextEntry ->
-                                quotedIDParsedSqlContextEntry.getValue().getProjectedAttributes().get(quotedID) != null ||
-                                        hasAttributeID(quotedID, quotedIDParsedSqlContextEntry.getValue().getChildContext() ) != null
-                ).findFirst();
-
-        if (first.isPresent())
-            return first.get().getKey();
-        else
-            return null;
+                    final QuotedID quotedAttributeID = context.getIdFac().createAttributeID(sId);
+                    final QualifiedAttributeID qualifiedAttributeID = callerContext.getAttributes().get(quotedAttributeID);
+                    if ( qualifiedAttributeID != null )
+                        context.getProjectedAttributes().put(quotedAttributeID, qualifiedAttributeID );
+                    else
+                        throw new MappingQueryException( "the attribute is not present in any relation.", sId  );
+                });
     }
 
 }
