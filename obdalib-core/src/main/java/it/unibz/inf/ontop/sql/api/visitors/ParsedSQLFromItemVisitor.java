@@ -68,7 +68,6 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
 
         RelationID name = context.getIdFac().createRelationID(table.getSchemaName(), table.getName());
         if (context.getMetadata().getRelation(name) != null) {
-            context.getGlobalTables().add(name);
             DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
             String key = table.getName();
             context.getRelations().put(context.getIdFac().createRelationID(table.getSchemaName(), key), databaseRelationDefinition);
@@ -120,7 +119,6 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(context.getMetadata(),  contextAlias );
        //v.set( relationalMapIndex );
         subSelBody.accept(visitor);
-        context.getGlobalTables().addAll(visitor.getTables());
         //context.getAttributes().putAll(visitor.getContext().getAttributes());
         context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
 

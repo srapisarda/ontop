@@ -33,8 +33,8 @@ public class ParsedSqlContext {
 
     private final DBMetadata metadata;
     private final QuotedIDFactory idFac;
-    private final Set<RelationID> globalTables = new HashSet<>();
     private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
+    // TODO: 12/09/2016  change   to   private final Map<QualifiedAttributeID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
     private final Map<QuotedID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
     private final Map<QuotedID, QualifiedAttributeID> tableAttributes = new HashMap<>();
     private final Map<QuotedID, QualifiedAttributeID> attributes = new HashMap<>();
@@ -68,10 +68,6 @@ public class ParsedSqlContext {
         this.childContext = childContext;
     }
 
-    public Set<RelationID> getGlobalTables() {
-        return globalTables;
-    }
-
     public QuotedID getAlias() {
         return alias;
     }
@@ -82,7 +78,6 @@ public class ParsedSqlContext {
     public Map<QuotedID, QualifiedAttributeID> getProjectedAttributes() {
         return projectedAttributes;
     }
-
     public Map<QuotedID, QualifiedAttributeID> getTableAttributes() {
         return tableAttributes;
     }

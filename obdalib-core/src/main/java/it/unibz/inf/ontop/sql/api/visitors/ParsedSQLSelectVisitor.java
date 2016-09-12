@@ -23,13 +23,10 @@ import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Set;
 
 /**
  * @author Salvatore Rapisarda on 10/07/2016.
@@ -125,7 +122,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         if (plainSelect.getJoins() != null)
             plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
 
-        context.getGlobalTables().addAll(fromItemVisitor.getContext().getGlobalTables());
+
         context.getRelations().putAll(fromItemVisitor.getContext().getRelations());
         context.getTableAttributes().putAll(fromItemVisitor.getContext().getTableAttributes());
         context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes() );
@@ -177,8 +174,5 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         throw new ParseException(withItem);
     }
 
-    public Set<RelationID> getTables() {
-        return context.getGlobalTables();
-    }
 
 }

@@ -39,9 +39,6 @@ import java.util.Set;
  */
 public class ParsedSqlQueryVisitor  {
     private ParsedSQLSelectVisitor selectVisitor;
-    public Set<RelationID> getTables() {
-        return  selectVisitor.getTables();
-    }
 
     /**
      *  This constructor get in input the instance of
