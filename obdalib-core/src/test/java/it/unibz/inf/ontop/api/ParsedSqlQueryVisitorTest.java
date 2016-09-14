@@ -529,23 +529,27 @@ public class ParsedSqlQueryVisitorTest {
     public void expectedAttributesAliasSubSelectJoin(){
         String sql = "select NAME, AGE, c.ACTIVE, EMAIL from PERSON t, (select EMAIL, ACTIVE from EMAIL q ) C";
 
-
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
 
         assertTrue(p.getContext().getProjectedAttributes().size() == 4 );
 
         String expectedTable= "person";
-        final QualifiedAttributeID name = p.getContext().getTableAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("name"));
-        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), name.getRelation());
-        final QualifiedAttributeID age = p.getContext().getTableAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("age"));
-        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), age.getRelation());
+        final QualifiedAttributeID nameQualified = p.getContext().getTableAttributes().get(new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("name")));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), nameQualified.getRelation());
+
+        final QualifiedAttributeID ageQualified = p.getContext().getTableAttributes().get(new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("name")));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), ageQualified.getRelation());
 
 
         expectedTable= "email";
-        final QualifiedAttributeID active = p.getContext().getProjectedAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("c.active"));
-        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), active.getRelation());
-        final QualifiedAttributeID email = p.getContext().getProjectedAttributes().get(dbMetadata.getQuotedIDFactory().createAttributeID("email"));
-        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), email.getRelation());
+        final QualifiedAttributeID activeQualified = p.getContext().getProjectedAttributes().get(
+                new QualifiedAttributeID(dbMetadata.getQuotedIDFactory().createRelationID(null, "c"),
+                                         dbMetadata.getQuotedIDFactory().createAttributeID("active")));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), activeQualified.getRelation());
+
+
+        final QualifiedAttributeID emailQualified = p.getContext().getProjectedAttributes().get(new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("email")));
+        assertEquals(dbMetadata.getQuotedIDFactory().createRelationID(null, expectedTable), emailQualified.getRelation());
 
         assertTrue( p.getContext().getChildContext().size() == 1);
 

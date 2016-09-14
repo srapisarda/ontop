@@ -34,10 +34,10 @@ public class ParsedSqlContext {
     private final DBMetadata metadata;
     private final QuotedIDFactory idFac;
     private final Map<RelationID, DatabaseRelationDefinition> relations = new HashMap<>();
-    // TODO: 12/09/2016  change   to   private final Map<QualifiedAttributeID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
-    private final Map<QuotedID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
-    private final Map<QuotedID, QualifiedAttributeID> tableAttributes = new HashMap<>();
-    private final Map<QuotedID, QualifiedAttributeID> attributes = new HashMap<>();
+    private final Map<QualifiedAttributeID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
+    private final Map<QualifiedAttributeID, QualifiedAttributeID> tableAttributes = new HashMap<>();
+    private final Map<QualifiedAttributeID, QualifiedAttributeID> attributes = new HashMap<>();
+
     private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
 
@@ -75,15 +75,19 @@ public class ParsedSqlContext {
     public Map<RelationID, DatabaseRelationDefinition> getRelations() {
         return relations;
     }
-    public Map<QuotedID, QualifiedAttributeID> getProjectedAttributes() {
+
+    public Map<QualifiedAttributeID, QualifiedAttributeID> getProjectedAttributes() {
         return projectedAttributes;
     }
-    public Map<QuotedID, QualifiedAttributeID> getTableAttributes() {
+
+    public Map<QualifiedAttributeID, QualifiedAttributeID> getTableAttributes() {
         return tableAttributes;
     }
-    public Map<QuotedID, QualifiedAttributeID> getAttributes() {
+
+    public Map<QualifiedAttributeID, QualifiedAttributeID> getAttributes() {
         return attributes;
     }
+
     //endregion
 
 }

@@ -71,16 +71,35 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             DatabaseRelationDefinition databaseRelationDefinition = context.getMetadata().getDatabaseRelation(context.getIdFac().createRelationID(table.getSchemaName(), table.getName()));
             String key = table.getName();
             context.getRelations().put(context.getIdFac().createRelationID(table.getSchemaName(), key), databaseRelationDefinition);
+
             // Mapping table attribute
-            databaseRelationDefinition.getAttributes().forEach(attribute ->
-                    context.getTableAttributes().put(attribute.getID(), new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID())));
+            databaseRelationDefinition.getAttributes().forEach(attribute -> {
+                final QualifiedAttributeID tableQualifiedAttributeID = new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID());
+                // quoted attribute key
+                QualifiedAttributeID  keyTableAttribute = new QualifiedAttributeID(
+                        null,
+                        attribute.getID()
+                );
+                //
+                context.getTableAttributes().put( keyTableAttribute,  tableQualifiedAttributeID );
+            });
 
             context.getAttributes().putAll(context.getTableAttributes());
+
             if ( table.getAlias() != null && table.getAlias().getName() != null ) {
                 final String aliasName = table.getAlias().getName();
                 databaseRelationDefinition.getAttributes().forEach(attribute -> {
+
+
                     final QuotedID quotedID = context.getIdFac().createAttributeID(aliasName + "." + attribute.getID().getName());
-                    context.getAttributes().put(quotedID, new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID()));
+                    final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID());
+                    // quoted attribute key
+                    QualifiedAttributeID  keyAttribute = new QualifiedAttributeID(
+                            context.getIdFac().createRelationID(null, aliasName ),
+                            attribute.getID()
+                    );
+                    //
+                    context.getAttributes().put( keyAttribute, qualifiedAttributeID );
                 });
             }
         } else
@@ -121,13 +140,18 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
         subSelBody.accept(visitor);
         //context.getAttributes().putAll(visitor.getContext().getAttributes());
         context.getChildContext().put( visitor.getContext().getAlias(),  visitor.getContext());
+        context.getAttributes().putAll (visitor.getContext().getTableAttributes());
 
-        context.getAttributes().putAll(visitor.getContext().getTableAttributes());
         final String aliasName = subSelect.getAlias().getName();
-        visitor.getContext().getTableAttributes().entrySet().forEach (attribute -> {
-            final QuotedID quotedID = context.getIdFac().createAttributeID(aliasName + "." + attribute.getKey());
-            context.getAttributes().put(quotedID,  attribute.getValue());
+        visitor.getContext().getTableAttributes().entrySet().forEach(attribute -> {
+            // attribute attribute key
+            QualifiedAttributeID  attributeKey = new QualifiedAttributeID(
+                    context.getIdFac().createRelationID(null, aliasName ),
+                    attribute.getKey().getAttribute()
+            );
+            context.getAttributes().put( attributeKey, attribute.getValue());
         });
+
 
        // v.getFromItemVisitor().getRelationMapIndex();
 /*
