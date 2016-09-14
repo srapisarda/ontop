@@ -73,10 +73,6 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
                 .getColumns()
                 .forEach(column -> {
 
-                    String sId = column.getTable() == null || column.getTable().getName() == null  ?
-                             column.getColumnName() :
-                            column.getTable().getName() + "." + column.getColumnName() ;
-
                     // QualifiedAttributeID as key
                     RelationID relationID=null;
                     if ( column.getTable() != null && column.getTable().getName() != null )
@@ -88,13 +84,12 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
                     ) ;
                     //
 
-
                     final QualifiedAttributeID qualifiedAttributeID =  callerContext.getAttributes().get(key); //callerContext.getAttributes().get(quotedAttributeID);
 
                     if ( qualifiedAttributeID != null )
                         context.getProjectedAttributes().put(key, qualifiedAttributeID);
                     else
-                        throw new MappingQueryException( "the attribute is not present in any relation.", sId  );
+                        throw new MappingQueryException( "the attribute is not present in any relation.", key  );
                 });
     }
 
