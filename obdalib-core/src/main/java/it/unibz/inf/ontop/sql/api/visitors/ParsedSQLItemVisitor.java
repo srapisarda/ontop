@@ -22,7 +22,6 @@ package it.unibz.inf.ontop.sql.api.visitors;
 
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.sql.*;
-import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -45,6 +44,7 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
     }
     private final ParsedSqlContext context;
     private final ParsedSqlContext callerContext;
+
     ParsedSQLItemVisitor( ParsedSqlContext parentContext){
         context= new ParsedSqlContext(parentContext.getMetadata());
         this.callerContext = parentContext;

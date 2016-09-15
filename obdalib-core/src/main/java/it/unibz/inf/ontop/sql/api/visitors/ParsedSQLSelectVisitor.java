@@ -23,7 +23,6 @@ import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,18 +115,11 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         logger.debug(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
-        ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(context.getMetadata());
+        ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(context);
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
             plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
-
-        context.getRelations().putAll(fromItemVisitor.getContext().getRelations());
-        context.getTableAttributes().putAll(fromItemVisitor.getContext().getTableAttributes());
-        context.getAttributes().putAll( fromItemVisitor.getContext().getAttributes());
-
-        if (!(fromItemVisitor.getContext().getChildContext() == null || fromItemVisitor.getContext().getChildContext().isEmpty()))
-            context.setChildContext(fromItemVisitor.getContext().getChildContext());
 
         plainSelect.getSelectItems().forEach(selectItem -> {
             if (selectItem instanceof AllColumns)

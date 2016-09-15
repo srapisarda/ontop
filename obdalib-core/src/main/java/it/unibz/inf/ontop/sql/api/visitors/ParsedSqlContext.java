@@ -1,4 +1,4 @@
-package it.unibz.inf.ontop.sql.api;
+package it.unibz.inf.ontop.sql.api.visitors;
 
 /*
  * #%L
@@ -41,12 +41,12 @@ public class ParsedSqlContext {
     private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
 
-    public ParsedSqlContext(DBMetadata metadata){
+    ParsedSqlContext(DBMetadata metadata){
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
     }
 
-    public ParsedSqlContext(DBMetadata metadata, QuotedID contextAlias) {
+    ParsedSqlContext(DBMetadata metadata, QuotedID contextAlias) {
         this(metadata);
         this.alias = contextAlias;
     }
@@ -56,7 +56,7 @@ public class ParsedSqlContext {
         return metadata;
     }
 
-    public QuotedIDFactory getIdFac() {
+    QuotedIDFactory getIdFac() {
         return idFac;
     }
 
@@ -64,9 +64,6 @@ public class ParsedSqlContext {
         return childContext;
     }
 
-    public void setChildContext(Map<QuotedID, ParsedSqlContext> childContext) {
-        this.childContext = childContext;
-    }
 
     public QuotedID getAlias() {
         return alias;

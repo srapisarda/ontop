@@ -23,7 +23,6 @@ package it.unibz.inf.ontop.sql.api.visitors;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
-import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
@@ -45,8 +44,9 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
     }
     private final ParsedSqlContext context;
 
-    ParsedSQLFromItemVisitor(DBMetadata metadata){
-        this.context = new ParsedSqlContext(metadata);
+
+    ParsedSQLFromItemVisitor(ParsedSqlContext context){
+        this.context = context;
     }
 
 
@@ -89,9 +89,6 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             if ( table.getAlias() != null && table.getAlias().getName() != null ) {
                 final String aliasName = table.getAlias().getName();
                 databaseRelationDefinition.getAttributes().forEach(attribute -> {
-
-
-                    final QuotedID quotedID = context.getIdFac().createAttributeID(aliasName + "." + attribute.getID().getName());
                     final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID());
                     // quoted attribute key
                     QualifiedAttributeID  keyAttribute = new QualifiedAttributeID(

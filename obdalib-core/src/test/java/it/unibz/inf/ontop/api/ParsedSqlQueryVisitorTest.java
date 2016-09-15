@@ -23,7 +23,7 @@ package it.unibz.inf.ontop.api;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
-import it.unibz.inf.ontop.sql.api.ParsedSqlContext;
+import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;

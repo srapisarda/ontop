@@ -23,13 +23,11 @@ package it.unibz.inf.ontop.sql.api;
 
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
+import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
 import net.sf.jsqlparser.statement.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Set;
 
 /**
  * A structure to store the parsed SQL query string. It returns the information
