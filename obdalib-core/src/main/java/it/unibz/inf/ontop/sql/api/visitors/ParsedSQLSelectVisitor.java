@@ -23,6 +23,7 @@ import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlNaturalJoin;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,11 +120,19 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
-            plainSelect.getJoins().forEach(join -> join.getRightItem().accept(fromItemVisitor));
+            plainSelect.getJoins().forEach(join ->{
+                join.getRightItem().accept(fromItemVisitor);
+                if ( join.isNatural())
+                    context.getJoins().add(new ParsedSqlNaturalJoin(context));
+            });
+
 
         plainSelect.getSelectItems().forEach(selectItem -> {
             if (selectItem instanceof AllColumns)
-                context.getProjectedAttributes().putAll( context.getTableAttributes() );
+                context.getTableAttributes().forEach( (k, v) -> {
+                    if( k.getRelation() != null)
+                        context.getProjectedAttributes().put( k, v);
+                });
             else {
                 ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context);
                 selectItem.accept(parsedSQLItemVisitor);

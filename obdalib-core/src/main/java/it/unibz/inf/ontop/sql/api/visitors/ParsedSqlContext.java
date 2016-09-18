@@ -21,6 +21,7 @@ package it.unibz.inf.ontop.sql.api.visitors;
  */
 
 import it.unibz.inf.ontop.sql.*;
+import net.sf.jsqlparser.expression.Expression;
 
 import java.util.*;
 
@@ -37,7 +38,7 @@ public class ParsedSqlContext {
     private final Map<QualifiedAttributeID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
     private final Map<QualifiedAttributeID, QualifiedAttributeID> tableAttributes = new HashMap<>();
     private final Map<QualifiedAttributeID, QualifiedAttributeID> attributes = new HashMap<>();
-
+    private final List<Expression> joins = new LinkedList<>();
     private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
 
@@ -83,6 +84,10 @@ public class ParsedSqlContext {
 
     public Map<QualifiedAttributeID, QualifiedAttributeID> getAttributes() {
         return attributes;
+    }
+
+    public List<Expression> getJoins() {
+        return joins;
     }
 
     //endregion

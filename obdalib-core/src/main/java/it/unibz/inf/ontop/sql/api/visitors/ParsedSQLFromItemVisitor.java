@@ -76,12 +76,15 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
             databaseRelationDefinition.getAttributes().forEach(attribute -> {
                 final QualifiedAttributeID tableQualifiedAttributeID = new QualifiedAttributeID(databaseRelationDefinition.getID(), attribute.getID());
                 // quoted attribute key
-                QualifiedAttributeID  keyTableAttribute = new QualifiedAttributeID(
-                        null,
-                        attribute.getID()
-                );
-                //
-                context.getTableAttributes().put( keyTableAttribute,  tableQualifiedAttributeID );
+                for ( int i =0; i<2 ; i++) {
+                    final QualifiedAttributeID keyTableAttribute = new QualifiedAttributeID(
+                            i==0 ? null: attribute.getRelation().getID(),
+                            attribute.getID()
+                    );
+                    //
+                    context.getTableAttributes().put(keyTableAttribute, tableQualifiedAttributeID);
+
+                }
             });
 
             context.getAttributes().putAll(context.getTableAttributes());

@@ -23,6 +23,7 @@ package it.unibz.inf.ontop.api;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlNaturalJoin;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
@@ -173,9 +174,18 @@ public class ParsedSqlQueryVisitorTest {
 
     @Test
     public void MetadataContainsExpectedTwoTablesInNaturalJoin(){
-        String [] expected = { "PERSON", "EMAIL"};
-        String sql = String.format( "select * from %1$s natural join %2$s", expected[0], expected[1]);
+        String sql = "select * from person natural join email";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue( p.getContext().getJoins().get(0) instanceof ParsedSqlNaturalJoin);
+        ParsedSqlNaturalJoin expression = (ParsedSqlNaturalJoin) p.getContext().getJoins().get(0);
+
+        assertEquals(2,  expression.getCommonAttributes().size());
+
+        final QualifiedAttributeID personIdPersonkey = new QualifiedAttributeID(dbMetadata.getQuotedIDFactory().createRelationID(null, "person"), dbMetadata.getQuotedIDFactory().createAttributeID("idperson"));
+        assertTrue( expression.getCommonAttributes().contains( personIdPersonkey) );
+
+        final QualifiedAttributeID personIdEmailkey = new QualifiedAttributeID(dbMetadata.getQuotedIDFactory().createRelationID(null, "email"), dbMetadata.getQuotedIDFactory().createAttributeID("idperson"));
+        assertTrue( expression.getCommonAttributes().contains( personIdEmailkey) );
 //        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
 //        assertTrue(  p.getTables().size() == expected.length );
 //        for (final String table : expected)
