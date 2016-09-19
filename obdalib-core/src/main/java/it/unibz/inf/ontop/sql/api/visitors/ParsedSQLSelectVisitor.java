@@ -124,6 +124,14 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                 join.getRightItem().accept(fromItemVisitor);
                 if ( join.isNatural())
                     context.getJoins().add(new ParsedSqlNaturalJoin(context));
+                else if( join.isInner() ){
+                    ParsedSQLExpressionVisitor visitor = new ParsedSQLExpressionVisitor(context);
+                    if ( join.getOnExpression() != null  )
+                        join.getOnExpression().accept(visitor);
+                    else if ( join.getUsingColumns() != null ){
+                        // todo: add logic here
+                    }
+                }
             });
 
 

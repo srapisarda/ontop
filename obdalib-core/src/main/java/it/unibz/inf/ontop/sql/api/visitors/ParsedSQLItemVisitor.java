@@ -66,7 +66,7 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
         logger.debug("visit selectExpressionItem");
 
         // TODO:  should support complex expressions
-        final ParsedSQLExpressionVisitor parsedSQLExpressionVisitor = new ParsedSQLExpressionVisitor();
+        final ParsedSQLExpressionVisitor parsedSQLExpressionVisitor = new ParsedSQLExpressionVisitor(context);
         selectExpressionItem.getExpression().accept(parsedSQLExpressionVisitor);
 
         parsedSQLExpressionVisitor

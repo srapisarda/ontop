@@ -23,10 +23,13 @@ package it.unibz.inf.ontop.api;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlAttribute;
 import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlNaturalJoin;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
@@ -274,20 +277,36 @@ public class ParsedSqlQueryVisitorTest {
 
     @Test
     public void MetadataContainsExpectedTwoTablesInnerJoinON(){
-        String [] expected = { "PERSON", "EMAIL"};
-        String sql = String.format( "select * from %1$s a inner join %2$s b on a.idPerson=b.idPerson ", expected[0], expected[1]);
+        String sql = "select * from PERSON a inner join EMAIL b on a.idPerson=b.idPerson ";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
-//        assertTrue(  p.getTables().size() == expected.length );
-//        for (final String table : expected)
-//            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+        assertTrue( p.getContext().getJoins().size()==1 );
+
+
+        EqualsTo  equalsTo = (EqualsTo) p.getContext().getJoins().get(0) ;
+        // assert existence of right attribute mapped
+        final ParsedSqlAttribute  rightAttributeKey =  (ParsedSqlAttribute) equalsTo.getRightExpression();
+        assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
+        // assert existence of left attribute mapped
+        final ParsedSqlAttribute  leftAttributeKey =  (ParsedSqlAttribute) equalsTo.getLeftExpression();
+        assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
+
+
     }
 
     @Test
     public void MetadataContainsExpectedThreeTablesInnerJoinON(){
-        String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
-        String sql = String.format( "select * from %1$s a inner join %2$s b on a.idPerson=b.idPerson inner join %3$s c on a.idPerson=c.idPerson", expected[0], expected[1], expected[2]);
+        String sql = "select * from PERSON a inner join EMAIL b on a.idPerson=b.idPerson inner join ADDRESS c on a.idPerson=c.idPerson";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+
+        p.getContext().getJoins().forEach(equalsTo -> {
+                    // assert existence of right attribute mapped
+                    final ParsedSqlAttribute rightAttributeKey = (ParsedSqlAttribute)  ((EqualsTo)equalsTo).getRightExpression();
+                    assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
+                    // assert existence of left attribute mapped
+                    final ParsedSqlAttribute leftAttributeKey = (ParsedSqlAttribute) ((EqualsTo)equalsTo).getLeftExpression();
+                    assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
+        });
+
 //        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
 //        assertTrue(  p.getTables().size() == expected.length );
 //        for (final String table : expected)

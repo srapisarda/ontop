@@ -22,6 +22,10 @@ package it.unibz.inf.ontop.sql.api.visitors;
 
 
 import com.google.common.collect.ImmutableList;
+import it.unibz.inf.ontop.sql.QualifiedAttributeID;
+import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.RelationID;
+import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlAttribute;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -37,12 +41,17 @@ import org.slf4j.LoggerFactory;
  * on 04/08/2016.
  */
 
+
+
+
 class ParsedSQLExpressionVisitor implements ExpressionVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ImmutableList.Builder<Column> columnsListBuilder;
+    private final ParsedSqlContext context;
 
-    ParsedSQLExpressionVisitor() {
+    ParsedSQLExpressionVisitor(ParsedSqlContext context) {
         this.columnsListBuilder = new ImmutableList.Builder<>();
+        this.context = context;
     }
 
     ImmutableList<Column> getColumns(){
@@ -145,19 +154,45 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
         logger.debug("Visit Between");
     }
 
+
+    private ParsedSqlAttribute getAttributeFromColumn( Column column){
+        final QuotedID attributeID = context.getMetadata().getQuotedIDFactory().createAttributeID(column.getColumnName());
+        final RelationID relationID = context.getMetadata().getQuotedIDFactory().createRelationID(null, column.getTable().getName());
+        QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(relationID, attributeID );
+        return  new ParsedSqlAttribute(qualifiedAttributeID);
+    }
+
+    private void addAttributeIfColumn(OldOracleJoinBinaryExpression expression ){
+        ParsedSQLExpressionVisitor visitor = new ParsedSQLExpressionVisitor(context);
+        expression.getLeftExpression().accept( visitor);
+
+        if ( expression.getLeftExpression() instanceof Column )
+            expression.setLeftExpression( getAttributeFromColumn ( (Column) expression.getLeftExpression()));
+
+        if ( expression.getRightExpression() instanceof Column )
+            expression.setRightExpression( getAttributeFromColumn ( (Column) expression.getRightExpression()));
+
+        context.getJoins().add( expression );
+    }
+
+
     @Override
     public void visit(EqualsTo equalsTo) {
         logger.debug("Visit EqualsTo");
+        addAttributeIfColumn(equalsTo);
+
     }
 
     @Override
     public void visit(GreaterThan greaterThan) {
         logger.debug("Visit GreaterThan");
+        addAttributeIfColumn(greaterThan);
     }
 
     @Override
     public void visit(GreaterThanEquals greaterThanEquals) {
         logger.debug("Visit GreaterThanEquals");
+        addAttributeIfColumn(greaterThanEquals);
     }
 
     @Override
@@ -178,16 +213,19 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
     @Override
     public void visit(MinorThan minorThan) {
         logger.debug("Visit MinorThan");
+        addAttributeIfColumn(minorThan);
     }
 
     @Override
     public void visit(MinorThanEquals minorThanEquals) {
         logger.debug("Visit MinorThanEquals");
+        addAttributeIfColumn(minorThanEquals);
     }
 
     @Override
     public void visit(NotEqualsTo notEqualsTo) {
         logger.debug("Visit NotEqualsTo");
+        addAttributeIfColumn(notEqualsTo);
     }
 
     @Override
@@ -235,6 +273,7 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
     @Override
     public void visit(Matches matches) {
         logger.debug("Visit Matches");
+        addAttributeIfColumn(matches);
     }
 
     @Override
