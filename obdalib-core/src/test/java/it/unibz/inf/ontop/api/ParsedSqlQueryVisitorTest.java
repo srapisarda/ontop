@@ -24,6 +24,7 @@ import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
 import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlAttribute;
+import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlCondition;
 import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlNaturalJoin;
 import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
@@ -282,7 +283,7 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue( p.getContext().getJoins().size()==1 );
 
 
-        EqualsTo  equalsTo = (EqualsTo) p.getContext().getJoins().get(0) ;
+        ParsedSqlCondition  equalsTo = (ParsedSqlCondition) p.getContext().getJoins().get(0) ;
         // assert existence of right attribute mapped
         final ParsedSqlAttribute  rightAttributeKey =  (ParsedSqlAttribute) equalsTo.getRightExpression();
         assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
@@ -300,10 +301,10 @@ public class ParsedSqlQueryVisitorTest {
 
         p.getContext().getJoins().forEach(equalsTo -> {
                     // assert existence of right attribute mapped
-                    final ParsedSqlAttribute rightAttributeKey = (ParsedSqlAttribute)  ((EqualsTo)equalsTo).getRightExpression();
+                    final ParsedSqlAttribute rightAttributeKey = (ParsedSqlAttribute)  ((ParsedSqlCondition)equalsTo).getRightExpression();
                     assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
                     // assert existence of left attribute mapped
-                    final ParsedSqlAttribute leftAttributeKey = (ParsedSqlAttribute) ((EqualsTo)equalsTo).getLeftExpression();
+                    final ParsedSqlAttribute leftAttributeKey = (ParsedSqlAttribute) ((ParsedSqlCondition)equalsTo).getLeftExpression();
                     assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
         });
 

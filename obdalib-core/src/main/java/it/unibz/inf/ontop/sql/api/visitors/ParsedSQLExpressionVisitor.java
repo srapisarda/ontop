@@ -26,6 +26,7 @@ import it.unibz.inf.ontop.sql.QualifiedAttributeID;
 import it.unibz.inf.ontop.sql.QuotedID;
 import it.unibz.inf.ontop.sql.RelationID;
 import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlAttribute;
+import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlCondition;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -166,13 +167,25 @@ class ParsedSQLExpressionVisitor implements ExpressionVisitor {
         ParsedSQLExpressionVisitor visitor = new ParsedSQLExpressionVisitor(context);
         expression.getLeftExpression().accept( visitor);
 
-        if ( expression.getLeftExpression() instanceof Column )
-            expression.setLeftExpression( getAttributeFromColumn ( (Column) expression.getLeftExpression()));
+        Expression rightExpression;
+        if  ( ! visitor.getColumns().isEmpty() )
+            rightExpression =  getAttributeFromColumn ( visitor.getColumns().get(0) );
+        else
+            rightExpression = expression.getRightExpression();
 
-        if ( expression.getRightExpression() instanceof Column )
-            expression.setRightExpression( getAttributeFromColumn ( (Column) expression.getRightExpression()));
 
-        context.getJoins().add( expression );
+        visitor = new ParsedSQLExpressionVisitor(context);
+        expression.getRightExpression().accept( visitor);
+        Expression leftExpression;
+        if  ( ! visitor.getColumns().isEmpty() )
+            leftExpression =  getAttributeFromColumn ( visitor.getColumns().get(0) );
+        else
+            leftExpression = expression.getLeftExpression();
+
+        ParsedSqlCondition condition = new ParsedSqlCondition(expression, rightExpression, leftExpression);
+
+        context.getJoins().add(  condition  );
+
     }
 
 
