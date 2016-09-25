@@ -16,6 +16,11 @@ public class ParsedSqlCondition extends OldOracleJoinBinaryExpression implements
         this.expression = expression;
         this.setLeftExpression(leftExpression);
         this.setRightExpression(rightExpression);
+
+    }
+
+    public boolean isNot () {
+        return  expression.isNot();
     }
 
     @Override
