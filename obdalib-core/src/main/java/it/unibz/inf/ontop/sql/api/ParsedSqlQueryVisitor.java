@@ -23,8 +23,8 @@ package it.unibz.inf.ontop.sql.api;
 
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
-import it.unibz.inf.ontop.sql.api.visitors.ParsedSQLSelectVisitor;
-import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
+import it.unibz.inf.ontop.sql.api.ParsedSql.visitors.PSqlSelectVisitor;
+import it.unibz.inf.ontop.sql.api.ParsedSql.visitors.PSqlContext;
 import net.sf.jsqlparser.statement.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * @author Salvatore Rapisarda
  */
 public class ParsedSqlQueryVisitor  {
-    private ParsedSQLSelectVisitor selectVisitor;
+    private PSqlSelectVisitor selectVisitor;
 
     /**
      *  This constructor get in input the instance of
@@ -53,11 +53,11 @@ public class ParsedSqlQueryVisitor  {
         if (selectQuery.getWithItemsList() != null && ! selectQuery.getWithItemsList().isEmpty())
             throw new ParseException(selectQuery.getWithItemsList());
 
-        selectVisitor = new ParsedSQLSelectVisitor(metadata);
+        selectVisitor = new PSqlSelectVisitor(metadata);
         selectQuery.getSelectBody().accept(selectVisitor);
     }
 
-    public ParsedSqlContext getContext () {
+    public PSqlContext getContext () {
         return selectVisitor.getContext();
     }
 

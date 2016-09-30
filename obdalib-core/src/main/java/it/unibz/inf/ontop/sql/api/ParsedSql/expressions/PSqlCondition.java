@@ -1,5 +1,6 @@
-package it.unibz.inf.ontop.sql.api.expressions;
+package it.unibz.inf.ontop.sql.api.ParsedSql.expressions;
 
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlExpressionVisitor;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 import net.sf.jsqlparser.expression.operators.relational.OldOracleJoinBinaryExpression;
@@ -8,11 +9,11 @@ import net.sf.jsqlparser.expression.operators.relational.OldOracleJoinBinaryExpr
  * Created by salvo on 25/09/2016.
  *
  */
-public class ParsedSqlCondition extends OldOracleJoinBinaryExpression implements Expression {
+public class PSqlCondition extends OldOracleJoinBinaryExpression implements PSqlExpression {
 
     private final OldOracleJoinBinaryExpression expression;
 
-    public ParsedSqlCondition(OldOracleJoinBinaryExpression expression, Expression leftExpression, Expression rightExpression ){
+    public PSqlCondition(OldOracleJoinBinaryExpression expression, Expression leftExpression, Expression rightExpression ){
         this.expression = expression;
         this.setLeftExpression(leftExpression);
         this.setRightExpression(rightExpression);
@@ -25,6 +26,11 @@ public class ParsedSqlCondition extends OldOracleJoinBinaryExpression implements
 
     @Override
     public void accept(ExpressionVisitor expressionVisitor) {
+    }
+
+    @Override
+    public void accept(PSqlExpressionVisitor expressionVisitor) {
+
     }
 
     @Override

@@ -1,18 +1,18 @@
-package it.unibz.inf.ontop.sql.api.expressions;
+package it.unibz.inf.ontop.sql.api.ParsedSql.expressions;
 
 import it.unibz.inf.ontop.sql.QualifiedAttributeID;
-import net.sf.jsqlparser.expression.Expression;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlExpressionVisitor;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 
 /**
  * Created by Salvatore Rapisarda on 17/09/2016.
  *
  */
-public class ParsedSqlAttribute implements Expression {
+public class PSqlAttribute implements PSqlExpression {
 
     private final QualifiedAttributeID attributeID;
 
-    public ParsedSqlAttribute(QualifiedAttributeID attributeID) {
+    public PSqlAttribute(QualifiedAttributeID attributeID) {
         this.attributeID = attributeID;
     }
 
@@ -25,4 +25,8 @@ public class ParsedSqlAttribute implements Expression {
         return attributeID;
     }
 
+    @Override
+    public void accept(PSqlExpressionVisitor expressionVisitor) {
+
+    }
 }

@@ -1,4 +1,4 @@
-package it.unibz.inf.ontop.sql.api.visitors;
+package it.unibz.inf.ontop.sql.api.ParsedSql.visitors;
 /*
  * #%L
  * ontop-obdalib-core
@@ -23,7 +23,8 @@ import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlNaturalJoin;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlInnerJoinUsing;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlNaturalJoin;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,18 +32,18 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Salvatore Rapisarda on 10/07/2016.
  */
-public class ParsedSQLSelectVisitor implements SelectVisitor {
+public class PSqlSelectVisitor implements SelectVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
 
     /**
-     * @return an instance of {@link ParsedSqlContext}
+     * @return an instance of {@link PSqlContext}
      */
-    public ParsedSqlContext getContext() {
+    public PSqlContext getContext() {
         return context;
     }
 
-    private final ParsedSqlContext context;
+    private final PSqlContext context;
 
 
     /**
@@ -50,8 +51,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      *
      * @param metadata db metadata object {@link DBMetadata}
      */
-    public ParsedSQLSelectVisitor(DBMetadata metadata) {
-        context = new ParsedSqlContext(metadata);
+    public PSqlSelectVisitor(DBMetadata metadata) {
+        context = new PSqlContext(metadata);
 
     }
 
@@ -61,8 +62,8 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
      * @param metadata db metadata object {@link DBMetadata}
      * @param contextAlias is a {@link QuotedID} that  identify the context
      */
-    ParsedSQLSelectVisitor(DBMetadata metadata, QuotedID contextAlias) {
-        context = new ParsedSqlContext(metadata, contextAlias);
+    PSqlSelectVisitor(DBMetadata metadata, QuotedID contextAlias) {
+        context = new PSqlContext(metadata, contextAlias);
 
     }
 
@@ -116,21 +117,23 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
 
         logger.debug(String.format("PlainSelect:  %1$s", plainSelect.toString()));
 
-        ParsedSQLFromItemVisitor fromItemVisitor = new ParsedSQLFromItemVisitor(context);
+        PSqlFromItemVisitor fromItemVisitor = new PSqlFromItemVisitor(context);
         plainSelect.getFromItem().accept(fromItemVisitor);
 
         if (plainSelect.getJoins() != null)
             plainSelect.getJoins().forEach(join ->{
                 join.getRightItem().accept(fromItemVisitor);
                 if ( join.isNatural())
-                    context.getJoins().add(new ParsedSqlNaturalJoin(context));
+                    context.getJoins().add(new PSqlNaturalJoin(context));
                 else if( join.isInner() ){
-                    ParsedSQLExpressionVisitor visitor = new ParsedSQLExpressionVisitor(context);
-                    if ( join.getOnExpression() != null  )
+                    if ( join.getOnExpression() != null  ) {
+                        PSqlExpressionVisitor visitor = new PSqlExpressionVisitor(context);
                         join.getOnExpression().accept(visitor);
-                    else if ( join.getUsingColumns() != null ){
-                        // todo: add logic here
+                    }else if ( join.getUsingColumns() != null ){
+                         context.getJoins().add( new PSqlInnerJoinUsing(context, join.getUsingColumns() ) );
                     }
+                }else if (join.isCross()){
+
                 }
             });
 
@@ -142,7 +145,7 @@ public class ParsedSQLSelectVisitor implements SelectVisitor {
                         context.getProjectedAttributes().put( k, v);
                 });
             else {
-                ParsedSQLItemVisitor parsedSQLItemVisitor = new ParsedSQLItemVisitor(context);
+                PSqlItemVisitor parsedSQLItemVisitor = new PSqlItemVisitor(context);
                 selectItem.accept(parsedSQLItemVisitor);
                 context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
             }

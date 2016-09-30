@@ -1,4 +1,4 @@
-package it.unibz.inf.ontop.sql.api.visitors;
+package it.unibz.inf.ontop.sql.api.ParsedSql.visitors;
 /*
  * #%L
  * ontop-obdalib-core
@@ -32,20 +32,20 @@ import org.slf4j.LoggerFactory;
 /**
  * @author  Salvatore Rapisarda on 10/07/2016.
  */
-class ParsedSQLFromItemVisitor implements FromItemVisitor {
+class PSqlFromItemVisitor implements net.sf.jsqlparser.statement.select.FromItemVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      *
-     * @return  an instance of {@link ParsedSqlContext}
+     * @return  an instance of {@link PSqlContext}
      */
-    public ParsedSqlContext getContext() {
+    public PSqlContext getContext() {
         return context;
     }
-    private final ParsedSqlContext context;
+    private final PSqlContext context;
 
 
-    ParsedSQLFromItemVisitor(ParsedSqlContext context){
+    PSqlFromItemVisitor(PSqlContext context){
         this.context = context;
     }
 
@@ -135,7 +135,7 @@ class ParsedSQLFromItemVisitor implements FromItemVisitor {
                 throw new ParseException(subSelect);*/
        // List<String> relationalMapIndex = new LinkedList<>();
         final QuotedID contextAlias =  context.getIdFac().createAttributeID( subSelect.getAlias().getName() ) ;
-        ParsedSQLSelectVisitor visitor = new ParsedSQLSelectVisitor(context.getMetadata(),  contextAlias );
+        PSqlSelectVisitor visitor = new PSqlSelectVisitor(context.getMetadata(),  contextAlias );
        //v.set( relationalMapIndex );
         subSelBody.accept(visitor);
         //context.getAttributes().putAll(visitor.getContext().getAttributes());

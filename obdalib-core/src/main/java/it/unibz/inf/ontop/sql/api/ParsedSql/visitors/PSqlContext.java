@@ -1,4 +1,4 @@
-package it.unibz.inf.ontop.sql.api.visitors;
+package it.unibz.inf.ontop.sql.api.ParsedSql.visitors;
 
 /*
  * #%L
@@ -30,7 +30,7 @@ import java.util.*;
  *  on 27/08/2016.
  *
  */
-public class ParsedSqlContext {
+public class PSqlContext {
 
     private final DBMetadata metadata;
     private final QuotedIDFactory idFac;
@@ -39,15 +39,15 @@ public class ParsedSqlContext {
     private final Map<QualifiedAttributeID, QualifiedAttributeID> tableAttributes = new HashMap<>();
     private final Map<QualifiedAttributeID, QualifiedAttributeID> attributes = new HashMap<>();
     private final List<Expression> joins = new LinkedList<>();
-    private Map<QuotedID, ParsedSqlContext> childContext = new LinkedHashMap<>();
+    private Map<QuotedID, PSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
 
-    ParsedSqlContext(DBMetadata metadata){
+    PSqlContext(DBMetadata metadata){
         this.metadata = metadata;
         this.idFac = metadata.getQuotedIDFactory();
     }
 
-    ParsedSqlContext(DBMetadata metadata, QuotedID contextAlias) {
+    PSqlContext(DBMetadata metadata, QuotedID contextAlias) {
         this(metadata);
         this.alias = contextAlias;
     }
@@ -61,7 +61,7 @@ public class ParsedSqlContext {
         return idFac;
     }
 
-    public Map<QuotedID, ParsedSqlContext> getChildContext() {
+    public Map<QuotedID, PSqlContext> getChildContext() {
         return childContext;
     }
 

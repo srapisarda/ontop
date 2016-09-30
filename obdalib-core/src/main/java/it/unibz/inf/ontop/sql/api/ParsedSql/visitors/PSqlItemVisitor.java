@@ -1,4 +1,4 @@
-package it.unibz.inf.ontop.sql.api.visitors;
+package it.unibz.inf.ontop.sql.api.ParsedSql.visitors;
 
 /*
  * #%L
@@ -33,20 +33,20 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Salvatore Rapisarda on 20/07/2016.
  */
-class ParsedSQLItemVisitor implements SelectItemVisitor {
+class PSqlItemVisitor implements SelectItemVisitor {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     /**
      *
-     * @return  an instance of {@link ParsedSqlContext}
+     * @return  an instance of {@link PSqlContext}
      */
-    public ParsedSqlContext getContext() {
+    public PSqlContext getContext() {
         return context;
     }
-    private final ParsedSqlContext context;
-    private final ParsedSqlContext callerContext;
+    private final PSqlContext context;
+    private final PSqlContext callerContext;
 
-    ParsedSQLItemVisitor( ParsedSqlContext parentContext){
-        context= new ParsedSqlContext(parentContext.getMetadata());
+    PSqlItemVisitor(PSqlContext parentContext){
+        context= new PSqlContext(parentContext.getMetadata());
         this.callerContext = parentContext;
     }
 
@@ -66,7 +66,7 @@ class ParsedSQLItemVisitor implements SelectItemVisitor {
         logger.debug("visit selectExpressionItem");
 
         // TODO:  should support complex expressions
-        final ParsedSQLExpressionVisitor parsedSQLExpressionVisitor = new ParsedSQLExpressionVisitor(context);
+        final PSqlExpressionVisitor parsedSQLExpressionVisitor = new PSqlExpressionVisitor(context);
         selectExpressionItem.getExpression().accept(parsedSQLExpressionVisitor);
 
         parsedSQLExpressionVisitor

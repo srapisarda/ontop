@@ -23,14 +23,12 @@ package it.unibz.inf.ontop.api;
 import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.*;
-import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlAttribute;
-import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlCondition;
-import it.unibz.inf.ontop.sql.api.expressions.ParsedSqlNaturalJoin;
-import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlAttribute;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlCondition;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlNaturalJoin;
+import it.unibz.inf.ontop.sql.api.ParsedSql.visitors.PSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
@@ -180,8 +178,8 @@ public class ParsedSqlQueryVisitorTest {
     public void MetadataContainsExpectedTwoTablesInNaturalJoin(){
         String sql = "select * from person natural join email";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-        assertTrue( p.getContext().getJoins().get(0) instanceof ParsedSqlNaturalJoin);
-        ParsedSqlNaturalJoin expression = (ParsedSqlNaturalJoin) p.getContext().getJoins().get(0);
+        assertTrue( p.getContext().getJoins().get(0) instanceof PSqlNaturalJoin);
+        PSqlNaturalJoin expression = (PSqlNaturalJoin) p.getContext().getJoins().get(0);
 
         assertEquals(2,  expression.getCommonAttributes().size());
 
@@ -283,12 +281,12 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue( p.getContext().getJoins().size()==1 );
 
 
-        ParsedSqlCondition  equalsTo = (ParsedSqlCondition) p.getContext().getJoins().get(0) ;
+        PSqlCondition equalsTo = (PSqlCondition) p.getContext().getJoins().get(0) ;
         // assert existence of right attribute mapped
-        final ParsedSqlAttribute  rightAttributeKey =  (ParsedSqlAttribute) equalsTo.getRightExpression();
+        final PSqlAttribute rightAttributeKey =  (PSqlAttribute) equalsTo.getRightExpression();
         assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
         // assert existence of left attribute mapped
-        final ParsedSqlAttribute  leftAttributeKey =  (ParsedSqlAttribute) equalsTo.getLeftExpression();
+        final PSqlAttribute leftAttributeKey =  (PSqlAttribute) equalsTo.getLeftExpression();
         assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
 
 
@@ -301,10 +299,10 @@ public class ParsedSqlQueryVisitorTest {
 
         p.getContext().getJoins().forEach(equalsTo -> {
                     // assert existence of right attribute mapped
-                    final ParsedSqlAttribute rightAttributeKey = (ParsedSqlAttribute)  ((ParsedSqlCondition)equalsTo).getRightExpression();
+                    final PSqlAttribute rightAttributeKey = (PSqlAttribute)  ((PSqlCondition)equalsTo).getRightExpression();
                     assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
                     // assert existence of left attribute mapped
-                    final ParsedSqlAttribute leftAttributeKey = (ParsedSqlAttribute) ((ParsedSqlCondition)equalsTo).getLeftExpression();
+                    final PSqlAttribute leftAttributeKey = (PSqlAttribute) ((PSqlCondition)equalsTo).getLeftExpression();
                     assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
         });
 
@@ -330,10 +328,17 @@ public class ParsedSqlQueryVisitorTest {
         String [] expected = { "PERSON", "EMAIL"};
         String sql = String.format( "select * from %1$s a inner join %2$s b using (idPerson) ", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
-//        assertTrue(  p.getTables().size() == expected.length );
-//        for (final String table : expected)
-//            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+
+
+   }
+
+    @Test (expected = MappingQueryException.class)
+    public void ExpectedErrorInAnInnerJoinUsing(){
+        String [] expected = { "PERSON", "EMAIL"};
+        String sql = String.format( "select * from %1$s a inner join %2$s b using (personId) ", expected[0], expected[1]);
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+
+
     }
 
     @Test
@@ -341,10 +346,9 @@ public class ParsedSqlQueryVisitorTest {
         String [] expected = { "PERSON", "EMAIL", "ADDRESS"};
         String sql = String.format( "select * from %1$s a inner join %2$s b inner join %3$s using (idPerson) ", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
-//        assertTrue(  p.getTables().size() == expected.length );
-//        for (final String table : expected)
-//            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+
+
+
     }
 
 
@@ -626,6 +630,10 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
+
+
+
+
     @Test  // TODO: to FIX
     // (expected = ParseException.class) // this need to be reviewed
     public void MetadataContainsExpectedThreeTableSubSelectJoin(){
@@ -658,7 +666,7 @@ public class ParsedSqlQueryVisitorTest {
 //        assertTrue(  p.getTables().size() == expected.length );
 
         assertTrue( p.getContext().getChildContext().size() == 1 );
-        ParsedSqlContext contextB = p.getContext().getChildContext().get(dbMetadata.getQuotedIDFactory().createAttributeID("b") );
+        PSqlContext contextB = p.getContext().getChildContext().get(dbMetadata.getQuotedIDFactory().createAttributeID("b") );
 
         assertEquals(
                 dbMetadata.getDatabaseRelations().stream().filter(databaseRelationDefinition -> databaseRelationDefinition.getID().getTableName().toUpperCase().equals("ADDRESS") ).findAny().get().getAttributes().size(),
@@ -667,7 +675,7 @@ public class ParsedSqlQueryVisitorTest {
 
         assertTrue( contextB.getChildContext().size() == 1  );
 
-        ParsedSqlContext contextA = contextB.getChildContext().get(dbMetadata.getQuotedIDFactory().createAttributeID("a"));
+        PSqlContext contextA = contextB.getChildContext().get(dbMetadata.getQuotedIDFactory().createAttributeID("a"));
         assertNotNull( contextA  ) ;
 
         assertEquals(
@@ -687,9 +695,9 @@ public class ParsedSqlQueryVisitorTest {
         String sql = String.format(
                 "select * from %1$s a, " +
                 "(select * from %2$s a, " +
-                        "(select * from  %3$s a inner join %2$s b using(personId) ) c ) b, " +
+                        "(select * from  %3$s a inner join %2$s b using(IdPerson) ) c ) b, " +
                 "%2$s c , " +
-                "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.personId= b.personId) f ) d, " +
+                "(select * from %2$s a, (select * from %1$s a inner join   %2$s b  on a.IdPerson= b.IdPerson) f ) d, " +
                         "%3$s e;", expected[0], expected[1], expected[2]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
 //        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));

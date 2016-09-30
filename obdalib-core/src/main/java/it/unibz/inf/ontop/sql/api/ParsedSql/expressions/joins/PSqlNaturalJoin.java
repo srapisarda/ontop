@@ -1,8 +1,8 @@
-package it.unibz.inf.ontop.sql.api.expressions;
+package it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins;
 
 import it.unibz.inf.ontop.sql.QualifiedAttributeID;
-import it.unibz.inf.ontop.sql.api.visitors.ParsedSqlContext;
-import net.sf.jsqlparser.expression.Expression;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlExpression;
+import it.unibz.inf.ontop.sql.api.ParsedSql.visitors.PSqlContext;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 
 import java.util.HashSet;
@@ -12,11 +12,11 @@ import java.util.Set;
  * Created by salvo on 17/09/2016.
  *
  */
-public class ParsedSqlNaturalJoin  implements Expression {
+public class PSqlNaturalJoin implements PSqlExpression {
 
     private final Set<QualifiedAttributeID> commonAttributes;
 
-    public ParsedSqlNaturalJoin(ParsedSqlContext context) {
+    public PSqlNaturalJoin(PSqlContext context) {
         commonAttributes = new HashSet<>();
         context.getAttributes().keySet().forEach( attribute -> {
             if ( attribute.getRelation() != null ) {
@@ -44,6 +44,11 @@ public class ParsedSqlNaturalJoin  implements Expression {
 
     @Override
     public void accept(ExpressionVisitor expressionVisitor) {
+
+    }
+
+    @Override
+    public void accept(PSqlExpressionVisitor expressionVisitor) {
 
     }
 }
