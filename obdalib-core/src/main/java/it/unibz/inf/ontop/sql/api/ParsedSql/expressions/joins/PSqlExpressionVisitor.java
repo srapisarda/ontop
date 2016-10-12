@@ -5,7 +5,7 @@ import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlCondition;
 import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlExpression;
 
 /**
- * Created by rapissal on 30/09/2016.
+ * Created by Salvatore Rapisarda on 30/09/2016.
  *
  */
 public interface PSqlExpressionVisitor {

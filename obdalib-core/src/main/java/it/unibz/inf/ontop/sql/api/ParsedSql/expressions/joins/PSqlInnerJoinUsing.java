@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Created by rapissal on 30/09/2016.
+ * Created by Salvatore Rapisarda on 30/09/2016.
  *
  */
 public class PSqlInnerJoinUsing implements PSqlExpression {
