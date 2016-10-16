@@ -23,6 +23,7 @@ import it.unibz.inf.ontop.exception.MappingQueryException;
 import it.unibz.inf.ontop.exception.ParseException;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.QuotedID;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlCrossJoin;
 import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlInnerJoinUsing;
 import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlNaturalJoin;
 import net.sf.jsqlparser.statement.select.*;
@@ -133,7 +134,7 @@ public class PSqlSelectVisitor implements SelectVisitor {
                          context.getJoins().add( new PSqlInnerJoinUsing(context, join.getUsingColumns() ) );
                     }
                 }else if (join.isCross()){
-
+                    context.getJoins().add( new PSqlCrossJoin(context) );
                 }
             });
 
