@@ -49,11 +49,19 @@ class PSqlExpressionVisitor implements net.sf.jsqlparser.expression.ExpressionVi
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ImmutableList.Builder<Column> columnsListBuilder;
     private final PSqlContext context;
+    private Alias alias=null;
 
     PSqlExpressionVisitor(PSqlContext context) {
         this.columnsListBuilder = new ImmutableList.Builder<>();
         this.context = context;
     }
+
+    PSqlExpressionVisitor(PSqlContext context, Alias alias) {
+        this(context);
+        this.alias = alias;
+    }
+
+
 
     ImmutableList<Column> getColumns(){
         return columnsListBuilder.build();

@@ -400,33 +400,23 @@ public class ParsedSqlQueryVisitorTest {
                 expected[0], expected[1], expected[2], expected[3]);
 
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
-//        assertTrue(  p.getTables().size() == expected.length );
-//        for (final String table : expected)
-//            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
 
+        final QualifiedAttributeID fnameKey = new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("fname"));
+        assertNotNull( p.getContext().getAttributes().get(fnameKey) );
+        assertNotNull( p.getContext().getProjectedAttributes().get(fnameKey));
 
+        final QualifiedAttributeID emailAddressKey = new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("emailAddress"));
+        assertNotNull( p.getContext().getAttributes().get(emailAddressKey) );
+        assertNotNull( p.getContext().getProjectedAttributes().get(emailAddressKey));
 
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().toLowerCase().equals("fname")).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream2.size() == 1);
-//        assertTrue( pairStream2.get(0).getFst().size()==1 );
-//        assertTrue( pairStream2.get(0).getFst().get(0).getTableName().equals("A") );
-//        assertTrue( pairStream2.get(0).getSnd().getAttribute().getName().toLowerCase().equals("fname"));
+        final QualifiedAttributeID personAddressKey = new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("personAddress"));
+        assertNotNull( p.getContext().getAttributes().get(personAddressKey) );
+        assertNotNull( p.getContext().getProjectedAttributes().get(personAddressKey));
 
-        // "ParsedSqlParsedSqlPair[["d"],"d".POSTC]" -> "POSTCODE"
-//        List<Map.Entry<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>, QuotedID>> postc =
-//                p.getGlobalProjectedAttributes().entrySet().stream().filter(pairQuotedIDEntry ->
-//                        pairQuotedIDEntry.getKey().getSnd().getAttribute().getName().toLowerCase().equals("postc")).collect(Collectors.toList());
-//        assertTrue( postc.size() == 1);
-//        assertTrue( postc.get(0).getValue().getName().toLowerCase().equals("postcode"));
-//        assertTrue( postc.get(0).getKey().getSnd().getRelation().getTableName().equals("D"));
-//        assertTrue( postc.get(0).getKey().getFst().get(0).getTableName().equals("D"));
-        // ["d"] -> POSTCODE
-//        assertTrue( p.getGlobalRelations().get(postc.get(0).getKey().getFst()).getID().getTableName().equals("POSTCODE"));
+        final QualifiedAttributeID postcKey = new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("postc"));
+        assertNotNull( p.getContext().getAttributes().get(postcKey) );
+        assertNotNull( p.getContext().getProjectedAttributes().get(postcKey));
+
     }
 
     @Test  // TODO: to FIX
@@ -918,8 +908,6 @@ public class ParsedSqlQueryVisitorTest {
         tdPostcode.addAttribute(quotedIDFactory.createAttributeID("rangeNumbers"), Types.VARCHAR, null, false);
 
     }
-
-
 
 
 

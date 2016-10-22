@@ -146,9 +146,11 @@ public class PSqlSelectVisitor implements SelectVisitor {
                         context.getProjectedAttributes().put( k, v);
                 });
             else {
+
                 PSqlItemVisitor parsedSQLItemVisitor = new PSqlItemVisitor(context);
                 selectItem.accept(parsedSQLItemVisitor);
-                context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
+//                context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
+//                context.getAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
             }
         });
 

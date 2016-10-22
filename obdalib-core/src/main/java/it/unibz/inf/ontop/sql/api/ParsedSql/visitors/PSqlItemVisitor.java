@@ -43,11 +43,11 @@ class PSqlItemVisitor implements SelectItemVisitor {
         return context;
     }
     private final PSqlContext context;
-    private final PSqlContext callerContext;
+    private final PSqlContext parentContext;
 
     PSqlItemVisitor(PSqlContext parentContext){
         context= new PSqlContext(parentContext.getMetadata());
-        this.callerContext = parentContext;
+        this.parentContext = parentContext;
     }
 
     @Override
@@ -65,8 +65,11 @@ class PSqlItemVisitor implements SelectItemVisitor {
     public void visit(SelectExpressionItem selectExpressionItem) {
         logger.debug("visit selectExpressionItem");
 
+
+
+
         // TODO:  should support complex expressions
-        final PSqlExpressionVisitor parsedSQLExpressionVisitor = new PSqlExpressionVisitor(context);
+        final PSqlExpressionVisitor parsedSQLExpressionVisitor = new PSqlExpressionVisitor(context, selectExpressionItem.getAlias());
         selectExpressionItem.getExpression().accept(parsedSQLExpressionVisitor);
 
         parsedSQLExpressionVisitor
@@ -83,11 +86,21 @@ class PSqlItemVisitor implements SelectItemVisitor {
                             context.getIdFac().createAttributeID(column.getColumnName())
                     ) ;
                     //
+                    final QualifiedAttributeID qualifiedAttributeID =  parentContext.getAttributes().get(key); //parentContext.getAttributes().get(quotedAttributeID);
+                    if ( qualifiedAttributeID != null ) {
 
-                    final QualifiedAttributeID qualifiedAttributeID =  callerContext.getAttributes().get(key); //callerContext.getAttributes().get(quotedAttributeID);
-
-                    if ( qualifiedAttributeID != null )
-                        context.getProjectedAttributes().put(key, qualifiedAttributeID);
+                        if (selectExpressionItem.getAlias()!= null ) {
+                            QualifiedAttributeID  aliasKey = new QualifiedAttributeID(
+                                    null,
+                                    context.getIdFac().createAttributeID(selectExpressionItem.getAlias().getName())
+                            );
+                            context.getProjectedAttributes().put(aliasKey, qualifiedAttributeID);
+                            context.getAttributes().put(aliasKey, qualifiedAttributeID);
+                            parentContext.getProjectedAttributes().put(aliasKey, qualifiedAttributeID);
+                            parentContext.getAttributes().put(aliasKey, qualifiedAttributeID);
+                        }else
+                            parentContext.getProjectedAttributes().put(key, qualifiedAttributeID);
+                    }
                     else
                         throw new MappingQueryException( "the attribute is not present in any relation.", key  );
                 });
