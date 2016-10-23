@@ -1,7 +1,7 @@
 package it.unibz.inf.ontop.sql.api.ParsedSql.expressions;
 
 import it.unibz.inf.ontop.sql.QualifiedAttributeID;
-import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlExpressionVisitor;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.ParsedSqlExpressionVisitor;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 
 /**
@@ -10,23 +10,45 @@ import net.sf.jsqlparser.expression.ExpressionVisitor;
  */
 public class PSqlAttribute implements PSqlExpression {
 
-    private final QualifiedAttributeID attributeID;
+    private QualifiedAttributeID attributeID;
+    private Object value;
 
-    public PSqlAttribute(QualifiedAttributeID attributeID) {
+
+    PSqlAttribute(QualifiedAttributeID attributeID) {
         this.attributeID = attributeID;
     }
 
-    @Override
-    public void accept(ExpressionVisitor expressionVisitor) {
+    PSqlAttribute(String value){
+        this.value =value;
     }
 
+    public boolean hasAttributeId(){
+        return attributeID!=null ;
+    }
+
+
+    public Object getValue() {
+        return hasAttributeId()? attributeID :  value;
+    }
 
     public QualifiedAttributeID getAttributeID() {
         return attributeID;
     }
 
-    @Override
-    public void accept(PSqlExpressionVisitor expressionVisitor) {
 
+    @Override
+    public void accept(ExpressionVisitor expressionVisitor) {
+    }
+
+    @Override
+    public void accept(ParsedSqlExpressionVisitor expressionVisitor) {
+
+    }
+    @Override
+    public String toString(){
+        if ( this.attributeID != null)
+            return this.attributeID.toString();
+        else
+            return this.value.toString();
     }
 }

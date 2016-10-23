@@ -449,13 +449,42 @@ public class ParsedSqlQueryVisitorTest {
 
 
     @Test
+    public void SimpleSQLConditionWhereClause2_TEST(){
+        String sql = "select a.name, a.age, b.email, b.active FROM person a, email b where a.idPerson >1";
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue(p.getContext().getJoins().size() == 1 );
+        final Expression expression = p.getContext().getJoins().get(0);
+
+        assertTrue( p.getContext().getConditions() != null  && p.getContext().getConditions().size()==1);
+
+        final QuotedID attributeID = dbMetadata.getQuotedIDFactory().createAttributeID("idPerson");
+        final RelationID relationID = dbMetadata.getQuotedIDFactory().createRelationID(null, "a");
+        final QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(relationID, attributeID );
+        assertEquals( p.getContext().getConditions(). get(0).getLeftAttribute().getAttributeID(), qualifiedAttributeID);
+
+        assertFalse( p.getContext().getConditions().get(0).getRightAttribute().hasAttributeId() );
+        assertEquals(  p.getContext().getConditions().get(0).getRightAttribute().getValue(), "1");
+
+    }
+
+
+    @Test
     public void SimpleSQLConditionWhereClause_TEST(){
         String sql = "select a.name, a.age, b.email, b.active FROM person a, email b where a.idPerson = b.idPerson";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
         assertTrue(p.getContext().getJoins().size() == 1 );
         final Expression expression = p.getContext().getJoins().get(0);
         assertTrue( expression instanceof PSqlCondition  );
-        //((PSqlCondition) expression).getLeftExpression()
+
+        final QuotedID attributeID = dbMetadata.getQuotedIDFactory().createAttributeID("idPerson");
+        final RelationID relationID1 = dbMetadata.getQuotedIDFactory().createRelationID(null, "a");
+        final RelationID relationID2 = dbMetadata.getQuotedIDFactory().createRelationID(null, "b");
+        final QualifiedAttributeID qualifiedAttributeID1 = new QualifiedAttributeID(relationID1, attributeID );
+        final QualifiedAttributeID qualifiedAttributeID2 = new QualifiedAttributeID(relationID2, attributeID );
+        assertEquals( p.getContext().getConditions(). get(0).getLeftAttribute().getValue(), qualifiedAttributeID1);
+
+        assertTrue( p.getContext().getConditions().get(0).getRightAttribute().hasAttributeId() );
+        assertEquals(  p.getContext().getConditions().get(0).getRightAttribute().getValue(), qualifiedAttributeID2);
 
     }
 

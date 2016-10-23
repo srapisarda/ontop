@@ -45,7 +45,7 @@ public class PSqlInnerJoinUsing implements PSqlExpression {
 
 
     @Override
-    public void accept(PSqlExpressionVisitor expressionVisitor) {
+    public void accept(ParsedSqlExpressionVisitor expressionVisitor) {
 
     }
 

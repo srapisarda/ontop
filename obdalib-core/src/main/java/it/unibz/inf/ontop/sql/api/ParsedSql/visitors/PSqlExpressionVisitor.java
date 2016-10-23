@@ -22,10 +22,6 @@ package it.unibz.inf.ontop.sql.api.ParsedSql.visitors;
 
 
 import com.google.common.collect.ImmutableList;
-import it.unibz.inf.ontop.sql.QualifiedAttributeID;
-import it.unibz.inf.ontop.sql.QuotedID;
-import it.unibz.inf.ontop.sql.RelationID;
-import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlAttribute;
 import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlCondition;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
@@ -45,25 +41,19 @@ import org.slf4j.LoggerFactory;
 
 
 
-class PSqlExpressionVisitor implements net.sf.jsqlparser.expression.ExpressionVisitor {
+public class PSqlExpressionVisitor implements net.sf.jsqlparser.expression.ExpressionVisitor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ImmutableList.Builder<Column> columnsListBuilder;
     private final PSqlContext context;
-    private Alias alias=null;
 
-    PSqlExpressionVisitor(PSqlContext context) {
+    public PSqlExpressionVisitor(PSqlContext context) {
         this.columnsListBuilder = new ImmutableList.Builder<>();
         this.context = context;
     }
 
-    PSqlExpressionVisitor(PSqlContext context, Alias alias) {
-        this(context);
-        this.alias = alias;
-    }
 
 
-
-    ImmutableList<Column> getColumns(){
+    public ImmutableList<Column> getColumns(){
         return columnsListBuilder.build();
     }
 
@@ -164,37 +154,10 @@ class PSqlExpressionVisitor implements net.sf.jsqlparser.expression.ExpressionVi
     }
 
 
-    private PSqlAttribute getAttributeFromColumn(Column column){
-        final QuotedID attributeID = context.getMetadata().getQuotedIDFactory().createAttributeID(column.getColumnName());
-        final RelationID relationID = context.getMetadata().getQuotedIDFactory().createRelationID(null, column.getTable().getName());
-        QualifiedAttributeID qualifiedAttributeID = new QualifiedAttributeID(relationID, attributeID );
-        return  new PSqlAttribute(qualifiedAttributeID);
-    }
-
     private void addAttributeIfColumn(OldOracleJoinBinaryExpression expression ){
-        PSqlExpressionVisitor visitor = new PSqlExpressionVisitor(context);
-        expression.getLeftExpression().accept( visitor);
-
-        Expression rightExpression;
-        if  ( ! visitor.getColumns().isEmpty() )
-            rightExpression =  getAttributeFromColumn ( visitor.getColumns().get(0) );
-        else
-            rightExpression = expression.getRightExpression();
-
-
-        visitor = new PSqlExpressionVisitor(context);
-        expression.getRightExpression().accept( visitor);
-        Expression leftExpression;
-        if  ( ! visitor.getColumns().isEmpty() )
-            leftExpression =  getAttributeFromColumn ( visitor.getColumns().get(0) );
-        else
-            leftExpression = expression.getLeftExpression();
-
-        PSqlCondition condition = new PSqlCondition(expression, rightExpression, leftExpression);
-
-        context.getJoins().add(  condition  );
-
-
+        PSqlCondition condition = new PSqlCondition(context, expression);
+        context.getJoins().add( condition  );
+        context.getConditions().add(condition);
     }
 
 

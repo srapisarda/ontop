@@ -8,7 +8,7 @@ import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlExpression;
  * Created by Salvatore Rapisarda on 30/09/2016.
  *
  */
-public interface PSqlExpressionVisitor {
+public interface ParsedSqlExpressionVisitor {
     void visit(PSqlAttribute var1);
     void visit(PSqlInnerJoinUsing var1);
     void visit(PSqlCondition var1);

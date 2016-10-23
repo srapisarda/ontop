@@ -1,6 +1,6 @@
 package it.unibz.inf.ontop.sql.api.ParsedSql.expressions;
 
-import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlExpressionVisitor;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.ParsedSqlExpressionVisitor;
 import net.sf.jsqlparser.expression.Expression;
 
 /**
@@ -8,5 +8,5 @@ import net.sf.jsqlparser.expression.Expression;
  *
  */
 public interface PSqlExpression extends Expression {
-    void accept(PSqlExpressionVisitor expressionVisitor);
+    void accept(ParsedSqlExpressionVisitor expressionVisitor);
 }

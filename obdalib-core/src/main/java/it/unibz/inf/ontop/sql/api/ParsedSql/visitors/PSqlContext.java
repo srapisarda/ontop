@@ -21,6 +21,7 @@ package it.unibz.inf.ontop.sql.api.ParsedSql.visitors;
  */
 
 import it.unibz.inf.ontop.sql.*;
+import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.PSqlCondition;
 import net.sf.jsqlparser.expression.Expression;
 
 import java.util.*;
@@ -40,6 +41,8 @@ public class PSqlContext {
     private final Map<QualifiedAttributeID, QualifiedAttributeID> attributes = new HashMap<>();
     private final Map<QualifiedAttributeID, QualifiedAttributeID> joinAttributes = new HashMap<>();
     private final List<Expression> joins = new LinkedList<>();
+    private final List<PSqlCondition> conditions = new ArrayList<>();
+
     private Map<QuotedID, PSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
 
@@ -95,6 +98,9 @@ public class PSqlContext {
         return joinAttributes;
     }
 
+    public List<PSqlCondition> getConditions() {
+        return conditions;
+    }
 
     //endregion
 

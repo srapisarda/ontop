@@ -120,20 +120,9 @@ class PSqlFromItemVisitor implements net.sf.jsqlparser.statement.select.FromItem
             throw new MappingQueryException("A SUB_SELECT SHOULD BE IDENTIFIED BY AN ALIAS", subSelect);
 
 
-        // logger.debug(String.format("select index: %3$s,  (relationLevel: %2$d):  %1$s", subSelect.toString(), relationLevel, getSelectIndex()));
-            /*
-            if (!(subSelect.getSelectBody() instanceof PlainSelect)) {
-            throw new ParseException(subSelect);
-            */
-
         PlainSelect subSelBody = (PlainSelect) subSelect.getSelectBody();
 
-        // relationLevel(ParsedSqlQueryVisitor.relationIndexOperations.add);
 
-        // only very simple subqueries are supported at the moment
-            /*if (subSelBody.getJoins() != null || subSelBody.getWhere() != null)
-                throw new ParseException(subSelect);*/
-       // List<String> relationalMapIndex = new LinkedList<>();
         final QuotedID contextAlias =  context.getIdFac().createAttributeID( subSelect.getAlias().getName() ) ;
         PSqlSelectVisitor visitor = new PSqlSelectVisitor(context.getMetadata(),  contextAlias );
        //v.set( relationalMapIndex );
@@ -152,14 +141,6 @@ class PSqlFromItemVisitor implements net.sf.jsqlparser.statement.select.FromItem
             context.getAttributes().put( attributeKey, attribute.getValue());
         });
 
-
-       // v.getFromItemVisitor().getRelationMapIndex();
-/*
-            if (subSelBody.getWhere() != null)
-                subSelBody.getWhere().accept(this);
-
-
-*/
     }
 
     /**

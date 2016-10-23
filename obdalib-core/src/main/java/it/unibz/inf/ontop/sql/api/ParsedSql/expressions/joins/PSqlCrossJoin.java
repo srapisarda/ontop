@@ -17,7 +17,7 @@ public class PSqlCrossJoin implements PSqlExpression {
     }
 
     @Override
-    public void accept(PSqlExpressionVisitor expressionVisitor) {
+    public void accept(ParsedSqlExpressionVisitor expressionVisitor) {
         
     }
 
