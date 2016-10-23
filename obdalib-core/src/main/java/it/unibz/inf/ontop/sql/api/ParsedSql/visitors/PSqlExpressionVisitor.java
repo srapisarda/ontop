@@ -194,6 +194,7 @@ class PSqlExpressionVisitor implements net.sf.jsqlparser.expression.ExpressionVi
 
         context.getJoins().add(  condition  );
 
+
     }
 
 

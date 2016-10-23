@@ -38,6 +38,7 @@ public class PSqlContext {
     private final Map<QualifiedAttributeID, QualifiedAttributeID> projectedAttributes = new HashMap<>();
     private final Map<QualifiedAttributeID, QualifiedAttributeID> tableAttributes = new HashMap<>();
     private final Map<QualifiedAttributeID, QualifiedAttributeID> attributes = new HashMap<>();
+    private final Map<QualifiedAttributeID, QualifiedAttributeID> joinAttributes = new HashMap<>();
     private final List<Expression> joins = new LinkedList<>();
     private Map<QuotedID, PSqlContext> childContext = new LinkedHashMap<>();
     private QuotedID alias;
@@ -89,6 +90,11 @@ public class PSqlContext {
     public List<Expression> getJoins() {
         return joins;
     }
+
+    public Map<QualifiedAttributeID, QualifiedAttributeID> getJoinAttributes() {
+        return joinAttributes;
+    }
+
 
     //endregion
 

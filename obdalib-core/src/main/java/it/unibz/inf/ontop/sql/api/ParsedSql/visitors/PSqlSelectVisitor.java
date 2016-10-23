@@ -149,23 +149,14 @@ public class PSqlSelectVisitor implements SelectVisitor {
 
                 PSqlItemVisitor parsedSQLItemVisitor = new PSqlItemVisitor(context);
                 selectItem.accept(parsedSQLItemVisitor);
-//                context.getProjectedAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
-//                context.getAttributes().putAll(parsedSQLItemVisitor.getContext().getProjectedAttributes());
-            }
+          }
         });
 
+        if ( plainSelect.getWhere() != null ){
+            PSqlExpressionVisitor expressionVisitor = new PSqlExpressionVisitor(context);
+            plainSelect.getWhere().accept(expressionVisitor);
+        }
 
-
-
-        //  this.getGlobalRelations().entrySet().stream().
-
-
-//         this.getFromItemVisitor().getRelationMapIndex()
-//        this.getGlobalRelations().put(  )
-//         this.fromItemVisitor.getRelationMapIndex()
-
-//        if (subSelBody.getWhere() != null)
-//            subSelBody.getWhere().accept(this);
     }
 
     /**

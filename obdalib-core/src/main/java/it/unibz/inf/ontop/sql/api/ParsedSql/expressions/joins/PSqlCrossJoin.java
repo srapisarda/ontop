@@ -11,6 +11,7 @@ import net.sf.jsqlparser.expression.ExpressionVisitor;
 public class PSqlCrossJoin implements PSqlExpression {
     final PSqlContext context;
 
+
     public PSqlCrossJoin(PSqlContext context) {
         this.context = context;
     }

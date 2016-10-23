@@ -29,6 +29,7 @@ import it.unibz.inf.ontop.sql.api.ParsedSql.expressions.joins.PSqlNaturalJoin;
 import it.unibz.inf.ontop.sql.api.ParsedSql.visitors.PSqlContext;
 import it.unibz.inf.ontop.sql.api.ParsedSqlQueryVisitor;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
@@ -306,10 +307,6 @@ public class ParsedSqlQueryVisitorTest {
                     assertNotNull(p.getContext().getAttributes().get(rightAttributeKey.getAttributeID()));
         });
 
-//        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
-//        assertTrue(  p.getTables().size() == expected.length );
-//        for (final String table : expected)
-//            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
     }
 
     @Test(expected = MappingQueryException.class)
@@ -431,44 +428,36 @@ public class ParsedSqlQueryVisitorTest {
     }
 
 
+
+
+
     @Test
     public void MetadataContainsExpectedTwoAliasAsAttribute(){
 
         String sql = "select NAME a, AGE b from PERSON c ";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-//        assertTrue(p.getGlobalProjectedAttributes() != null);
-//
-//       //  [["c"], "a"] --> "NAME"
-//
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream2 = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().equals("A")).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream2.size() == 1);
-//        assertTrue( pairStream2.get(0).getFst().size()==1 );
-//        assertTrue( pairStream2.get(0).getFst().get(0).getTableName().equals("C") );
-//        assertTrue( pairStream2.get(0).getSnd().getAttribute().getName().equals("A"));
 
-        // ["c"] -> PERSON ************************
-//        DatabaseRelationDefinition r =  p.getGlobalRelations().get(pairStream2.get(0).getFst());
-//        assertEquals("Expected table PERSON.", "PERSON",  r.getID().getTableName());
-//
-//
-//        //  [["c"], "b"] --> "AGE"
-//
-//        ImmutableList<ParsedSqlPair<ImmutableList<RelationID>, QualifiedAttributeID>> pairStream = ImmutableList.copyOf( p.getGlobalProjectedAttributes()
-//                .keySet()
-//                .stream()
-//                .filter(co -> co.getSnd().getAttribute().getName().equals("B")).collect(Collectors.toList()));
-//
-//        assertTrue( pairStream.size() == 1);
-//        assertTrue( pairStream.get(0).getFst().size()==1 );
-//        assertTrue( pairStream.get(0).getFst().get(0).getTableName().equals("C") );
-//        assertTrue( pairStream.get(0).getSnd().getAttribute().getName().equals("B"));
+        final QualifiedAttributeID aKey = new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("A"));
+        assertNotNull( p.getContext().getAttributes().get(aKey) );
+        assertNotNull( p.getContext().getProjectedAttributes().get(aKey));
+
+        final QualifiedAttributeID bKey = new QualifiedAttributeID(null, dbMetadata.getQuotedIDFactory().createAttributeID("B"));
+        assertNotNull( p.getContext().getAttributes().get(bKey) );
+        assertNotNull( p.getContext().getProjectedAttributes().get(bKey));
 
     }
 
+
+    @Test
+    public void SimpleSQLConditionWhereClause_TEST(){
+        String sql = "select a.name, a.age, b.email, b.active FROM person a, email b where a.idPerson = b.idPerson";
+        ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
+        assertTrue(p.getContext().getJoins().size() == 1 );
+        final Expression expression = p.getContext().getJoins().get(0);
+        assertTrue( expression instanceof PSqlCondition  );
+        ((PSqlCondition) expression).getLeftExpression()
+
+    }
 
     @Test
     public void MetadataContainsExpectedAttributesAndAliasOnTheSubSelect() {

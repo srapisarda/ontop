@@ -65,9 +65,6 @@ class PSqlItemVisitor implements SelectItemVisitor {
     public void visit(SelectExpressionItem selectExpressionItem) {
         logger.debug("visit selectExpressionItem");
 
-
-
-
         // TODO:  should support complex expressions
         final PSqlExpressionVisitor parsedSQLExpressionVisitor = new PSqlExpressionVisitor(context, selectExpressionItem.getAlias());
         selectExpressionItem.getExpression().accept(parsedSQLExpressionVisitor);
