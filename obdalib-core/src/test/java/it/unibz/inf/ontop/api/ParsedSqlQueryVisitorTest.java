@@ -455,7 +455,7 @@ public class ParsedSqlQueryVisitorTest {
         assertTrue(p.getContext().getJoins().size() == 1 );
         final Expression expression = p.getContext().getJoins().get(0);
         assertTrue( expression instanceof PSqlCondition  );
-        ((PSqlCondition) expression).getLeftExpression()
+        //((PSqlCondition) expression).getLeftExpression()
 
     }
 
