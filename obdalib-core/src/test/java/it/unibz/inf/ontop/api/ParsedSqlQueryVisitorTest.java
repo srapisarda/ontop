@@ -189,10 +189,11 @@ public class ParsedSqlQueryVisitorTest {
 
         final QualifiedAttributeID personIdEmailkey = new QualifiedAttributeID(dbMetadata.getQuotedIDFactory().createRelationID(null, "email"), dbMetadata.getQuotedIDFactory().createAttributeID("idperson"));
         assertTrue( expression.getCommonAttributes().contains( personIdEmailkey) );
-//        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
-//        assertTrue(  p.getTables().size() == expected.length );
-//        for (final String table : expected)
-//            assertTrue(p.getTables().stream().anyMatch(q -> q.getTableName().toUpperCase().equals(table)));
+
+        assertEquals( 1, p.getContext().getConditions().size());
+       assertEquals(  personIdPersonkey, p.getContext().getConditions().get(0).getLeftAttribute().getAttributeID());
+        assertEquals( personIdEmailkey, p.getContext().getConditions().get(0).getRightAttribute().getAttributeID());
+
     }
 
 
@@ -200,7 +201,6 @@ public class ParsedSqlQueryVisitorTest {
     @Test
     public void MetadataContainsAttributeInJoinTablesInNaturalJoin(){
         String [] expected = { "PERSON", "EMAIL"};
-        // select a.name, a.age, b.email from PERSON as a natural join EMAIL as b
         String sql = String.format( "select a.name, a.age, b.email from %1$s as a natural join %2$s as b", expected[0], expected[1]);
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
 //        logger.info(String.format( "expected.length: %d, p.getGlobalTables().size(): %d ",  expected.length, p.getTables().size() ));
@@ -279,15 +279,15 @@ public class ParsedSqlQueryVisitorTest {
     public void MetadataContainsExpectedTwoTablesInnerJoinON(){
         String sql = "select * from PERSON a inner join EMAIL b on a.idPerson=b.idPerson ";
         ParsedSqlQueryVisitor p = new ParsedSqlQueryVisitor( (Select) getStatementFromUnquotedSQL(sql), dbMetadata);
-        assertTrue( p.getContext().getJoins().size()==1 );
+        assertTrue( p.getContext().getConditions().size()==1 );
 
 
-        PSqlCondition equalsTo = (PSqlCondition) p.getContext().getJoins().get(0) ;
+        final PSqlCondition condition = p.getContext().getConditions().get(0);
         // assert existence of right attribute mapped
-        final PSqlAttribute rightAttributeKey =  (PSqlAttribute) equalsTo.getRightExpression();
+        final PSqlAttribute rightAttributeKey =   condition.getRightAttribute();
         assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
         // assert existence of left attribute mapped
-        final PSqlAttribute leftAttributeKey =  (PSqlAttribute) equalsTo.getLeftExpression();
+        final PSqlAttribute leftAttributeKey =   condition.getLeftAttribute();
         assertNotNull( p.getContext().getAttributes().get( rightAttributeKey.getAttributeID()));
 
 
