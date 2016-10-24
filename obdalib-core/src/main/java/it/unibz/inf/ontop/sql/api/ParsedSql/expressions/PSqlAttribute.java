@@ -14,11 +14,11 @@ public class PSqlAttribute implements PSqlExpression {
     private Object value;
 
 
-    PSqlAttribute(QualifiedAttributeID attributeID) {
+    public PSqlAttribute(QualifiedAttributeID attributeID) {
         this.attributeID = attributeID;
     }
 
-    PSqlAttribute(String value){
+    public PSqlAttribute(String value){
         this.value =value;
     }
 
