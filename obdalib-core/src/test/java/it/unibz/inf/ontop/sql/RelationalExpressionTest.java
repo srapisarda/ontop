@@ -209,7 +209,6 @@ public class RelationalExpressionTest {
         naturalUsingCommonAsserts(relationalExpression);
     }
 
-
     @Test(expected = IllegalJoinException.class)
     public void join_using_exception_test() throws IllegalJoinException {
         System.out.println(re1);
@@ -249,7 +248,6 @@ public class RelationalExpressionTest {
         RelationalExpression.joinUsing(relationalExpression, re3, ImmutableSet.of(MDFAC.createAttributeID("A")));
     }
 
-
     @Test
     public void alias_test() {
         RelationID tableAlias = MDFAC.createRelationID(null, "S");
@@ -285,7 +283,6 @@ public class RelationalExpressionTest {
 
     }
 
-
     private void naturalUsingCommonAsserts(RelationalExpression relationalExpression){
         assertTrue(relationalExpression.getDataAtoms().contains(f1));
         assertTrue(relationalExpression.getDataAtoms().contains(f2));
@@ -317,6 +314,5 @@ public class RelationalExpressionTest {
         assertEquals(v, attrs.get(qaNv));
 
     }
-
 
 }
