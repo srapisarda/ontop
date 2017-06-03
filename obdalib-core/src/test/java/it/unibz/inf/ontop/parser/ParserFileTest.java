@@ -28,7 +28,7 @@ import it.unibz.inf.ontop.model.impl.OBDADataFactoryImpl;
 import it.unibz.inf.ontop.sql.DBMetadata;
 import it.unibz.inf.ontop.sql.DBMetadataExtractor;
 import it.unibz.inf.ontop.sql.QuotedIDFactory;
-import it.unibz.inf.ontop.sql.api.ParsedSQLQuery;
+//import it.unibz.inf.ontop.sql.api.ParsedSQLQuery;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -154,7 +154,7 @@ public class ParserFileTest extends TestCase {
 	}
 
 	private static boolean parse(String input, QuotedIDFactory idfac) {
-		ParsedSQLQuery queryP;
+//		ParsedSQLQuery queryP;
 		
 	//	try {
 	//		queryP = new ParsedSQLQuery(input, true, idfac);

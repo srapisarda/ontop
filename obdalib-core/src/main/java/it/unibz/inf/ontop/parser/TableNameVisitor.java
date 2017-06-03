@@ -76,7 +76,7 @@ public class TableNameVisitor {
 		select.getSelectBody().accept(selectVisitor);
 		
 		if (unsupported && deepParsing) // used to throw exception for the currently unsupported methods
-			throw new JSQLParserException(SQLQueryDeepParser.QUERY_NOT_SUPPORTED);
+			throw new JSQLParserException("Query not supported ");
 	}
 		
 	public Map<RelationID, RelationID> getTables() {	
